@@ -1,0 +1,30 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
+
+namespace Work_Experience_Search.controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class MediaController : ControllerBase
+{
+    private readonly IWebHostEnvironment _env;
+
+    public MediaController(IWebHostEnvironment env)
+    {
+        _env = env;
+    }
+
+    [HttpGet("uploads/{fileName}")]
+    public IActionResult GetFile(string fileName)
+    {
+        string filePath = Path.Combine(_env.WebRootPath, "uploads", fileName);
+        
+        if (!System.IO.File.Exists(filePath))
+            return NotFound();
+        
+        new FileExtensionContentTypeProvider().TryGetContentType(filePath, out var contentType);
+
+        byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+        return File(fileBytes, contentType ?? "application/octet-stream");
+    }
+}
