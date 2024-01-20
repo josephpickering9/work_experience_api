@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Work_Experience_Search.Services;
 
 namespace Work_Experience_Search.controllers;
@@ -46,8 +47,17 @@ public class ProjectController : ControllerBase
     }
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PostProject([FromForm] CreateProject createProject)
     {
+        bool projectExists = await _context.Project
+            .AnyAsync(p => p.Title.ToLower() == createProject.Title.ToLower());
+
+        if (projectExists)
+        {
+            return Conflict("A project with the same title already exists.");
+        }
+        
         string? imagePath = createProject.Image != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image)) : null;
         string? bgImagePath = createProject.BackgroundImage != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage)) : null;
         
@@ -70,17 +80,39 @@ public class ProjectController : ControllerBase
     }
     
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutProject(int id, Project project)
+    public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
     {
-        if (id != project.Id)
-        {
-            return BadRequest();
-        }
+        Project? project = await _context.Project.FindAsync(id);
 
+        if (project == null)
+        {
+            return NotFound();
+        }
+        
+        string? imagePath = createProject.Image != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image)) : null;
+        string? bgImagePath = createProject.BackgroundImage != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage)) : null;
+        
+        if (imagePath != null)
+        {
+            project.Image = imagePath;
+        }
+        
+        if (bgImagePath != null)
+        {
+            project.BackgroundImage = bgImagePath;
+        }
+        
+        project.Title = createProject.Title;
+        project.ShortDescription = createProject.ShortDescription;
+        project.Description = createProject.Description;
+        project.Company = createProject.Company;
+        project.Year = createProject.Year;
+        project.Website = createProject.Website;
+        
         _context.Entry(project).State = EntityState.Modified;
         await _context.SaveChangesAsync();
 
-        return NoContent();
+        return CreatedAtAction("GetProject", new { id = project.Id }, project);
     }
     
     [HttpDelete("id")]
@@ -102,15 +134,21 @@ public class ProjectController : ControllerBase
 
 public class CreateProject
 {
+    [Required]
     public string Title { get; set; }
+    [Required]
     public string ShortDescription { get; set; }
+    [Required]
     public string Description { get; set; }
+    [Required]
     public string Company { get; set; }
+    [Required]
     public int Year { get; set; }
     public string Website { get; set; }
     
     public IFormFile? Image { get; set; }
     public IFormFile? BackgroundImage { get; set; }
     
+    [Required]
     public List<string> Tags { get; set; }
 }

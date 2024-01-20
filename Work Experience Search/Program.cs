@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Work_Experience_Search;
 using Work_Experience_Search.Services;
 
@@ -11,7 +12,13 @@ builder.Services.AddDbContext<Database>(options =>
 builder.Services.AddScoped<IFileService, FileService>();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Work Experience API", Version = "v1" });
+    
+    c.OperationFilter<SwaggerFileOperationFilter>();
+    c.SupportNonNullableReferenceTypes();
+});
 builder.Services.AddControllers();
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddCors(options =>
