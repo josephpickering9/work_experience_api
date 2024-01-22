@@ -114,7 +114,7 @@ public class ProjectServiceTests
     public async Task UpdateProjectAsync_ExistingProject_UpdatesProject()
     {
         // Arrange
-        Project existingProject = await SaveProject(CreateProject(4, "Test Project", "Test Description", "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021, "https://example.com", new List<Tag> { CreateTag(4, "Updated Tag", TagType.Backend) }));
+        Project existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description", "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021, "https://example.com", new List<Tag> { CreateTag(5, "Updated Tag", TagType.Backend) }));
         
         CreateProject updateData = new CreateProject
         {
@@ -159,7 +159,7 @@ public class ProjectServiceTests
     public async Task DeleteProjectAsync_ExistingProject_DeletesProject()
     {
         // Arrange
-        Project existingProject = await SaveProject(CreateProject(4, "Test Project", "Test Description", "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021, "https://example.com", new List<Tag> { CreateTag(4, "Updated Tag", TagType.Backend) }));
+        Project existingProject = await SaveProject(CreateProject(6, "Test Delete Project", "Test Description", "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021, "https://example.com", new List<Tag> { CreateTag(6, "Updated Tag", TagType.Backend) }));
     
         // Act
         Project? result = await _projectService.DeleteProjectAsync(existingProject.Id);
@@ -217,7 +217,7 @@ public class ProjectServiceTests
     {
         return new Project()
         {
-            Id = id,
+            // Id = id,
             Title = title,
             Description = description,
             ShortDescription = shortDescription,
