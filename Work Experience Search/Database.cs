@@ -15,6 +15,11 @@ public class Database : DbContext
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-
+        modelBuilder
+            .Entity<Tag>()
+            .Property(e => e.Type)
+            .HasConversion(
+                v => v.ToDescriptionString(),
+                v => EnumExtensions.FromDescriptionString<TagType>(v));
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Work_Experience_Search;
@@ -17,9 +18,15 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Work Experience API", Version = "v1" });
     
     c.OperationFilter<SwaggerFileOperationFilter>();
+    c.SchemaFilter<EnumDescriptionSchemaFilter>();
     c.SupportNonNullableReferenceTypes();
 });
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.IgnoreNullValues = true;
+    });
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddCors(options =>
 {

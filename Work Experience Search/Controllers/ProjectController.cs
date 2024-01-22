@@ -1,8 +1,7 @@
-using System.ComponentModel.DataAnnotations;
-using Work_Experience_Search.Services;
-
 namespace Work_Experience_Search.controllers;
 
+using System.ComponentModel.DataAnnotations;
+using Services;
 using Microsoft.EntityFrameworkCore;
 using models;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +41,8 @@ public class ProjectController : ControllerBase
         {
             return NotFound();
         }
+        
+        project.Tags = await _context.Tag.Where(t => t.Projects.Any(p => p.Id == project.Id)).ToListAsync();
 
         return project;
     }
@@ -75,6 +76,30 @@ public class ProjectController : ControllerBase
         
         _context.Project.Add(project);
         await _context.SaveChangesAsync();
+
+        if (createProject.Tags != null && createProject.Tags.Count > 0)
+        {
+            foreach (string tagTitle in createProject.Tags)
+            {
+                Tag? tag = await _context.Tag.FirstOrDefaultAsync(t => t.Title.ToLower() == tagTitle.ToLower());
+
+                if (tag == null)
+                {
+                    tag = new Tag
+                    {
+                        Title = tagTitle,
+                        Type = TagType.Default,
+                        Colour = "blue",
+                    };
+
+                    _context.Tag.Add(tag);
+                }
+
+                project.Tags.Add(tag);
+            }
+
+            await _context.SaveChangesAsync();
+        }
 
         return CreatedAtAction("GetProject", new { id = project.Id }, project);
     }
