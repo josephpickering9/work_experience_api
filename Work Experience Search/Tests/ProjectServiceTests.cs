@@ -230,7 +230,7 @@ public class ProjectServiceTests
     {
         return new Project
         {
-            // Id = id,
+            Id = id,
             Title = title,
             Description = description,
             ShortDescription = shortDescription,
