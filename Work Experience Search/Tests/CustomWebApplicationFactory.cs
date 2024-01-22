@@ -10,20 +10,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             // Remove the real database registration
-            ServiceDescriptor? descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<Database>));
-            if (descriptor != null)
-            {
-                services.Remove(descriptor);
-            }
+            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<Database>));
+            if (descriptor != null) services.Remove(descriptor);
 
             // Add a new database context using an in-memory database for testing
-            services.AddDbContext<Database>(options =>
-            {
-                options.UseInMemoryDatabase("InMemoryDbForTesting");
-            });
+            services.AddDbContext<Database>(options => { options.UseInMemoryDatabase("InMemoryDbForTesting"); });
 
             // Mock other services that you are using
-            ServiceProvider? serviceProvider = new ServiceCollection()
+            var serviceProvider = new ServiceCollection()
                 .AddEntityFrameworkInMemoryDatabase()
                 .BuildServiceProvider();
 
@@ -33,11 +27,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                     .UseInternalServiceProvider(serviceProvider);
             });
 
-            ServiceProvider sp = services.BuildServiceProvider();
-            using (IServiceScope scope = sp.CreateScope())
+            var sp = services.BuildServiceProvider();
+            using (var scope = sp.CreateScope())
             {
-                IServiceProvider scopedServices = scope.ServiceProvider;
-                Database? db = scopedServices.GetRequiredService<Database>();
+                var scopedServices = scope.ServiceProvider;
+                var db = scopedServices.GetRequiredService<Database>();
                 db.Database.EnsureCreated();
 
                 try

@@ -8,22 +8,16 @@ public class FileService : IFileService
     {
         _hostEnvironment = hostEnvironment;
     }
-    
+
     public async Task<string> SaveFileAsync(IFormFile file)
     {
-        if (file == null || file.Length == 0)
-        {
-            return null;
-        }
+        if (file == null || file.Length == 0) return null;
 
-        string uploadDir = Path.Combine(_hostEnvironment.WebRootPath, "uploads");
-        if (!Directory.Exists(uploadDir))
-        {
-            Directory.CreateDirectory(uploadDir);
-        }
+        var uploadDir = Path.Combine(_hostEnvironment.WebRootPath, "uploads");
+        if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
 
-        string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-        string filePath = Path.Combine(uploadDir, fileName);
+        var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+        var filePath = Path.Combine(uploadDir, fileName);
 
         using (var fileStream = new FileStream(filePath, FileMode.Create))
         {
