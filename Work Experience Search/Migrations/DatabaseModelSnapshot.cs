@@ -36,7 +36,7 @@ namespace Work_Experience_Search.Migrations
                     b.ToTable("ProjectTag");
                 });
 
-            modelBuilder.Entity("Work_Experience_Search.models.Project", b =>
+            modelBuilder.Entity("Work_Experience_Search.Models.Project", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -77,7 +77,7 @@ namespace Work_Experience_Search.Migrations
                     b.ToTable("Project");
                 });
 
-            modelBuilder.Entity("Work_Experience_Search.models.Tag", b =>
+            modelBuilder.Entity("Work_Experience_Search.Models.Tag", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -104,13 +104,13 @@ namespace Work_Experience_Search.Migrations
 
             modelBuilder.Entity("ProjectTag", b =>
                 {
-                    b.HasOne("Work_Experience_Search.models.Project", null)
+                    b.HasOne("Work_Experience_Search.Models.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Work_Experience_Search.models.Tag", null)
+                    b.HasOne("Work_Experience_Search.Models.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)

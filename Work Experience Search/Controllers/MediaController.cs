@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 
-namespace Work_Experience_Search.controllers;
+namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
