@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Work_Experience_Search.models;
+namespace Work_Experience_Search.Models;
 
 public class Project
 {

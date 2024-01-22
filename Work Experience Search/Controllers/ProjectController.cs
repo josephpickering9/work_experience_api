@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
-using Work_Experience_Search.models;
+using Work_Experience_Search.Exceptions;
+using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 
-namespace Work_Experience_Search.controllers;
+namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
@@ -17,7 +18,7 @@ public class ProjectController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Project>>> GetProjects(string search)
+    public async Task<ActionResult<IEnumerable<Project>>> GetProjects(string? search)
     {
         return Ok(await _projectService.GetProjectsAsync(search));
     }
@@ -25,13 +26,14 @@ public class ProjectController : ControllerBase
     [HttpGet("id")]
     public async Task<ActionResult<Project>> GetProject(int id)
     {
-        Project? project = await _projectService.GetProjectAsync(id);
-        if (project == null)
+        try
         {
-            return NotFound();
+            return await _projectService.GetProjectAsync(id);
         }
-        
-        return project;
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
     }
 
     [HttpPost]
@@ -39,8 +41,12 @@ public class ProjectController : ControllerBase
     {
         try
         {
-            Project? project = await _projectService.CreateProjectAsync(createProject);
+            Project project = await _projectService.CreateProjectAsync(createProject);
             return CreatedAtAction("GetProject", new { id = project.Id }, project);
+        }
+        catch (ConflictException e)
+        {
+            return Conflict(e.Message);
         }
         catch (InvalidOperationException e)
         {
@@ -53,13 +59,12 @@ public class ProjectController : ControllerBase
     {
         try
         {
-            Project? project = await _projectService.UpdateProjectAsync(id, createProject);
-            if (project == null)
-            {
-                return NotFound();
-            }
-        
+            Project project = await _projectService.UpdateProjectAsync(id, createProject);
             return CreatedAtAction("GetProject", new { id = project.Id }, project);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
         }
         catch (InvalidOperationException e)
         {
@@ -72,13 +77,12 @@ public class ProjectController : ControllerBase
     {
         try
         {
-            Project? project = await _projectService.DeleteProjectAsync(id);
-            if (project == null)
-            {
-                return NotFound();
-            }
-            
+            await _projectService.DeleteProjectAsync(id);
             return NoContent();
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
         }
         catch (Exception e)
         {
@@ -100,7 +104,7 @@ public class CreateProject
     [Required]
     public int Year { get; set; }
     public string Website { get; set; }
-    
+
     public IFormFile? Image { get; set; }
     public IFormFile? BackgroundImage { get; set; }
     

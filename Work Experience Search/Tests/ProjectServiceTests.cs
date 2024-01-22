@@ -1,5 +1,5 @@
-using Work_Experience_Search.controllers;
-using Work_Experience_Search.models;
+using Work_Experience_Search.Controllers;
+using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Moq;
 using Microsoft.EntityFrameworkCore;

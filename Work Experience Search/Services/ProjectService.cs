@@ -1,13 +1,14 @@
-using Work_Experience_Search.controllers;
+using Work_Experience_Search.Exceptions;
 
 namespace Work_Experience_Search.Services;
 
-using models;
+using Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Controllers;
 
 public class ProjectService : IProjectService
 {
@@ -32,9 +33,13 @@ public class ProjectService : IProjectService
         return await projects.ToListAsync();
     }
 
-    public async Task<Project?> GetProjectAsync(int id)
+    public async Task<Project> GetProjectAsync(int id)
     {
         Project? project = await _context.Project.FindAsync(id);
+        if (project == null)
+        {
+            throw new NotFoundException("Project not found.");
+        }
         
         if (project != null)
         {
@@ -51,7 +56,7 @@ public class ProjectService : IProjectService
 
         if (projectExists)
         {
-            throw new InvalidOperationException("Project already exists.");
+            throw new ConflictException("A project with the same title already exists");
         }
 
         string? imagePath = createProject.Image != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image)) : null;
@@ -101,14 +106,22 @@ public class ProjectService : IProjectService
     }
 
 
-    public async Task<Project?> UpdateProjectAsync(int id, CreateProject createProject)
+    public async Task<Project> UpdateProjectAsync(int id, CreateProject createProject)
     {
         Project? project = await _context.Project.FindAsync(id);
         if (project == null)
         {
-            return null;
+            throw new NotFoundException("Project not found.");
         }
 
+        bool projectExists = await _context.Project
+            .AnyAsync(p => p.Title.ToLower() == createProject.Title.ToLower());
+
+        if (projectExists)
+        {
+            throw new ConflictException("A project with the same title already exists");
+        }
+        
         string? imagePath = createProject.Image != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image)) : null;
         string? bgImagePath = createProject.BackgroundImage != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage)) : null;
 
@@ -162,12 +175,12 @@ public class ProjectService : IProjectService
     }
 
 
-    public async Task<Project?> DeleteProjectAsync(int id)
+    public async Task<Project> DeleteProjectAsync(int id)
     {
-        Project? project = await _context.Project.FindAsync(id);
+        Project project = await _context.Project.FindAsync(id);
         if (project == null)
         {
-            return null;
+            throw new NotFoundException("Project not found.");
         }
 
         _context.Project.Remove(project);
