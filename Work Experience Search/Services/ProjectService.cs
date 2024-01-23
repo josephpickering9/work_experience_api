@@ -1,14 +1,9 @@
+using Microsoft.EntityFrameworkCore;
+using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
+using Work_Experience_Search.Models;
 
 namespace Work_Experience_Search.Services;
-
-using Models;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Controllers;
 
 public class ProjectService : IProjectService
 {
@@ -25,44 +20,39 @@ public class ProjectService : IProjectService
     {
         IQueryable<Project> projects = _context.Project;
 
-        if (!String.IsNullOrEmpty(search))
-        {
-            projects = projects.Where(p => p.Title.ToLower().Contains(search.ToLower()) || p.Description.ToLower().Contains(search.ToLower()));
-        }
+        if (!string.IsNullOrEmpty(search))
+            projects = projects.Where(p =>
+                p.Title.ToLower().Contains(search.ToLower()) || p.Description.ToLower().Contains(search.ToLower()));
 
         return await projects.ToListAsync();
     }
 
     public async Task<Project> GetProjectAsync(int id)
     {
-        Project? project = await _context.Project.FindAsync(id);
-        if (project == null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-        
+        var project = await _context.Project.FindAsync(id);
+        if (project == null) throw new NotFoundException("Project not found.");
+
         if (project != null)
-        {
             project.Tags = await _context.Tag.Where(t => t.Projects.Any(p => p.Id == project.Id)).ToListAsync();
-        }
 
         return project;
     }
 
     public async Task<Project> CreateProjectAsync(CreateProject createProject)
     {
-        bool projectExists = await _context.Project
+        var projectExists = await _context.Project
             .AnyAsync(p => p.Title.ToLower() == createProject.Title.ToLower());
 
-        if (projectExists)
-        {
-            throw new ConflictException("A project with the same title already exists");
-        }
+        if (projectExists) throw new ConflictException("A project with the same title already exists");
 
-        string? imagePath = createProject.Image != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image)) : null;
-        string? bgImagePath = createProject.BackgroundImage != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage)) : null;
+        var imagePath = createProject.Image != null
+            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image))
+            : null;
+        var bgImagePath = createProject.BackgroundImage != null
+            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage))
+            : null;
 
-        Project project = new Project
+        var project = new Project
         {
             Title = createProject.Title,
             ShortDescription = createProject.ShortDescription,
@@ -80,9 +70,9 @@ public class ProjectService : IProjectService
 
         if (createProject.Tags != null && createProject.Tags.Count > 0)
         {
-            foreach (string tagTitle in createProject.Tags)
+            foreach (var tagTitle in createProject.Tags)
             {
-                Tag? tag = await _context.Tag.FirstOrDefaultAsync(t => t.Title.ToLower() == tagTitle.ToLower());
+                var tag = await _context.Tag.FirstOrDefaultAsync(t => t.Title.ToLower() == tagTitle.ToLower());
 
                 if (tag == null)
                 {
@@ -90,7 +80,7 @@ public class ProjectService : IProjectService
                     {
                         Title = tagTitle,
                         Type = TagType.Default,
-                        Colour = "blue",
+                        Colour = "blue"
                     };
 
                     _context.Tag.Add(tag);
@@ -108,32 +98,24 @@ public class ProjectService : IProjectService
 
     public async Task<Project> UpdateProjectAsync(int id, CreateProject createProject)
     {
-        Project? project = await _context.Project.FindAsync(id);
-        if (project == null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
+        var project = await _context.Project.FindAsync(id);
+        if (project == null) throw new NotFoundException("Project not found.");
 
-        bool projectExists = await _context.Project
+        var projectExists = await _context.Project
             .AnyAsync(p => p.Title.ToLower() == createProject.Title.ToLower());
 
-        if (projectExists)
-        {
-            throw new ConflictException("A project with the same title already exists");
-        }
-        
-        string? imagePath = createProject.Image != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image)) : null;
-        string? bgImagePath = createProject.BackgroundImage != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage)) : null;
+        if (projectExists) throw new ConflictException("A project with the same title already exists");
 
-        if (imagePath != null)
-        {
-            project.Image = imagePath;
-        }
+        var imagePath = createProject.Image != null
+            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image))
+            : null;
+        var bgImagePath = createProject.BackgroundImage != null
+            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage))
+            : null;
 
-        if (bgImagePath != null)
-        {
-            project.BackgroundImage = bgImagePath;
-        }
+        if (imagePath != null) project.Image = imagePath;
+
+        if (bgImagePath != null) project.BackgroundImage = bgImagePath;
 
         project.Title = createProject.Title;
         project.ShortDescription = createProject.ShortDescription;
@@ -144,26 +126,26 @@ public class ProjectService : IProjectService
 
         _context.Entry(project).State = EntityState.Modified;
         await _context.SaveChangesAsync();
-        
+
         if (createProject.Tags.Count > 0)
         {
-            List<Tag> newTags = new List<Tag>();
-            
-            foreach (string tagTitle in createProject.Tags)
+            var newTags = new List<Tag>();
+
+            foreach (var tagTitle in createProject.Tags)
             {
-                Tag? tag = await _context.Tag.FirstOrDefaultAsync(t => t.Title.ToLower() == tagTitle.ToLower());
+                var tag = await _context.Tag.FirstOrDefaultAsync(t => t.Title.ToLower() == tagTitle.ToLower());
                 if (tag == null)
                 {
                     tag = new Tag
                     {
                         Title = tagTitle,
                         Type = TagType.Default,
-                        Colour = "blue",
+                        Colour = "blue"
                     };
 
                     _context.Tag.Add(tag);
                 }
-                
+
                 newTags.Add(tag);
             }
 
@@ -177,11 +159,8 @@ public class ProjectService : IProjectService
 
     public async Task<Project> DeleteProjectAsync(int id)
     {
-        Project project = await _context.Project.FindAsync(id);
-        if (project == null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
+        var project = await _context.Project.FindAsync(id);
+        if (project == null) throw new NotFoundException("Project not found.");
 
         _context.Project.Remove(project);
         await _context.SaveChangesAsync();

@@ -23,32 +23,32 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task GetProjects_ReturnsProjects()
     {
         // Arrange
-        HttpResponseMessage httpResponse = await _client.GetAsync("/project");
+        var httpResponse = await _client.GetAsync("/project");
 
         // Act
         httpResponse.EnsureSuccessStatusCode();
-        string stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        IEnumerable<Project>? projects = JsonConvert.DeserializeObject<IEnumerable<Project>>(stringResponse);
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var projects = JsonConvert.DeserializeObject<IEnumerable<Project>>(stringResponse);
 
         // Assert
         Assert.NotNull(projects);
         Assert.NotEmpty(projects);
     }
-    
+
     [Fact]
     public async Task GetProject_ExistingId_ReturnsProject()
     {
         // Arrange
-        int testProjectId = 10; 
-        Project expectedProject = await CreateProjectAsync(testProjectId);
+        var testProjectId = 10;
+        var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        HttpResponseMessage httpResponse = await _client.GetAsync($"/project/id?id={testProjectId}");
+        var httpResponse = await _client.GetAsync($"/project/id?id={testProjectId}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
-        string stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        Project? actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
 
         Assert.NotNull(actualProject);
         Assert.Equal(expectedProject.Id, actualProject.Id);
@@ -65,20 +65,20 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task GetProject_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        int nonExistingProjectId = 999;
+        var nonExistingProjectId = 999;
 
         // Act
-        HttpResponseMessage httpResponse = await _client.GetAsync($"/project/id?id={nonExistingProjectId}");
+        var httpResponse = await _client.GetAsync($"/project/id?id={nonExistingProjectId}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
-    
+
     [Fact]
     public async Task PostProject_CreatesNewProject()
     {
         // Arrange
-        CreateProject newProject = new CreateProject
+        var newProject = new CreateProject
         {
             Title = "New Project",
             ShortDescription = "A short description",
@@ -91,15 +91,15 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Tags = new List<string> { "Tag1", "Tag2" }
         };
 
-        StringContent content = new StringContent(JsonConvert.SerializeObject(newProject), Encoding.UTF8, "application/json");
+        var content = new StringContent(JsonConvert.SerializeObject(newProject), Encoding.UTF8, "application/json");
 
         // Act
-        HttpResponseMessage httpResponse = await _client.PostAsync("/project", content);
+        var httpResponse = await _client.PostAsync("/project", content);
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
-        string stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        Project? actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
 
         Assert.NotNull(actualProject);
         Assert.Equal(newProject.Title, actualProject.Title);
@@ -111,10 +111,10 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(newProject.Tags.Count, actualProject.Tags.Count);
 
-        using (IServiceScope? scope = _factory.Services.CreateScope())
+        using (var scope = _factory.Services.CreateScope())
         {
-            Database? context = scope.ServiceProvider.GetRequiredService<Database>();
-            Project? projectInDb = await context.Project.FindAsync(actualProject.Id);
+            var context = scope.ServiceProvider.GetRequiredService<Database>();
+            var projectInDb = await context.Project.FindAsync(actualProject.Id);
             Assert.NotNull(projectInDb);
             Assert.Equal(newProject.Title, projectInDb.Title);
             Assert.Equal(newProject.Description, projectInDb.Description);
@@ -122,21 +122,22 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Assert.Equal(newProject.Company, projectInDb.Company);
             Assert.Equal(newProject.Year, projectInDb.Year);
             Assert.Equal(newProject.Website, projectInDb.Website);
-            
+
             if (projectInDb != null)
             {
-                projectInDb.Tags = await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
+                projectInDb.Tags =
+                    await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
                 Assert.NotNull(projectInDb.Tags);
                 Assert.Equal(newProject.Tags.Count, projectInDb.Tags.Count);
             }
         }
     }
-    
+
     [Fact]
     public async Task PostProject_WithDuplicateTitle_ReturnsConflict()
     {
         // Arrange
-        CreateProject duplicateProject = new CreateProject
+        var duplicateProject = new CreateProject
         {
             Title = "Duplicate Project",
             ShortDescription = "A short description",
@@ -149,37 +150,38 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Tags = new List<string> { "Tag1", "Tag2" }
         };
 
-        StringContent content = new StringContent(JsonConvert.SerializeObject(duplicateProject), Encoding.UTF8, "application/json");
+        var content = new StringContent(JsonConvert.SerializeObject(duplicateProject), Encoding.UTF8,
+            "application/json");
 
         // Act - First attempt (should succeed)
-        HttpResponseMessage firstResponse = await _client.PostAsync("/project", content);
+        var firstResponse = await _client.PostAsync("/project", content);
         firstResponse.EnsureSuccessStatusCode();
 
         // Act - Second attempt (should fail)
-        HttpResponseMessage secondResponse = await _client.PostAsync("/project", content);
+        var secondResponse = await _client.PostAsync("/project", content);
 
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
-        string stringResponse = await secondResponse.Content.ReadAsStringAsync();
+        var stringResponse = await secondResponse.Content.ReadAsStringAsync();
 
         Assert.Contains("A project with the same title already exists", stringResponse);
 
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (var scope = _factory.Services.CreateScope())
         {
-            Database context = scope.ServiceProvider.GetRequiredService<Database>();
-            int projectCount = await context.Project.CountAsync(p => p.Title == duplicateProject.Title);
+            var context = scope.ServiceProvider.GetRequiredService<Database>();
+            var projectCount = await context.Project.CountAsync(p => p.Title == duplicateProject.Title);
             Assert.Equal(1, projectCount);
         }
     }
-    
+
     [Fact]
     public async Task PutProject_ExistingId_UpdatesProject()
     {
         // Arrange
-        int testProjectId = 12; 
-        Project existingProject = await CreateProjectAsync(testProjectId);
+        var testProjectId = 12;
+        var existingProject = await CreateProjectAsync(testProjectId);
 
-        CreateProject updateProject = new CreateProject
+        var updateProject = new CreateProject
         {
             Title = "Updated Project",
             ShortDescription = "Updated short description",
@@ -190,15 +192,15 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Tags = new List<string> { "UpdatedTag1", "UpdatedTag2" }
         };
 
-        StringContent content = new StringContent(JsonConvert.SerializeObject(updateProject), Encoding.UTF8, "application/json");
+        var content = new StringContent(JsonConvert.SerializeObject(updateProject), Encoding.UTF8, "application/json");
 
         // Act
-        HttpResponseMessage httpResponse = await _client.PutAsync($"/project/{existingProject.Id}", content);
+        var httpResponse = await _client.PutAsync($"/project/{existingProject.Id}", content);
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
-        string stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        Project? actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
 
         Assert.NotNull(actualProject);
         Assert.Equal(updateProject.Title, actualProject.Title);
@@ -210,10 +212,10 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(updateProject.Tags.Count, actualProject.Tags.Count);
 
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (var scope = _factory.Services.CreateScope())
         {
-            Database context = scope.ServiceProvider.GetRequiredService<Database>();
-            Project? projectInDb = await context.Project.FindAsync(existingProject.Id);
+            var context = scope.ServiceProvider.GetRequiredService<Database>();
+            var projectInDb = await context.Project.FindAsync(existingProject.Id);
             Assert.NotNull(projectInDb);
             Assert.Equal(updateProject.Title, projectInDb.Title);
             Assert.Equal(updateProject.Description, projectInDb.Description);
@@ -221,37 +223,38 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Assert.Equal(updateProject.Company, projectInDb.Company);
             Assert.Equal(updateProject.Year, projectInDb.Year);
             Assert.Equal(updateProject.Website, projectInDb.Website);
-            
+
             if (projectInDb != null)
             {
-                projectInDb.Tags = await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
+                projectInDb.Tags =
+                    await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
                 Assert.NotNull(projectInDb.Tags);
                 Assert.Equal(updateProject.Tags.Count, projectInDb.Tags.Count);
             }
         }
     }
-    
+
     [Fact]
     public async Task DeleteProject_ExistingId_DeletesProject()
     {
         // Arrange
-        int testProjectId = 13; 
-        Project existingProject = await CreateProjectAsync(testProjectId);
+        var testProjectId = 13;
+        var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        HttpResponseMessage httpResponse = await _client.DeleteAsync($"/project/id?id={existingProject.Id}");
+        var httpResponse = await _client.DeleteAsync($"/project/id?id={existingProject.Id}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
 
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (var scope = _factory.Services.CreateScope())
         {
-            Database context = scope.ServiceProvider.GetRequiredService<Database>();
-            Project? projectInDb = await context.Project.FindAsync(existingProject.Id);
+            var context = scope.ServiceProvider.GetRequiredService<Database>();
+            var projectInDb = await context.Project.FindAsync(existingProject.Id);
             Assert.Null(projectInDb);
         }
-    }    
-    
+    }
+
     private async Task<Project> CreateProjectAsync(
         int projectId,
         string title = "Test Project",
@@ -263,8 +266,9 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         int year = 2021,
         string website = "https://example.com",
         List<Tag>? tags = null
-    ) {
-        Project project = new Project
+    )
+    {
+        var project = new Project
         {
             Id = projectId,
             Title = title,
@@ -278,9 +282,9 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Tags = tags ?? new List<Tag>()
         };
 
-        using IServiceScope scope = _factory.Services.CreateScope();
-        Database? context = scope.ServiceProvider.GetRequiredService<Database>();
-        
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+
         context.Project.Add(project);
         await context.SaveChangesAsync();
         return project;

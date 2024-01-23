@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
@@ -41,7 +41,7 @@ public class ProjectController : ControllerBase
     {
         try
         {
-            Project project = await _projectService.CreateProjectAsync(createProject);
+            var project = await _projectService.CreateProjectAsync(createProject);
             return CreatedAtAction("GetProject", new { id = project.Id }, project);
         }
         catch (ConflictException e)
@@ -53,13 +53,13 @@ public class ProjectController : ControllerBase
             return BadRequest(e.Message);
         }
     }
-    
+
     [HttpPut("{id}")]
     public async Task<ActionResult<Project>> PutProject(int id, [FromBody] CreateProject createProject)
     {
         try
         {
-            Project project = await _projectService.UpdateProjectAsync(id, createProject);
+            var project = await _projectService.UpdateProjectAsync(id, createProject);
             return CreatedAtAction("GetProject", new { id = project.Id }, project);
         }
         catch (NotFoundException e)
@@ -71,7 +71,7 @@ public class ProjectController : ControllerBase
             return BadRequest(e.Message);
         }
     }
-    
+
     [HttpDelete("id")]
     public async Task<IActionResult> DeleteProject(int id)
     {
@@ -93,21 +93,20 @@ public class ProjectController : ControllerBase
 
 public class CreateProject
 {
-    [Required]
-    public string Title { get; set; }
-    [Required]
-    public string ShortDescription { get; set; }
-    [Required]
-    public string Description { get; set; }
-    [Required]
-    public string Company { get; set; }
-    [Required]
-    public int Year { get; set; }
+    [Required] public string Title { get; set; }
+
+    [Required] public string ShortDescription { get; set; }
+
+    [Required] public string Description { get; set; }
+
+    [Required] public string Company { get; set; }
+
+    [Required] public int Year { get; set; }
+
     public string Website { get; set; }
 
     public IFormFile? Image { get; set; }
     public IFormFile? BackgroundImage { get; set; }
-    
-    [Required]
-    public List<string> Tags { get; set; }
+
+    [Required] public List<string> Tags { get; set; }
 }

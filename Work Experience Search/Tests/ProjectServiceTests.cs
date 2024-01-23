@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
-using Moq;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace Work_Experience_Search.Tests;
@@ -15,16 +15,16 @@ public class ProjectServiceTests
 
     public ProjectServiceTests()
     {
-        DbContextOptions<Database> options = new DbContextOptionsBuilder<Database>()
-            .UseInMemoryDatabase(databaseName: "TestDatabase-" + new Guid())
+        var options = new DbContextOptionsBuilder<Database>()
+            .UseInMemoryDatabase("TestDatabase-" + new Guid())
             .Options;
 
         _context = new Database(options);
         _mockFileService = new Mock<IFileService>();
         _projectService = new ProjectService(_context, _mockFileService.Object);
-        
+
         SeedDatabase();
-        
+
         _mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync((IFormFile? file) => file != null ? "testPath" : null);
     }
@@ -35,20 +35,20 @@ public class ProjectServiceTests
         // Arrange is done in the constructor
 
         // Act
-        IEnumerable<Project> result = await _projectService.GetProjectsAsync(search: null);
+        var result = await _projectService.GetProjectsAsync(null);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(3, ((List<Project>)result).Count); // Assuming GetTestProjects() returns 3 projects
     }
-    
+
     [Fact]
     public async Task GetProjectsAsync_WithSearchTerm_ReturnsMatchingProjects()
     {
         // Arrange is done in the constructor
 
         // Act
-        IEnumerable<Project> result = await _projectService.GetProjectsAsync(search: "ViSIT");
+        var result = await _projectService.GetProjectsAsync("ViSIT");
 
         // Assert
         Assert.NotNull(result);
@@ -60,10 +60,10 @@ public class ProjectServiceTests
     public async Task GetProjectAsync_ValidId_ReturnsProject()
     {
         // Arrange
-        int testProjectId = 1; // Assuming this ID exists in GetTestProjects()
+        var testProjectId = 1; // Assuming this ID exists in GetTestProjects()
 
         // Act
-        Project? result = await _projectService.GetProjectAsync(testProjectId);
+        var result = await _projectService.GetProjectAsync(testProjectId);
 
         // Assert
         Assert.NotNull(result);
@@ -74,7 +74,7 @@ public class ProjectServiceTests
     public async Task CreateProjectAsync_NewProject_ReturnsProject()
     {
         // Arrange
-        CreateProject newProject = new CreateProject
+        var newProject = new CreateProject
         {
             Title = "Test Project",
             Description = "Test Description",
@@ -86,12 +86,12 @@ public class ProjectServiceTests
             Website = "https://example.com",
             Tags = new List<string> { "Test Tag" }
         };
-        
+
         _mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync((IFormFile file) => file != null ? "testPath" : null);
 
         // Act
-        Project result = await _projectService.CreateProjectAsync(newProject);
+        var result = await _projectService.CreateProjectAsync(newProject);
 
         // Assert
         Assert.NotNull(result);
@@ -101,22 +101,24 @@ public class ProjectServiceTests
         Assert.Equal(newProject.Company, result.Company);
         Assert.Equal(newProject.Year, result.Year);
         Assert.Equal(newProject.Website, result.Website);
-        
-        Project? projectInDb = await _context.Project.FindAsync(result.Id);
+
+        var projectInDb = await _context.Project.FindAsync(result.Id);
         Assert.NotNull(projectInDb);
         Assert.Equal(newProject.Title, projectInDb.Title);
         Assert.NotNull(projectInDb.Tags);
         Assert.Equal(newProject.Tags.Count, projectInDb.Tags.Count);
         Assert.Contains(projectInDb.Tags, t => t.Title == "Test Tag");
     }
-    
+
     [Fact]
     public async Task UpdateProjectAsync_ExistingProject_UpdatesProject()
     {
         // Arrange
-        Project existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description", "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021, "https://example.com", new List<Tag> { CreateTag(5, "Updated Tag", TagType.Backend) }));
-        
-        CreateProject updateData = new CreateProject
+        var existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description",
+            "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021,
+            "https://example.com", new List<Tag> { CreateTag(5, "Updated Tag", TagType.Backend) }));
+
+        var updateData = new CreateProject
         {
             Title = "Updated Project",
             Description = "Updated Description",
@@ -130,7 +132,7 @@ public class ProjectServiceTests
         };
 
         // Act
-        Project? result = await _projectService.UpdateProjectAsync(existingProject.Id, updateData);
+        var result = await _projectService.UpdateProjectAsync(existingProject.Id, updateData);
 
         // Assert
         Assert.NotNull(result);
@@ -140,9 +142,9 @@ public class ProjectServiceTests
         Assert.Equal(updateData.Company, result.Company);
         Assert.Equal(updateData.Year, result.Year);
         Assert.Equal(updateData.Website, result.Website);
-        
+
         // Ensure the project is updated in the database
-        Project? projectInDb = await _context.Project.FindAsync(existingProject.Id);
+        var projectInDb = await _context.Project.FindAsync(existingProject.Id);
         Assert.NotNull(projectInDb);
         Assert.Equal(updateData.Title, projectInDb.Title);
         Assert.Equal(updateData.Description, projectInDb.Description);
@@ -154,21 +156,23 @@ public class ProjectServiceTests
         Assert.Equal(updateData.Tags.Count, projectInDb.Tags.Count);
         Assert.Contains(projectInDb.Tags, t => t.Title == "Updated Tag");
     }
-    
+
     [Fact]
     public async Task DeleteProjectAsync_ExistingProject_DeletesProject()
     {
         // Arrange
-        Project existingProject = await SaveProject(CreateProject(6, "Test Delete Project", "Test Description", "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021, "https://example.com", new List<Tag> { CreateTag(6, "Updated Tag", TagType.Backend) }));
-    
+        var existingProject = await SaveProject(CreateProject(6, "Test Delete Project", "Test Description",
+            "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021,
+            "https://example.com", new List<Tag> { CreateTag(6, "Updated Tag", TagType.Backend) }));
+
         // Act
-        Project? result = await _projectService.DeleteProjectAsync(existingProject.Id);
+        var result = await _projectService.DeleteProjectAsync(existingProject.Id);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(existingProject.Id, result.Id);
-        
-        Project? projectInDb = await _context.Project.FindAsync(existingProject.Id);
+
+        var projectInDb = await _context.Project.FindAsync(existingProject.Id);
         Assert.Null(projectInDb);
     }
 
@@ -180,31 +184,39 @@ public class ProjectServiceTests
             _context.SaveChanges();
         }
     }
-    
+
     private async Task<Project> SaveProject(Project project)
     {
         await _context.Project.AddAsync(project);
         _context.SaveChanges();
         return project;
     }
-    
+
     private static List<Project> GetTestProjects()
     {
-        Tag cSharpTag = CreateTag(1, "C#", TagType.Backend);
-        Tag aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);
-        Tag xamarinFormsTag = CreateTag(3, "Xamarin Forms", TagType.Frontend);
-        
+        var cSharpTag = CreateTag(1, "C#", TagType.Backend);
+        var aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);
+        var xamarinFormsTag = CreateTag(3, "Xamarin Forms", TagType.Frontend);
+
         return new List<Project>
         {
-            CreateProject(1, "Visit Northumberland", "A website for Visit Northumberland using C# and ASP.NET Core MVC.", "A website for Visit Northumberland", "Drummond Central", new Guid().ToString(), new Guid().ToString(), 2021, "https://visitnorthumberland.com/", new List<Tag> { cSharpTag, aspNetCoreTag }),
-            CreateProject(2, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.", "A website for BeatCovidNE", "Drummond Central", new Guid().ToString(), new Guid().ToString(), 2021, "https://beatcovidne.co.uk/", new List<Tag> { cSharpTag, aspNetCoreTag }),
-            CreateProject(3, "taxigoat", "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.", "A website for taxigoat", "Drummond Central", new Guid().ToString(), new Guid().ToString(), 2021, "https://taxigoat.co.uk/", new List<Tag> { xamarinFormsTag })
+            CreateProject(1, "Visit Northumberland",
+                "A website for Visit Northumberland using C# and ASP.NET Core MVC.",
+                "A website for Visit Northumberland", "Drummond Central", new Guid().ToString(), new Guid().ToString(),
+                2021, "https://visitnorthumberland.com/", new List<Tag> { cSharpTag, aspNetCoreTag }),
+            CreateProject(2, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
+                "A website for BeatCovidNE", "Drummond Central", new Guid().ToString(), new Guid().ToString(), 2021,
+                "https://beatcovidne.co.uk/", new List<Tag> { cSharpTag, aspNetCoreTag }),
+            CreateProject(3, "taxigoat",
+                "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.",
+                "A website for taxigoat", "Drummond Central", new Guid().ToString(), new Guid().ToString(), 2021,
+                "https://taxigoat.co.uk/", new List<Tag> { xamarinFormsTag })
         };
     }
 
     private static Tag CreateTag(int id, string title, TagType type)
     {
-        return new Tag()
+        return new Tag
         {
             Id = id,
             Title = title,
@@ -212,12 +224,13 @@ public class ProjectServiceTests
             Colour = "BLUE"
         };
     }
-    
-    private static Project CreateProject(int id, string title, string description, string shortDescription, string company, string image, string backgroundImage, int year, string website, List<Tag> tags)
+
+    private static Project CreateProject(int id, string title, string description, string shortDescription,
+        string company, string image, string backgroundImage, int year, string website, List<Tag> tags)
     {
-        return new Project()
+        return new Project
         {
-            // Id = id,
+            Id = id,
             Title = title,
             Description = description,
             ShortDescription = shortDescription,
