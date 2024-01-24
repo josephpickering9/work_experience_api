@@ -11,6 +11,7 @@ public class ProjectServiceTests
 {
     private readonly Database _context;
     private readonly Mock<IFileService> _mockFileService;
+    private readonly Mock<ITagService> _mockTagService;
     private readonly ProjectService _projectService;
 
     public ProjectServiceTests()
@@ -21,7 +22,8 @@ public class ProjectServiceTests
 
         _context = new Database(options);
         _mockFileService = new Mock<IFileService>();
-        _projectService = new ProjectService(_context, _mockFileService.Object);
+        _mockTagService = new Mock<ITagService>();
+        _projectService = new ProjectService(_context, _mockFileService.Object, _mockTagService.Object);
 
         SeedDatabase();
 
@@ -87,9 +89,6 @@ public class ProjectServiceTests
             Tags = new List<string> { "Test Tag" }
         };
 
-        _mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
-            .ReturnsAsync((IFormFile file) => file != null ? "testPath" : null);
-
         // Act
         var result = await _projectService.CreateProjectAsync(newProject);
 
@@ -143,7 +142,6 @@ public class ProjectServiceTests
         Assert.Equal(updateData.Year, result.Year);
         Assert.Equal(updateData.Website, result.Website);
 
-        // Ensure the project is updated in the database
         var projectInDb = await _context.Project.FindAsync(existingProject.Id);
         Assert.NotNull(projectInDb);
         Assert.Equal(updateData.Title, projectInDb.Title);
@@ -221,7 +219,8 @@ public class ProjectServiceTests
             Id = id,
             Title = title,
             Type = type,
-            Colour = "BLUE"
+            Icon = "testIcon",
+            CustomColour = null
         };
     }
 

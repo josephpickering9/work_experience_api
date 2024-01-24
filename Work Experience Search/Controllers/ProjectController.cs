@@ -37,7 +37,8 @@ public class ProjectController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Project>> PostProject([FromBody] CreateProject createProject)
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<Project>> PostProject([FromForm] CreateProject createProject)
     {
         try
         {
@@ -55,7 +56,8 @@ public class ProjectController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Project>> PutProject(int id, [FromBody] CreateProject createProject)
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
     {
         try
         {
