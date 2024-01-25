@@ -89,6 +89,9 @@ public class ProjectServiceTests
             Tags = new List<string> { "Test Tag" }
         };
 
+        _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
+            .ReturnsAsync((List<string> tags) => tags.Select(t => CreateTag(4, t, TagType.Default)).ToList());
+
         // Act
         var result = await _projectService.CreateProjectAsync(newProject);
 
@@ -113,9 +116,10 @@ public class ProjectServiceTests
     public async Task UpdateProjectAsync_ExistingProject_UpdatesProject()
     {
         // Arrange
+        var tag = CreateTag(5, "Updated Tag", TagType.Backend);
         var existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description",
             "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021,
-            "https://example.com", new List<Tag> { CreateTag(5, "Updated Tag", TagType.Backend) }));
+            "https://example.com", new List<Tag> { tag }));
 
         var updateData = new CreateProject
         {
@@ -129,6 +133,9 @@ public class ProjectServiceTests
             Website = "https://updated.com",
             Tags = new List<string> { "Updated Tag" }
         };
+
+        _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
+            .ReturnsAsync((List<string> tags) => tags.Select(t => tag).ToList());
 
         // Act
         var result = await _projectService.UpdateProjectAsync(existingProject.Id, updateData);
@@ -186,7 +193,7 @@ public class ProjectServiceTests
     private async Task<Project> SaveProject(Project project)
     {
         await _context.Project.AddAsync(project);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
         return project;
     }
 
@@ -212,7 +219,7 @@ public class ProjectServiceTests
         };
     }
 
-    private static Tag CreateTag(int id, string title, TagType type)
+    private static Tag CreateTag(int id, string title, TagType type, List<Project>? projects = null)
     {
         return new Tag
         {
@@ -220,7 +227,8 @@ public class ProjectServiceTests
             Title = title,
             Type = type,
             Icon = "testIcon",
-            CustomColour = null
+            CustomColour = null,
+            Projects = projects ?? new List<Project>()
         };
     }
 

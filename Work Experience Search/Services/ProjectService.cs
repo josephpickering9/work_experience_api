@@ -93,7 +93,6 @@ public class ProjectService : IProjectService
             : null;
 
         if (imagePath != null) project.Image = imagePath;
-
         if (bgImagePath != null) project.BackgroundImage = bgImagePath;
 
         project.Title = createProject.Title;
