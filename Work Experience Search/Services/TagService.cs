@@ -39,7 +39,7 @@ public class TagService : ITagService
 
         if (tagExists) throw new ConflictException("A tag with the same title already exists");
 
-        var tag = new Tag()
+        var tag = new Tag
         {
             Title = createTag.Title,
             Type = createTag.Type,
@@ -63,7 +63,7 @@ public class TagService : ITagService
 
             if (newTag == null)
             {
-                newTag = new Tag()
+                newTag = new Tag
                 {
                     Title = tag,
                     Type = TagType.Default,

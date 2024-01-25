@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Work_Experience_Search.Controllers;
@@ -299,28 +298,16 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             if (value == null) continue;
 
             if (value is string stringValue)
-            {
                 content.Add(new StringContent(stringValue), property.Name);
-            }
             else if (value is List<string> stringListValue)
-            {
                 foreach (var item in stringListValue)
-                {
                     content.Add(new StringContent(item), property.Name);
-                }
-            }
             else if (value is IFormFile fileValue)
-            {
                 content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
-            }
             else if (value is int intValue)
-            {
                 content.Add(new StringContent(intValue.ToString()), property.Name);
-            }
             else
-            {
                 throw new Exception($"Unsupported type: {value.GetType()}");
-            }
         }
 
         return content;

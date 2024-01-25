@@ -64,10 +64,7 @@ public class ProjectService : IProjectService
             Tags = new List<Tag>()
         };
 
-        if (createProject.Tags.Count > 0)
-        {
-            project.Tags = await _tagService.SyncTagsAsync(createProject.Tags);
-        }
+        if (createProject.Tags.Count > 0) project.Tags = await _tagService.SyncTagsAsync(createProject.Tags);
 
         _context.Project.Add(project);
         await _context.SaveChangesAsync();
