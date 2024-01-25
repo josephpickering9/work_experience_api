@@ -26,7 +26,7 @@ public class ProjectService : IProjectService
             projects = projects.Where(p =>
                 p.Title.ToLower().Contains(search.ToLower()) || p.Description.ToLower().Contains(search.ToLower()));
 
-        return await projects.ToListAsync();
+        return await projects.OrderByDescending(p => p.Year).ToListAsync();
     }
 
     public async Task<Project> GetProjectAsync(int id)
