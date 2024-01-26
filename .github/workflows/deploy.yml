@@ -159,6 +159,7 @@ jobs:
           envs: GITHUB_SHA,RELEASE_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,ENV_PATH,DATABASE_CONNECTION_STRING
           script: |
             cd "$RELEASE_PATH"
+            dotnet publish -c Release
             echo "ConnectionStrings:DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}" > appsettings.Production.json
             dotnet ef database update
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
