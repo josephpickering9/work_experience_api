@@ -159,11 +159,15 @@ jobs:
           envs: GITHUB_SHA,RELEASE_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,ENV_PATH,DATABASE_CONNECTION_STRING
           script: |
             cd "$RELEASE_PATH"
-            dotnet publish -c Release
+            echo "1 $PWD"
             echo "ConnectionStrings:DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}" > appsettings.Production.json
+            dotnet publish -c Release
             dotnet ef database update
+            echo "2 $PWD"
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
+            echo "3 $PWD"
             cd "$RELEASE_BIN_PATH"
+            echo "4 $PWD"
             dotnet "Work Experience Search.dll"
           
   run-after-hooks:
