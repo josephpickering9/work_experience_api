@@ -159,7 +159,6 @@ jobs:
           envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING
           script: |
             cd "$RELEASE_PATH"
-            echo "1 $PWD"
             echo '{
               "ConnectionStrings": {
                 "DefaultConnection": "${{ secrets.DATABASE_CONNECTION_STRING }}"
@@ -167,13 +166,10 @@ jobs:
             }' > appsettings.Production.json
             dotnet publish -c Release
             dotnet ef database update
-            echo "2 $PWD"
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
-            echo "3 $RELEASE_BIN_PATH"
             cd "$RELEASE_BIN_PATH"
-            echo "4 $PWD"
-            dotnet "Work Experience Search.dll"
-          
+            nohup dotnet "Work Experience Search.dll" > /dev/null 2>&1 &  
+  
   run-after-hooks:
     name: '${{ matrix.server.name }}: After hook'
     runs-on: ubuntu-latest
