@@ -147,7 +147,7 @@ jobs:
         env:
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}
-          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/bin/Release/net8.0
+          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/'Work Experience Search'/bin/Release/net8.0
           ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
           BASE_PATH: ${{ matrix.server.path }}
           DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
@@ -162,6 +162,7 @@ jobs:
             echo "ConnectionStrings:DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}" > appsettings.Production.json
             dotnet ef database update
             ln -s -n -f $RELEASE_BIN_PATH $ACTIVE_RELEASE_PATH
+            cd $RELEASE_BIN_PATH
             dotnet 'Work Experience Search.dll'
           
   run-after-hooks:
