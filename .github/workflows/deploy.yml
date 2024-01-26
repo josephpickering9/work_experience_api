@@ -47,7 +47,11 @@ jobs:
       - name: Prepare files for archiving
         run: |
           mkdir temp_dir
-          cp -r $(ls | grep -vE '^\.git$|^\.github$|^\.vs$|^\.vscode$|^obj$|^bin$') temp_dir
+            for file in *; do
+              if [[ ! "$file" =~ ^\.git$|^\.github$|^\.vs$|^\.vscode$|^obj$|^bin$|^temp_dir$ ]]; then
+                cp -r "$file" temp_dir/
+            fi
+          done
 
       - name: Create deployment artifact
         run: tar -czf "${GITHUB_SHA}".tar.gz -C temp_dir .
