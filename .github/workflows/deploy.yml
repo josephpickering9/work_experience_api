@@ -160,7 +160,11 @@ jobs:
           script: |
             cd "$RELEASE_PATH"
             echo "1 $PWD"
-            echo "ConnectionStrings:DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}" > appsettings.Production.json
+            echo '{
+              "ConnectionStrings": {
+                "DefaultConnection": "${{ secrets.DATABASE_CONNECTION_STRING }}"
+              }
+            }' > appsettings.Production.json
             dotnet publish -c Release
             dotnet ef database update
             echo "2 $PWD"
