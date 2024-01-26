@@ -43,9 +43,18 @@ jobs:
       - name: Build and Publish
         run: |
           dotnet publish -c Release
+          
+      - name: Prepare files for archiving
+        run: |
+          mkdir temp_dir
+          cp -r $(ls | grep -vE '^\.git$|^\.github$|^\.vs$|^\.vscode$|^obj$|^bin$') temp_dir
 
       - name: Create deployment artifact
-        run: tar --warning=no-file-changed -czf "${GITHUB_SHA}".tar.gz --exclude .git --exclude .github --exclude .vs --exclude .vscode --exclude obj --exclude bin .
+        run: tar -czf "${GITHUB_SHA}".tar.gz -C temp_dir .
+
+      - name: Cleanup temporary files
+        run: |
+          rm -rf temp_dir
 
       - name: Store artifact for distribution
         uses: actions/upload-artifact@v4
