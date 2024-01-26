@@ -146,8 +146,8 @@ jobs:
         uses: appleboy/ssh-action@master
         env:
           GITHUB_SHA: ${{ github.sha }}
-          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search
-          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search/bin/Release/net8.0
+          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work\ Experience\ Search
+          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work\ Experience\ Search/bin/Release/net8.0
           ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
           BASE_PATH: ${{ matrix.server.path }}
           DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
@@ -158,12 +158,12 @@ jobs:
           port: ${{ matrix.server.port }}
           envs: GITHUB_SHA,RELEASE_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,ENV_PATH,DATABASE_CONNECTION_STRING
           script: |
-            cd '$RELEASE_PATH'
+            cd $RELEASE_PATH
             echo "ConnectionStrings:DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}" > appsettings.Production.json
             dotnet ef database update
             ln -s -n -f '$RELEASE_BIN_PATH' $ACTIVE_RELEASE_PATH
             cd' $RELEASE_BIN_PATH'
-            dotnet 'Work Experience Search.dll'
+            dotnet Work\ Experience\ Search.dll
           
   run-after-hooks:
     name: '${{ matrix.server.name }}: After hook'
