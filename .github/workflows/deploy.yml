@@ -45,7 +45,7 @@ jobs:
           dotnet publish -c Release
 
       - name: Create deployment artifact
-        run: tar -czf --warning=no-file-changed "${GITHUB_SHA}".tar.gz --exclude .git --exclude .github --exclude .vs --exclude .vscode --exclude obj --exclude bin .
+        run: tar --warning=no-file-changed -czf "${GITHUB_SHA}".tar.gz --exclude .git --exclude .github --exclude .vs --exclude .vscode --exclude obj --exclude bin .
 
       - name: Store artifact for distribution
         uses: actions/upload-artifact@v4
