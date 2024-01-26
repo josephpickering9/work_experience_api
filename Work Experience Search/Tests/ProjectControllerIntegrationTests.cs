@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Work_Experience_Search.Controllers;
@@ -91,7 +90,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Tags = new List<string> { "Tag1", "Tag2" }
         };
 
-        var content = new StringContent(JsonConvert.SerializeObject(newProject), Encoding.UTF8, "application/json");
+        var content = GetMultipartFormDataContent(newProject);
 
         // Act
         var httpResponse = await _client.PostAsync("/project", content);
@@ -150,8 +149,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Tags = new List<string> { "Tag1", "Tag2" }
         };
 
-        var content = new StringContent(JsonConvert.SerializeObject(duplicateProject), Encoding.UTF8,
-            "application/json");
+        var content = GetMultipartFormDataContent(duplicateProject);
 
         // Act - First attempt (should succeed)
         var firstResponse = await _client.PostAsync("/project", content);
@@ -192,7 +190,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Tags = new List<string> { "UpdatedTag1", "UpdatedTag2" }
         };
 
-        var content = new StringContent(JsonConvert.SerializeObject(updateProject), Encoding.UTF8, "application/json");
+        var content = GetMultipartFormDataContent(updateProject);
 
         // Act
         var httpResponse = await _client.PutAsync($"/project/{existingProject.Id}", content);
@@ -288,5 +286,30 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         context.Project.Add(project);
         await context.SaveChangesAsync();
         return project;
+    }
+
+    private MultipartFormDataContent GetMultipartFormDataContent<T>(T data) where T : class
+    {
+        var content = new MultipartFormDataContent();
+
+        foreach (var property in data.GetType().GetProperties())
+        {
+            var value = property.GetValue(data);
+            if (value == null) continue;
+
+            if (value is string stringValue)
+                content.Add(new StringContent(stringValue), property.Name);
+            else if (value is List<string> stringListValue)
+                foreach (var item in stringListValue)
+                    content.Add(new StringContent(item), property.Name);
+            else if (value is IFormFile fileValue)
+                content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
+            else if (value is int intValue)
+                content.Add(new StringContent(intValue.ToString()), property.Name);
+            else
+                throw new Exception($"Unsupported type: {value.GetType()}");
+        }
+
+        return content;
     }
 }

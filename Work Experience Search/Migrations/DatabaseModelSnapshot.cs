@@ -85,8 +85,10 @@ namespace Work_Experience_Search.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Colour")
-                        .IsRequired()
+                    b.Property<string>("CustomColour")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Icon")
                         .HasColumnType("text");
 
                     b.Property<string>("Title")

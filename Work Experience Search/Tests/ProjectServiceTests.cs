@@ -11,6 +11,7 @@ public class ProjectServiceTests
 {
     private readonly Database _context;
     private readonly Mock<IFileService> _mockFileService;
+    private readonly Mock<ITagService> _mockTagService;
     private readonly ProjectService _projectService;
 
     public ProjectServiceTests()
@@ -21,7 +22,8 @@ public class ProjectServiceTests
 
         _context = new Database(options);
         _mockFileService = new Mock<IFileService>();
-        _projectService = new ProjectService(_context, _mockFileService.Object);
+        _mockTagService = new Mock<ITagService>();
+        _projectService = new ProjectService(_context, _mockFileService.Object, _mockTagService.Object);
 
         SeedDatabase();
 
@@ -87,8 +89,8 @@ public class ProjectServiceTests
             Tags = new List<string> { "Test Tag" }
         };
 
-        _mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
-            .ReturnsAsync((IFormFile file) => file != null ? "testPath" : null);
+        _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
+            .ReturnsAsync((List<string> tags) => tags.Select(t => CreateTag(4, t, TagType.Default)).ToList());
 
         // Act
         var result = await _projectService.CreateProjectAsync(newProject);
@@ -114,9 +116,10 @@ public class ProjectServiceTests
     public async Task UpdateProjectAsync_ExistingProject_UpdatesProject()
     {
         // Arrange
+        var tag = CreateTag(5, "Updated Tag", TagType.Backend);
         var existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description",
             "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021,
-            "https://example.com", new List<Tag> { CreateTag(5, "Updated Tag", TagType.Backend) }));
+            "https://example.com", new List<Tag> { tag }));
 
         var updateData = new CreateProject
         {
@@ -131,6 +134,9 @@ public class ProjectServiceTests
             Tags = new List<string> { "Updated Tag" }
         };
 
+        _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
+            .ReturnsAsync((List<string> tags) => tags.Select(t => tag).ToList());
+
         // Act
         var result = await _projectService.UpdateProjectAsync(existingProject.Id, updateData);
 
@@ -143,7 +149,6 @@ public class ProjectServiceTests
         Assert.Equal(updateData.Year, result.Year);
         Assert.Equal(updateData.Website, result.Website);
 
-        // Ensure the project is updated in the database
         var projectInDb = await _context.Project.FindAsync(existingProject.Id);
         Assert.NotNull(projectInDb);
         Assert.Equal(updateData.Title, projectInDb.Title);
@@ -188,7 +193,7 @@ public class ProjectServiceTests
     private async Task<Project> SaveProject(Project project)
     {
         await _context.Project.AddAsync(project);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
         return project;
     }
 
@@ -214,14 +219,16 @@ public class ProjectServiceTests
         };
     }
 
-    private static Tag CreateTag(int id, string title, TagType type)
+    private static Tag CreateTag(int id, string title, TagType type, List<Project>? projects = null)
     {
         return new Tag
         {
             Id = id,
             Title = title,
             Type = type,
-            Colour = "BLUE"
+            Icon = "testIcon",
+            CustomColour = null,
+            Projects = projects ?? new List<Project>()
         };
     }
 
