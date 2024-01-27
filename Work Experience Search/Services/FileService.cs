@@ -17,7 +17,7 @@ public class FileService : IFileService
     {
         if (file == null || file.Length == 0) return null;
 
-        var uploadDir = Path.Combine(_hostEnvironment.WebRootPath ?? _hostEnvironment.ContentRootPath, "uploads");
+        var uploadDir = Path.Combine(_hostEnvironment.WebRootPath ?? _hostEnvironment.ContentRootPath, "wwwroot", "uploads");
         if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
 
         var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
