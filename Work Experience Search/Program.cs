@@ -44,10 +44,6 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
-builder.Services.Configure<StaticFileOptions>(options =>
-{
-    options.FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
-});
 
 var app = builder.Build();
 

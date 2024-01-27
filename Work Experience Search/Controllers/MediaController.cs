@@ -17,7 +17,7 @@ public class MediaController : ControllerBase
     [HttpGet("uploads/{fileName}")]
     public IActionResult GetFile(string fileName)
     {
-        Console.WriteLine("Path: " + _env.WebRootPath);
+        Console.WriteLine("Path: " + _env.ContentRootPath);
         var filePath = Path.Combine(_env.WebRootPath, "uploads", fileName);
 
         if (!System.IO.File.Exists(filePath))
