@@ -163,7 +163,7 @@ jobs:
               "ConnectionStrings": {
                 "DefaultConnection": "${{ secrets.DATABASE_CONNECTION_STRING }}"
               }
-            }' > appsettings.Production.json
+            }' > appsettings.json
             dotnet publish -c Release
             dotnet ef database update
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
