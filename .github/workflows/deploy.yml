@@ -168,7 +168,7 @@ jobs:
             dotnet publish -c Release
             dotnet ef database update
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
-            ln -s -n -f "$ROOT_PATH" "RELEASE_BIN_PATH/wwwroot"
+            ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
             cd "$RELEASE_BIN_PATH"
             nohup dotnet "Work Experience Search.dll" > /dev/null 2>&1 &  
   
