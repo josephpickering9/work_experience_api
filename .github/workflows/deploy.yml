@@ -148,6 +148,7 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search
           RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search/bin/Release/net8.0
+          ROOT_PATH: ${{ matrix.server.path }}/wwwroot
           ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
           BASE_PATH: ${{ matrix.server.path }}
           DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
@@ -167,6 +168,7 @@ jobs:
             dotnet publish -c Release
             dotnet ef database update
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
+            ln -s -n -f "$ROOT_PATH" "RELEASE_BIN_PATH/wwwroot"
             cd "$RELEASE_BIN_PATH"
             nohup dotnet "Work Experience Search.dll" > /dev/null 2>&1 &  
   
