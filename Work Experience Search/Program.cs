@@ -55,6 +55,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.MapControllers();
+app.UseDeveloperExceptionPage();
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
