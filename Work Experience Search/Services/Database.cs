@@ -11,6 +11,7 @@ public class Database : DbContext
 
     public DbSet<Project> Project { get; set; }
     public DbSet<Tag> Tag { get; set; }
+    public DbSet<Company> Company { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

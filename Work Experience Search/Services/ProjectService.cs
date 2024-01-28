@@ -56,7 +56,7 @@ public class ProjectService : IProjectService
             Title = createProject.Title,
             ShortDescription = createProject.ShortDescription,
             Description = createProject.Description,
-            Company = createProject.Company,
+            CompanyId = createProject.CompanyId,
             Image = imagePath,
             BackgroundImage = bgImagePath,
             Year = createProject.Year,
@@ -95,7 +95,7 @@ public class ProjectService : IProjectService
         project.Title = createProject.Title;
         project.ShortDescription = createProject.ShortDescription;
         project.Description = createProject.Description;
-        project.Company = createProject.Company;
+        project.CompanyId = createProject.CompanyId;
         project.Year = createProject.Year;
         project.Website = createProject.Website;
 
@@ -121,17 +121,5 @@ public class ProjectService : IProjectService
         await _context.SaveChangesAsync();
 
         return project;
-    }
-
-    private void UpdateProjectTags(Project project, List<Tag> newTags)
-    {
-        project.Tags.Clear();
-        project.Tags.AddRange(newTags);
-
-        // var tagsToAdd = newTags.Except(project.Tags).ToList();
-        // var tagsToRemove = project.Tags.Except(newTags).Select(tag => tag.Id).ToList();
-        //
-        // if (tagsToAdd.Count > 0) project.Tags.AddRange(tagsToAdd);
-        // if (tagsToRemove.Count > 0) project.Tags.RemoveAll(tag => tagsToRemove.Contains(tag.Id));
     }
 }

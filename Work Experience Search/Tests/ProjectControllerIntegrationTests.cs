@@ -82,7 +82,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Title = "New Project",
             ShortDescription = "A short description",
             Description = "A long description",
-            Company = "Test Company",
+            CompanyId = 1,
             Image = null,
             BackgroundImage = null,
             Year = 2021,
@@ -104,7 +104,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         Assert.Equal(newProject.Title, actualProject.Title);
         Assert.Equal(newProject.Description, actualProject.Description);
         Assert.Equal(newProject.ShortDescription, actualProject.ShortDescription);
-        Assert.Equal(newProject.Company, actualProject.Company);
+        Assert.Equal(newProject.CompanyId, actualProject.CompanyId);
         Assert.Equal(newProject.Year, actualProject.Year);
         Assert.Equal(newProject.Website, actualProject.Website);
         Assert.NotNull(actualProject.Tags);
@@ -118,7 +118,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Assert.Equal(newProject.Title, projectInDb.Title);
             Assert.Equal(newProject.Description, projectInDb.Description);
             Assert.Equal(newProject.ShortDescription, projectInDb.ShortDescription);
-            Assert.Equal(newProject.Company, projectInDb.Company);
+            Assert.Equal(newProject.CompanyId, projectInDb.CompanyId);
             Assert.Equal(newProject.Year, projectInDb.Year);
             Assert.Equal(newProject.Website, projectInDb.Website);
 
@@ -141,7 +141,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Title = "Duplicate Project",
             ShortDescription = "A short description",
             Description = "A long description",
-            Company = "Test Company",
+            CompanyId = 1,
             Image = null,
             BackgroundImage = null,
             Year = 2021,
@@ -184,7 +184,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Title = "Updated Project",
             ShortDescription = "Updated short description",
             Description = "Updated long description",
-            Company = "Updated Test Company",
+            CompanyId = 1,
             Year = 2021,
             Website = "https://updated-example.com",
             Tags = new List<string> { "UpdatedTag1", "UpdatedTag2" }
@@ -204,7 +204,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         Assert.Equal(updateProject.Title, actualProject.Title);
         Assert.Equal(updateProject.Description, actualProject.Description);
         Assert.Equal(updateProject.ShortDescription, actualProject.ShortDescription);
-        Assert.Equal(updateProject.Company, actualProject.Company);
+        Assert.Equal(updateProject.CompanyId, actualProject.CompanyId);
         Assert.Equal(updateProject.Year, actualProject.Year);
         Assert.Equal(updateProject.Website, actualProject.Website);
         Assert.NotNull(actualProject.Tags);
@@ -218,7 +218,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Assert.Equal(updateProject.Title, projectInDb.Title);
             Assert.Equal(updateProject.Description, projectInDb.Description);
             Assert.Equal(updateProject.ShortDescription, projectInDb.ShortDescription);
-            Assert.Equal(updateProject.Company, projectInDb.Company);
+            Assert.Equal(updateProject.CompanyId, projectInDb.CompanyId);
             Assert.Equal(updateProject.Year, projectInDb.Year);
             Assert.Equal(updateProject.Website, projectInDb.Website);
 
@@ -258,7 +258,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         string title = "Test Project",
         string description = "Test Description",
         string shortDescription = "Test Short Description",
-        string company = "Test Company",
+        int companyId = 1,
         string? image = null,
         string? backgroundImage = null,
         int year = 2021,
@@ -272,7 +272,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Title = title,
             Description = description,
             ShortDescription = shortDescription,
-            Company = company,
+            CompanyId = companyId,
             Image = image,
             BackgroundImage = backgroundImage,
             Year = year,
