@@ -81,7 +81,7 @@ public class ProjectServiceTests
             Title = "Test Project",
             Description = "Test Description",
             ShortDescription = "Test Short Description",
-            Company = "Test Company",
+            CompanyId = 1,
             Image = null,
             BackgroundImage = null,
             Year = 2021,
@@ -100,7 +100,7 @@ public class ProjectServiceTests
         Assert.Equal(newProject.Title, result.Title);
         Assert.Equal(newProject.Description, result.Description);
         Assert.Equal(newProject.ShortDescription, result.ShortDescription);
-        Assert.Equal(newProject.Company, result.Company);
+        Assert.Equal(newProject.CompanyId, result.CompanyId);
         Assert.Equal(newProject.Year, result.Year);
         Assert.Equal(newProject.Website, result.Website);
 
@@ -118,7 +118,7 @@ public class ProjectServiceTests
         // Arrange
         var tag = CreateTag(5, "Updated Tag", TagType.Backend);
         var existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description",
-            "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021,
+            "Test Short Description", 1, new Guid().ToString(), new Guid().ToString(), 2021,
             "https://example.com", new List<Tag> { tag }));
 
         var updateData = new CreateProject
@@ -126,7 +126,7 @@ public class ProjectServiceTests
             Title = "Updated Project",
             Description = "Updated Description",
             ShortDescription = "Updated Short Description",
-            Company = "Updated Company",
+            CompanyId = 1,
             Image = null,
             BackgroundImage = null,
             Year = 2021,
@@ -145,7 +145,7 @@ public class ProjectServiceTests
         Assert.Equal(updateData.Title, result.Title);
         Assert.Equal(updateData.Description, result.Description);
         Assert.Equal(updateData.ShortDescription, result.ShortDescription);
-        Assert.Equal(updateData.Company, result.Company);
+        Assert.Equal(updateData.CompanyId, result.CompanyId);
         Assert.Equal(updateData.Year, result.Year);
         Assert.Equal(updateData.Website, result.Website);
 
@@ -154,7 +154,7 @@ public class ProjectServiceTests
         Assert.Equal(updateData.Title, projectInDb.Title);
         Assert.Equal(updateData.Description, projectInDb.Description);
         Assert.Equal(updateData.ShortDescription, projectInDb.ShortDescription);
-        Assert.Equal(updateData.Company, projectInDb.Company);
+        Assert.Equal(updateData.CompanyId, projectInDb.CompanyId);
         Assert.Equal(updateData.Year, projectInDb.Year);
         Assert.Equal(updateData.Website, projectInDb.Website);
         Assert.NotNull(projectInDb.Tags);
@@ -167,7 +167,7 @@ public class ProjectServiceTests
     {
         // Arrange
         var existingProject = await SaveProject(CreateProject(6, "Test Delete Project", "Test Description",
-            "Test Short Description", "Test Company", new Guid().ToString(), new Guid().ToString(), 2021,
+            "Test Short Description", 1, new Guid().ToString(), new Guid().ToString(), 2021,
             "https://example.com", new List<Tag> { CreateTag(6, "Updated Tag", TagType.Backend) }));
 
         // Act
@@ -203,18 +203,22 @@ public class ProjectServiceTests
         var aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);
         var xamarinFormsTag = CreateTag(3, "Xamarin Forms", TagType.Frontend);
 
+        var company = CreateCompany(1, "Drummond Central", "A marketing agency based in Newcastle upon Tyne.",
+            "https://drummondcentral.co.uk/wp-content/uploads/2019/10/DC-Logo-White.png",
+            "https://drummondcentral.co.uk/");
+
         return new List<Project>
         {
             CreateProject(1, "Visit Northumberland",
                 "A website for Visit Northumberland using C# and ASP.NET Core MVC.",
-                "A website for Visit Northumberland", "Drummond Central", new Guid().ToString(), new Guid().ToString(),
+                "A website for Visit Northumberland", company.Id, new Guid().ToString(), new Guid().ToString(),
                 2021, "https://visitnorthumberland.com/", new List<Tag> { cSharpTag, aspNetCoreTag }),
             CreateProject(2, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
-                "A website for BeatCovidNE", "Drummond Central", new Guid().ToString(), new Guid().ToString(), 2021,
+                "A website for BeatCovidNE", company.Id, new Guid().ToString(), new Guid().ToString(), 2021,
                 "https://beatcovidne.co.uk/", new List<Tag> { cSharpTag, aspNetCoreTag }),
             CreateProject(3, "taxigoat",
                 "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.",
-                "A website for taxigoat", "Drummond Central", new Guid().ToString(), new Guid().ToString(), 2021,
+                "A website for taxigoat", company.Id, new Guid().ToString(), new Guid().ToString(), 2021,
                 "https://taxigoat.co.uk/", new List<Tag> { xamarinFormsTag })
         };
     }
@@ -232,8 +236,20 @@ public class ProjectServiceTests
         };
     }
 
+    private static Company CreateCompany(int id, string name, string description, string logo, string website)
+    {
+        return new Company
+        {
+            Id = id,
+            Name = name,
+            Description = description,
+            Logo = logo,
+            Website = website
+        };
+    }
+
     private static Project CreateProject(int id, string title, string description, string shortDescription,
-        string company, string image, string backgroundImage, int year, string website, List<Tag> tags)
+        int companyId, string image, string backgroundImage, int year, string website, List<Tag> tags)
     {
         return new Project
         {
@@ -241,7 +257,7 @@ public class ProjectServiceTests
             Title = title,
             Description = description,
             ShortDescription = shortDescription,
-            Company = company,
+            CompanyId = companyId,
             Image = image,
             BackgroundImage = backgroundImage,
             Year = year,

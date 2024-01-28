@@ -12,7 +12,8 @@ public class Project
 
     [Required] public string Description { get; set; } = null!;
 
-    [Required] public string Company { get; set; } = null!;
+    public int? CompanyId { get; set; } = null!;
+    public Company? Company { get; set; } = null!;
 
     public string? Image { get; set; }
     public string? BackgroundImage { get; set; }

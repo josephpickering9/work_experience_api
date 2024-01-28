@@ -101,11 +101,11 @@ public class CreateProject
 
     [Required] public string Description { get; set; }
 
-    [Required] public string Company { get; set; }
+    public int? CompanyId { get; set; }
 
     [Required] public int Year { get; set; }
 
-    public string Website { get; set; }
+    public string? Website { get; set; }
 
     public IFormFile? Image { get; set; }
     public IFormFile? BackgroundImage { get; set; }
