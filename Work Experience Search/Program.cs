@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using Work_Experience_Search;
 using Work_Experience_Search.Exceptions;
@@ -55,6 +56,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.MapControllers();
+app.UseDeveloperExceptionPage();
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
