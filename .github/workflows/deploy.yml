@@ -1,0 +1,220 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  delete-previous-artifacts:
+    name: Delete Old Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        id: artifact
+        with:
+          script: |
+            const res = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            })
+            res.data.artifacts
+              .forEach(({ id }) => {
+                github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: id,
+                })
+              })
+            
+  create-deployment-artifacts:
+    name: Create Deployment Artifacts
+    runs-on: ubuntu-latest
+    needs: delete-previous-artifacts
+    outputs:
+      deployment-matrix: ${{ steps.export-deployment-matrix.outputs.deployment-matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.101'
+
+      - name: Build and Publish
+        run: |
+          dotnet publish -c Release
+          
+      - name: Prepare files for archiving
+        run: |
+          mkdir temp_dir
+            for file in *; do
+              if [[ ! "$file" =~ ^\.git$|^\.github$|^\.vs$|^\.vscode$|^obj$|^bin$|^temp_dir$ ]]; then
+                cp -r "$file" temp_dir/
+            fi
+          done
+
+      - name: Create deployment artifact
+        run: tar -czf "${GITHUB_SHA}".tar.gz -C temp_dir .
+
+      - name: Cleanup temporary files
+        run: |
+          rm -rf temp_dir
+
+      - name: Store artifact for distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: ${{ github.sha }}.tar.gz
+
+      - name: Export deployment matrix
+        id: export-deployment-matrix
+        run: |
+          delimiter="$(openssl rand -hex 8)"
+          JSON="$(cat ./'Work Experience Search'/deployment-config.json)"
+          echo "deployment-matrix<<${delimiter}" >> "${GITHUB_OUTPUT}"
+          echo "$JSON" >> "${GITHUB_OUTPUT}"
+          echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+          
+  prepare-release-on-server:
+    name: Prepare release on server
+    runs-on: ubuntu-latest
+    needs: create-deployment-artifacts
+    strategy:
+      matrix:
+        server: ${{fromJson(needs.create-deployment-artifacts.outputs.deployment-matrix)}}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-build
+  
+      - name: Upload
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ matrix.server.ip }}
+          username: ${{ matrix.server.username }}
+          key: ${{ secrets.SSH_KEY }}
+          source: ${{ github.sha }}.tar.gz
+          target: ${{ matrix.server.path }}/artifacts
+  
+      - name: Extract archive and create directories
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        with:
+          host: ${{ matrix.server.ip }}
+          username: ${{ matrix.server.username }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ matrix.server.port }}
+          envs: GITHUB_SHA
+          script: |
+            mkdir -p "${{ matrix.server.path }}/releases/${GITHUB_SHA}"
+            tar xzf ${{ matrix.server.path }}/artifacts/${GITHUB_SHA}.tar.gz -C "${{ matrix.server.path }}/releases/${GITHUB_SHA}"
+
+  run-before-hooks:
+    name: '${{ matrix.server.name }}: Before hook'
+    runs-on: ubuntu-latest
+    needs: [create-deployment-artifacts, prepare-release-on-server]
+    strategy:
+      matrix:
+        server: ${{ fromJson(needs.create-deployment-artifacts.outputs.deployment-matrix) }}
+    steps:
+      - name: Run before hooks
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}
+          ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
+          BASE_PATH: ${{ matrix.server.path }}
+        with:
+          host: ${{ matrix.server.ip }}
+          username: ${{ matrix.server.username }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ matrix.server.port }}
+          envs: GITHUB_SHA,RELEASE_PATH,ACTIVE_RELEASE_PATH,BASE_PATH
+          script: |
+            ${{ matrix.server.beforeHooks }}
+            
+  activate-release:
+    name: '${{ matrix.server.name }}: Activate release'
+    runs-on: ubuntu-latest
+    needs: [create-deployment-artifacts, prepare-release-on-server, run-before-hooks]
+    strategy:
+      matrix:
+        server: ${{ fromJson(needs.create-deployment-artifacts.outputs.deployment-matrix) }}
+    steps:
+      - name: Activate release
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search
+          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search/bin/Release/net8.0
+          ROOT_PATH: ${{ matrix.server.path }}/wwwroot
+          ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
+          BASE_PATH: ${{ matrix.server.path }}
+          DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
+        with:
+          host: ${{ matrix.server.ip }}
+          username: ${{ matrix.server.username }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ matrix.server.port }}
+          envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING,ROOT_PATH
+          script: |
+            cd "$RELEASE_PATH"
+            echo '{
+              "ConnectionStrings": {
+                "DefaultConnection": "${{ secrets.DATABASE_CONNECTION_STRING }}"
+              }
+            }' > appsettings.json
+            dotnet publish -c Release
+            dotnet ef database update
+            ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
+            ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
+            cd "$RELEASE_BIN_PATH"
+            nohup dotnet "Work Experience Search.dll" > /dev/null 2>&1 &  
+  
+  run-after-hooks:
+    name: '${{ matrix.server.name }}: After hook'
+    runs-on: ubuntu-latest
+    needs: [create-deployment-artifacts, prepare-release-on-server, run-before-hooks, activate-release]
+    strategy:
+      matrix:
+        server: ${{ fromJson(needs.create-deployment-artifacts.outputs.deployment-matrix) }}
+    steps:
+      - name: Run after hooks
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}
+          ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
+          BASE_PATH: ${{ matrix.server.path }}
+        with:
+          host: ${{ matrix.server.ip }}
+          username: ${{ matrix.server.username }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ matrix.server.port }}
+          envs: GITHUB_SHA,RELEASE_PATH,ACTIVE_RELEASE_PATH,BASE_PATH
+          script: |
+            ${{ matrix.server.afterHooks }}
+
+  clean-up:
+    name: '${{ matrix.server.name }}: Clean up'
+    runs-on: ubuntu-latest
+    needs: [create-deployment-artifacts, prepare-release-on-server, run-before-hooks, activate-release, run-after-hooks]
+    strategy:
+      matrix:
+        server: ${{ fromJson(needs.create-deployment-artifacts.outputs.deployment-matrix) }}
+    steps:
+      - name: Run after hooks
+        uses: appleboy/ssh-action@master
+        env:
+          RELEASES_PATH: ${{ matrix.server.path }}/releases
+          ARTIFACTS_PATH: ${{ matrix.server.path }}/artifacts
+        with:
+          host: ${{ matrix.server.ip }}
+          username: ${{ matrix.server.username }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ matrix.server.port }}
+          envs: RELEASES_PATH
+          script: |
+            cd $RELEASES_PATH && ls -t -1 | tail -n +6 | xargs rm -rf
+            cd $ARTIFACTS_PATH && ls -t -1 | tail -n +6 | xargs rm -rf

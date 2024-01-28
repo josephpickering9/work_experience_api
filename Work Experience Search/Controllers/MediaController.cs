@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 
-namespace Work_Experience_Search.controllers;
+namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
@@ -17,14 +17,14 @@ public class MediaController : ControllerBase
     [HttpGet("uploads/{fileName}")]
     public IActionResult GetFile(string fileName)
     {
-        string filePath = Path.Combine(_env.WebRootPath, "uploads", fileName);
-        
+        var filePath = Path.Combine(_env.WebRootPath ?? _env.ContentRootPath, "uploads", fileName);
+
         if (!System.IO.File.Exists(filePath))
             return NotFound();
-        
+
         new FileExtensionContentTypeProvider().TryGetContentType(filePath, out var contentType);
 
-        byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+        var fileBytes = System.IO.File.ReadAllBytes(filePath);
         return File(fileBytes, contentType ?? "application/octet-stream");
     }
 }

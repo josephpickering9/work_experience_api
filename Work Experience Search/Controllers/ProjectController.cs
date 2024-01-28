@@ -1,116 +1,114 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
+using Work_Experience_Search.Exceptions;
+using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 
-namespace Work_Experience_Search.controllers;
-
-using Microsoft.EntityFrameworkCore;
-using models;
-using Microsoft.AspNetCore.Mvc;
+namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
 public class ProjectController : ControllerBase
 {
-    private readonly Database _context;
-    private readonly IFileService _fileService;
+    private readonly IProjectService _projectService;
 
-    public ProjectController(Database context, IFileService fileService)
+    public ProjectController(IProjectService projectService)
     {
-        _context = context;
-        _fileService = fileService;
+        _projectService = projectService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Project>>> GetProjects(string search)
+    public async Task<ActionResult<IEnumerable<Project>>> GetProjects(string? search)
     {
-        IQueryable<Project> projects = _context.Project;
-
-        if (!String.IsNullOrEmpty(search))
-        {
-            projects = projects.Where(p => p.Title.ToLower().Contains(search.ToLower()) || p.Description.ToLower().Contains(search.ToLower()));
-        }
-
-        return await projects.ToListAsync();
+        return Ok(await _projectService.GetProjectsAsync(search));
     }
-    
+
     [HttpGet("id")]
     public async Task<ActionResult<Project>> GetProject(int id)
     {
-        Project? project = await _context.Project.FindAsync(id);
-
-        if (project == null)
+        try
         {
-            return NotFound();
+            return await _projectService.GetProjectAsync(id);
         }
-
-        return project;
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
     }
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PostProject([FromForm] CreateProject createProject)
     {
-        string? imagePath = createProject.Image != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image)) : null;
-        string? bgImagePath = createProject.BackgroundImage != null ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage)) : null;
-        
-        Project project = new Project
+        try
         {
-            Title = createProject.Title,
-            ShortDescription = createProject.ShortDescription,
-            Description = createProject.Description,
-            Company = createProject.Company,
-            Image = imagePath,
-            BackgroundImage = bgImagePath,
-            Year = createProject.Year,
-            Website = createProject.Website,
-        };
-        
-        _context.Project.Add(project);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetProject", new { id = project.Id }, project);
-    }
-    
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutProject(int id, Project project)
-    {
-        if (id != project.Id)
-        {
-            return BadRequest();
+            var project = await _projectService.CreateProjectAsync(createProject);
+            return CreatedAtAction("GetProject", new { id = project.Id }, project);
         }
-
-        _context.Entry(project).State = EntityState.Modified;
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (ConflictException e)
+        {
+            return Conflict(e.Message);
+        }
+        catch (InvalidOperationException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
-    
+
+    [HttpPut("{id}")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
+    {
+        try
+        {
+            var project = await _projectService.UpdateProjectAsync(id, createProject);
+            return CreatedAtAction("GetProject", new { id = project.Id }, project);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+        catch (InvalidOperationException e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
     [HttpDelete("id")]
     public async Task<IActionResult> DeleteProject(int id)
     {
-        Project? project = await _context.Project.FindAsync(id);
-
-        if (project == null)
+        try
         {
-            return NotFound();
+            await _projectService.DeleteProjectAsync(id);
+            return NoContent();
         }
-
-        _context.Project.Remove(project);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 }
 
 public class CreateProject
 {
-    public string Title { get; set; }
-    public string ShortDescription { get; set; }
-    public string Description { get; set; }
-    public string Company { get; set; }
-    public int Year { get; set; }
-    public string Website { get; set; }
-    
+    [Required] public string Title { get; set; }
+
+    [Required] public string ShortDescription { get; set; }
+
+    [Required] public string Description { get; set; }
+
+    public int? CompanyId { get; set; }
+
+    [Required] public int Year { get; set; }
+
+    public string? Website { get; set; }
+
     public IFormFile? Image { get; set; }
     public IFormFile? BackgroundImage { get; set; }
-    
-    public List<string> Tags { get; set; }
+
+    [Required] public List<string> Tags { get; set; }
 }

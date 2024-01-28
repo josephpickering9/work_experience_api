@@ -11,8 +11,8 @@ using Work_Experience_Search;
 namespace Work_Experience_Search.Migrations
 {
     [DbContext(typeof(Database))]
-    [Migration("20240120152143_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20240124123133_TagCustomColour")]
+    partial class TagCustomColour
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,7 +39,7 @@ namespace Work_Experience_Search.Migrations
                     b.ToTable("ProjectTag");
                 });
 
-            modelBuilder.Entity("Work_Experience_Search.models.Project", b =>
+            modelBuilder.Entity("Work_Experience_Search.Models.Project", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -80,7 +80,7 @@ namespace Work_Experience_Search.Migrations
                     b.ToTable("Project");
                 });
 
-            modelBuilder.Entity("Work_Experience_Search.models.Tag", b =>
+            modelBuilder.Entity("Work_Experience_Search.Models.Tag", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -88,8 +88,10 @@ namespace Work_Experience_Search.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Colour")
-                        .IsRequired()
+                    b.Property<string>("CustomColour")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Icon")
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
@@ -107,13 +109,13 @@ namespace Work_Experience_Search.Migrations
 
             modelBuilder.Entity("ProjectTag", b =>
                 {
-                    b.HasOne("Work_Experience_Search.models.Project", null)
+                    b.HasOne("Work_Experience_Search.Models.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Work_Experience_Search.models.Tag", null)
+                    b.HasOne("Work_Experience_Search.Models.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
