@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Work_Experience_Search.Models;
 
@@ -15,7 +16,7 @@ public class Tag
 
     public string? CustomColour { get; set; } = null!;
 
-    [Required] public List<Project> Projects { get; set; }
+    [Required] [JsonIgnore] public List<Project> Projects { get; set; }
 }
 
 public enum TagType
