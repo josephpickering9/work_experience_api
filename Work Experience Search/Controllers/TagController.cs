@@ -24,7 +24,7 @@ public class TagController : ControllerBase
         return Ok(await _tagService.GetTagsAsync(search));
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<Tag>> GetTag(int id)
     {
         try
@@ -75,7 +75,7 @@ public class TagController : ControllerBase
         }
     }
 
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
     [Authorize]
     public async Task<IActionResult> DeleteTag(int id)
     {

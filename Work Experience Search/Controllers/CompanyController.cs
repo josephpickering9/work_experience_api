@@ -24,7 +24,7 @@ public class CompanyController : ControllerBase
         return Ok(await _tagService.GetCompaniesAsync(search));
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<Company>> GetCompany(int id)
     {
         try
@@ -77,7 +77,7 @@ public class CompanyController : ControllerBase
         }
     }
 
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
     [Authorize]
     public async Task<IActionResult> DeleteCompany(int id)
     {

@@ -24,7 +24,7 @@ public class ProjectController : ControllerBase
         return Ok(await _projectService.GetProjectsAsync(search));
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<Project>> GetProject(int id)
     {
         try
@@ -77,7 +77,7 @@ public class ProjectController : ControllerBase
         }
     }
 
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
     [Authorize]
     public async Task<IActionResult> DeleteProject(int id)
     {
