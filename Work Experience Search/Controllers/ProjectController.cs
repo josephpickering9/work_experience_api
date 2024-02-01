@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -37,6 +38,7 @@ public class ProjectController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PostProject([FromForm] CreateProject createProject)
     {
@@ -56,6 +58,7 @@ public class ProjectController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
     {
@@ -75,6 +78,7 @@ public class ProjectController : ControllerBase
     }
 
     [HttpDelete("id")]
+    [Authorize]
     public async Task<IActionResult> DeleteProject(int id)
     {
         try

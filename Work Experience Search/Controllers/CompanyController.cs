@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -37,6 +38,7 @@ public class CompanyController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Company>> PostCompany([FromForm] CreateCompany createCompany)
     {
@@ -56,6 +58,7 @@ public class CompanyController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Company>> PutCompany(int id, [FromForm] CreateCompany createCompany)
     {
@@ -75,6 +78,7 @@ public class CompanyController : ControllerBase
     }
 
     [HttpDelete("id")]
+    [Authorize]
     public async Task<IActionResult> DeleteCompany(int id)
     {
         try
