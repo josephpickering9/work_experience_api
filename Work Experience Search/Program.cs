@@ -89,11 +89,11 @@ app.UseExceptionHandler(errorApp =>
             await context.Response.WriteAsync(conflictException.Message);
     });
 });
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-app.UseAuthentication();
+// app.UseForwardedHeaders(new ForwardedHeadersOptions
+// {
+//     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+// });
+// app.UseAuthentication();
 app.Run();
 
 public partial class Program
