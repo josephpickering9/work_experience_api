@@ -99,9 +99,9 @@ public class CompanyController : ControllerBase
 
 public class CreateCompany
 {
-    [Required] public string Name { get; set; }
+    [Required] public string Name { get; set; } = null!;
 
-    [Required] public string Description { get; set; }
+    [Required] public string Description { get; set; } = null!;
 
     public IFormFile? Logo { get; set; }
 

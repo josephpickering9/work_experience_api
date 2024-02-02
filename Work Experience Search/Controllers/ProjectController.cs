@@ -114,5 +114,5 @@ public class CreateProject
     public IFormFile? Image { get; set; }
     public IFormFile? BackgroundImage { get; set; }
 
-    [Required] public List<string> Tags { get; set; }
+    [Required] public List<string> Tags { get; set; } = new();
 }
