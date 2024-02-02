@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Work_Experience_Search;
@@ -88,6 +89,11 @@ app.UseExceptionHandler(errorApp =>
             await context.Response.WriteAsync(conflictException.Message);
     });
 });
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+app.UseAuthentication();
 app.Run();
 
 public partial class Program
