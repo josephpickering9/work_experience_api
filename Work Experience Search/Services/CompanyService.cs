@@ -50,7 +50,7 @@ public class CompanyService : ICompanyService
             Name = createCompany.Name,
             Description = createCompany.Description,
             Logo = logoPath,
-            Website = createCompany.Website,
+            Website = createCompany.Website
         };
 
         _context.Company.Add(company);

@@ -1,7 +1,3 @@
-using Work_Experience_Search.Exceptions;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.StaticFiles;
-
 namespace Work_Experience_Search.Services;
 
 public class FileService : IFileService
