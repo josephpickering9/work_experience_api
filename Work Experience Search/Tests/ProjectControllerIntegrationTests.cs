@@ -1,4 +1,7 @@
 using System.Net;
+using System.Net.Http.Headers;
+using Auth0.AuthenticationApi;
+using Auth0.AuthenticationApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Work_Experience_Search.Controllers;
@@ -10,12 +13,20 @@ namespace Work_Experience_Search.Tests;
 public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly HttpClient _authenticatedClient;
     private readonly CustomWebApplicationFactory _factory;
+    private readonly IConfigurationSection _auth0Settings;
 
     public ProjectControllerIntegrationTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
         _client = factory.CreateClient();
+        _auth0Settings = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .Build()
+            .GetSection("Auth0");
+        _authenticatedClient = GetAuthenticatedClient().GetAwaiter().GetResult();
     }
 
     [Fact]
@@ -42,7 +53,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        var httpResponse = await _client.GetAsync($"/project/id?id={testProjectId}");
+        var httpResponse = await _client.GetAsync($"/project/{testProjectId}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -67,7 +78,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var nonExistingProjectId = 999;
 
         // Act
-        var httpResponse = await _client.GetAsync($"/project/id?id={nonExistingProjectId}");
+        var httpResponse = await _client.GetAsync($"/project/{nonExistingProjectId}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
@@ -93,7 +104,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(newProject);
 
         // Act
-        var httpResponse = await _client.PostAsync("/project", content);
+        var httpResponse = await _authenticatedClient.PostAsync("/project", content);
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -133,6 +144,32 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     }
 
     [Fact]
+    public async Task PostProject_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Arrange
+        var newProject = new CreateProject
+        {
+            Title = "New Project",
+            ShortDescription = "A short description",
+            Description = "A long description",
+            CompanyId = 1,
+            Image = null,
+            BackgroundImage = null,
+            Year = 2021,
+            Website = "https://example.com",
+            Tags = new List<string> { "Tag1", "Tag2" }
+        };
+
+        var content = GetMultipartFormDataContent(newProject);
+
+        // Act
+        var httpResponse = await _client.PostAsync("/project", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task PostProject_WithDuplicateTitle_ReturnsConflict()
     {
         // Arrange
@@ -152,11 +189,11 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(duplicateProject);
 
         // Act - First attempt (should succeed)
-        var firstResponse = await _client.PostAsync("/project", content);
+        var firstResponse = await _authenticatedClient.PostAsync("/project", content);
         firstResponse.EnsureSuccessStatusCode();
 
         // Act - Second attempt (should fail)
-        var secondResponse = await _client.PostAsync("/project", content);
+        var secondResponse = await _authenticatedClient.PostAsync("/project", content);
 
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
@@ -193,7 +230,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(updateProject);
 
         // Act
-        var httpResponse = await _client.PutAsync($"/project/{existingProject.Id}", content);
+        var httpResponse = await _authenticatedClient.PutAsync($"/project/{existingProject.Id}", content);
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -233,14 +270,42 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     }
 
     [Fact]
-    public async Task DeleteProject_ExistingId_DeletesProject()
+    public async Task PutProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
         var testProjectId = 13;
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        var httpResponse = await _client.DeleteAsync($"/project/id?id={existingProject.Id}");
+        var updateProject = new CreateProject
+        {
+            Title = "Updated Project",
+            ShortDescription = "Updated short description",
+            Description = "Updated long description",
+            CompanyId = 1,
+            Year = 2021,
+            Website = "https://updated-example.com",
+            Tags = new List<string> { "UpdatedTag1", "UpdatedTag2" }
+        };
+
+        var content = GetMultipartFormDataContent(updateProject);
+
+        // Act
+        var httpResponse = await _client.PutAsync($"/project/{existingProject.Id}", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteProject_ExistingId_DeletesProject()
+    {
+        // Arrange
+        var testProjectId = 14;
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        // Act
+        var httpResponse = await _authenticatedClient.DeleteAsync($"/project/{existingProject.Id}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -251,6 +316,20 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             var projectInDb = await context.Project.FindAsync(existingProject.Id);
             Assert.Null(projectInDb);
         }
+    }
+
+    [Fact]
+    public async Task DeleteProject_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Arrange
+        var testProjectId = 15;
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        // Act
+        var httpResponse = await _client.DeleteAsync($"/project/{existingProject.Id}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 
     private async Task<Project> CreateProjectAsync(
@@ -311,5 +390,26 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         }
 
         return content;
+    }
+
+    private async Task<string> GetAccessToken()
+    {
+        var auth0Client = new AuthenticationApiClient(new Uri(_auth0Settings["Domain"] ?? ""));
+        var tokenRequest = new ClientCredentialsTokenRequest
+        {
+            ClientId = _auth0Settings["ApiClientId"],
+            ClientSecret = _auth0Settings["ApiClientSecret"],
+            Audience = _auth0Settings["Audience"]
+        };
+        var tokenResponse = await auth0Client.GetTokenAsync(tokenRequest);
+
+        return tokenResponse.AccessToken;
+    }
+
+    private async Task<HttpClient> GetAuthenticatedClient()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessToken());
+        return client;
     }
 }
