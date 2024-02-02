@@ -21,7 +21,6 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     {
         _factory = factory;
         _client = factory.CreateClient();
-        _client.BaseAddress = new Uri("http://localhost:5105");
         _auth0Settings = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")
@@ -327,14 +326,13 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
 
     private async Task<string> GetAccessToken()
     {
-        var auth0Client = new AuthenticationApiClient(new Uri($"{_auth0Settings["Domain"]}"));
+        var auth0Client = new AuthenticationApiClient(new Uri(_auth0Settings["Domain"] ?? ""));
         var tokenRequest = new ClientCredentialsTokenRequest
         {
             ClientId = _auth0Settings["ApiClientId"],
             ClientSecret = _auth0Settings["ApiClientSecret"],
             Audience = _auth0Settings["Audience"]
         };
-
         var tokenResponse = await auth0Client.GetTokenAsync(tokenRequest);
 
         return tokenResponse.AccessToken;
@@ -343,7 +341,6 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     private async Task<HttpClient> GetAuthenticatedClient()
     {
         var client = _factory.CreateClient();
-        client.BaseAddress = new Uri("http://localhost:5105");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessToken());
         return client;
     }
