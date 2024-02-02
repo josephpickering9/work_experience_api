@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -23,7 +24,7 @@ public class TagController : ControllerBase
         return Ok(await _tagService.GetTagsAsync(search));
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<Tag>> GetTag(int id)
     {
         try
@@ -37,6 +38,7 @@ public class TagController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<Tag>> PostTag([FromBody] CreateTag createTag)
     {
         try
@@ -55,6 +57,7 @@ public class TagController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<ActionResult<Tag>> PutTag(int id, [FromBody] CreateTag createTag)
     {
         try
@@ -72,7 +75,8 @@ public class TagController : ControllerBase
         }
     }
 
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteTag(int id)
     {
         try

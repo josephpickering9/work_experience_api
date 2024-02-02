@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Work_Experience_Search.Tests;
 
@@ -33,15 +36,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 var scopedServices = scope.ServiceProvider;
                 var db = scopedServices.GetRequiredService<Database>();
                 db.Database.EnsureCreated();
-
-                try
-                {
-                    // Seed the database with test data if needed
-                }
-                catch (Exception)
-                {
-                    // Log errors or clean up the database if seeding fails
-                }
             }
         });
     }
