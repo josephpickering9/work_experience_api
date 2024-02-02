@@ -144,6 +144,32 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     }
 
     [Fact]
+    public async Task PostProject_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Arrange
+        var newProject = new CreateProject
+        {
+            Title = "New Project",
+            ShortDescription = "A short description",
+            Description = "A long description",
+            CompanyId = 1,
+            Image = null,
+            BackgroundImage = null,
+            Year = 2021,
+            Website = "https://example.com",
+            Tags = new List<string> { "Tag1", "Tag2" }
+        };
+
+        var content = GetMultipartFormDataContent(newProject);
+
+        // Act
+        var httpResponse = await _client.PostAsync("/project", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task PostProject_WithDuplicateTitle_ReturnsConflict()
     {
         // Arrange
@@ -244,10 +270,38 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     }
 
     [Fact]
-    public async Task DeleteProject_ExistingId_DeletesProject()
+    public async Task PutProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
         var testProjectId = 13;
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        // Act
+        var updateProject = new CreateProject
+        {
+            Title = "Updated Project",
+            ShortDescription = "Updated short description",
+            Description = "Updated long description",
+            CompanyId = 1,
+            Year = 2021,
+            Website = "https://updated-example.com",
+            Tags = new List<string> { "UpdatedTag1", "UpdatedTag2" }
+        };
+
+        var content = GetMultipartFormDataContent(updateProject);
+
+        // Act
+        var httpResponse = await _client.PutAsync($"/project/{existingProject.Id}", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteProject_ExistingId_DeletesProject()
+    {
+        // Arrange
+        var testProjectId = 14;
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -262,6 +316,20 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             var projectInDb = await context.Project.FindAsync(existingProject.Id);
             Assert.Null(projectInDb);
         }
+    }
+
+    [Fact]
+    public async Task DeleteProject_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Arrange
+        var testProjectId = 15;
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        // Act
+        var httpResponse = await _client.DeleteAsync($"/project/{existingProject.Id}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 
     private async Task<Project> CreateProjectAsync(
