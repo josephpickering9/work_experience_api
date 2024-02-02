@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Work_Experience_Search;
 using Work_Experience_Search.Exceptions;
+using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,7 +47,8 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
-builder.Services.AddAuth0WebAppAuthentication(options => {
+builder.Services.AddAuth0WebAppAuthentication(options =>
+{
     options.Domain = builder.Configuration["Auth0:Domain"] ?? "";
     options.ClientId = builder.Configuration["Auth0:ClientId"] ?? "";
 });

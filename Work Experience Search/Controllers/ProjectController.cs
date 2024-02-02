@@ -99,11 +99,11 @@ public class ProjectController : ControllerBase
 
 public class CreateProject
 {
-    [Required] public string Title { get; set; }
+    [Required] public string Title { get; set; } = null!;
 
-    [Required] public string ShortDescription { get; set; }
+    [Required] public string ShortDescription { get; set; } = null!;
 
-    [Required] public string Description { get; set; }
+    [Required] public string Description { get; set; } = null!;
 
     public int? CompanyId { get; set; }
 
@@ -114,5 +114,5 @@ public class CreateProject
     public IFormFile? Image { get; set; }
     public IFormFile? BackgroundImage { get; set; }
 
-    [Required] public List<string> Tags { get; set; }
+    [Required] public List<string> Tags { get; set; } = new();
 }

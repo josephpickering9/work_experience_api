@@ -12,10 +12,10 @@ namespace Work_Experience_Search.Tests;
 
 public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly HttpClient _client;
-    private readonly HttpClient _authenticatedClient;
-    private readonly CustomWebApplicationFactory _factory;
     private readonly IConfigurationSection _auth0Settings;
+    private readonly HttpClient _authenticatedClient;
+    private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory _factory;
 
     public ProjectControllerIntegrationTests(CustomWebApplicationFactory factory)
     {
