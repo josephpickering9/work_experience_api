@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Work_Experience_Search;
 using Work_Experience_Search.Exceptions;
+using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -99,11 +99,11 @@ public class ProjectController : ControllerBase
 
 public class CreateProject
 {
-    [Required] public string Title { get; set; }
+    [Required] public string Title { get; set; } = null!;
 
-    [Required] public string ShortDescription { get; set; }
+    [Required] public string ShortDescription { get; set; } = null!;
 
-    [Required] public string Description { get; set; }
+    [Required] public string Description { get; set; } = null!;
 
     public int? CompanyId { get; set; }
 

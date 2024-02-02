@@ -13,9 +13,9 @@ public class FileService : IFileService
         _hostEnvironment = hostEnvironment;
     }
 
-    public async Task<string> SaveFileAsync(IFormFile file)
+    public async Task<string?> SaveFileAsync(IFormFile? file)
     {
-        if (file == null || file.Length == 0) return null;
+        if (file == null || file.Length == 0) return "";
 
         var uploadDir = Path.Combine(_hostEnvironment.WebRootPath ?? _hostEnvironment.ContentRootPath, "uploads");
         if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);

@@ -22,5 +22,5 @@ public class Project
 
     public string? Website { get; set; }
 
-    [Required] public List<Tag> Tags { get; set; }
+    [Required] public List<Tag> Tags { get; set; } = new();
 }

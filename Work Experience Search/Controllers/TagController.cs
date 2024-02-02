@@ -97,11 +97,11 @@ public class TagController : ControllerBase
 
 public class CreateTag
 {
-    [Required] public string Title { get; set; }
+    [Required] public string Title { get; set; } = null!;
 
     [Required] public TagType Type { get; set; }
 
-    public string Icon { get; set; } = null!;
+    public string? Icon { get; set; } = null!;
 
     public string? CustomColour { get; set; } = null!;
 }
