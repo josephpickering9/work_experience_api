@@ -37,6 +37,19 @@ public class CompanyController : ControllerBase
         }
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<Company>> GetCompany(string slug)
+    {
+        try
+        {
+            return await _tagService.GetCompanyBySlugAsync(slug);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
     [HttpPost]
     [Authorize]
     [Consumes("multipart/form-data")]

@@ -22,5 +22,7 @@ public class Project
 
     public string? Website { get; set; }
 
+    [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
+
     [Required] public List<Tag> Tags { get; set; } = new();
 }

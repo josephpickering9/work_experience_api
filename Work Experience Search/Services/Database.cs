@@ -21,5 +21,18 @@ public class Database : DbContext
             .HasConversion(
                 v => v.ToDescriptionString(),
                 v => EnumExtensions.FromDescriptionString<TagType>(v));
+
+        // TODO: Apply this
+        // modelBuilder.Entity<Project>()
+        //     .HasIndex(b => b.Slug)
+        //     .IsUnique();
+        //
+        // modelBuilder.Entity<Tag>()
+        //     .HasIndex(b => b.Slug)
+        //     .IsUnique();
+        //
+        // modelBuilder.Entity<Company>()
+        //     .HasIndex(b => b.Slug)
+        //     .IsUnique();
     }
 }

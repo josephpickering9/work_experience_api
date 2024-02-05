@@ -37,6 +37,19 @@ public class TagController : ControllerBase
         }
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<Tag>> GetTag(string slug)
+    {
+        try
+        {
+            return await _tagService.GetTagBySlugAsync(slug);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<Tag>> PostTag([FromBody] CreateTag createTag)
