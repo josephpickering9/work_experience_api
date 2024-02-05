@@ -58,7 +58,8 @@ public class CompanyService : ICompanyService
             Name = createCompany.Name,
             Description = createCompany.Description,
             Logo = logoPath,
-            Website = createCompany.Website
+            Website = createCompany.Website,
+            Slug = createCompany.Name.ToSlug()
         };
 
         _context.Company.Add(company);
