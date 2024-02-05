@@ -69,6 +69,7 @@ public class ProjectService : IProjectService
             BackgroundImage = bgImagePath,
             Year = createProject.Year,
             Website = createProject.Website,
+            Slug = createProject.Title.ToSlug(),
             Tags = new List<Tag>()
         };
 

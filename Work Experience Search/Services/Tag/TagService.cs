@@ -52,7 +52,8 @@ public class TagService : ITagService
             Title = createTag.Title,
             Type = createTag.Type,
             Icon = createTag.Icon,
-            CustomColour = createTag.CustomColour
+            CustomColour = createTag.CustomColour,
+            Slug = createTag.Title.ToSlug()
         };
 
         _context.Tag.Add(tag);
