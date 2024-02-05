@@ -37,6 +37,19 @@ public class ProjectController : ControllerBase
         }
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<Project>> GetProject(string slug)
+    {
+        try
+        {
+            return await _projectService.GetProjectBySlugAsync(slug);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
     [HttpPost]
     [Authorize]
     [Consumes("multipart/form-data")]

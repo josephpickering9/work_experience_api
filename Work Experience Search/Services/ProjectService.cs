@@ -37,6 +37,14 @@ public class ProjectService : IProjectService
         return project;
     }
 
+    public async Task<Project> GetProjectBySlugAsync(string slug)
+    {
+        var project = await _context.Project.Include(p => p.Tags).FirstOrDefaultAsync(p => p.Slug == slug);
+        if (project == null) throw new NotFoundException("Project not found.");
+
+        return project;
+    }
+
     public async Task<Project> CreateProjectAsync(CreateProject createProject)
     {
         var projectExists = await _context.Project
@@ -98,6 +106,7 @@ public class ProjectService : IProjectService
         project.CompanyId = createProject.CompanyId;
         project.Year = createProject.Year;
         project.Website = createProject.Website;
+        project.Slug = createProject.Title.ToSlug();
 
         if (createProject.Tags.Count > 0)
         {
