@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
 
 namespace Work_Experience_Search.Models;
 
@@ -17,7 +16,7 @@ public class Tag
 
     public string? CustomColour { get; set; }
 
-    [Required]  public string Slug { get; set; } = Guid.NewGuid().ToString();
+    [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
 
     [Required] [JsonIgnore] public List<Project> Projects { get; set; } = new();
 }

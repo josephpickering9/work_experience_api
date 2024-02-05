@@ -7,7 +7,7 @@ public static class StringExtensions
     public static string ToSlug(this string phrase)
     {
         // Remove all accents and make the string lower case
-        string output = phrase.ToLowerInvariant();
+        var output = phrase.ToLowerInvariant();
         output = RemoveDiacritics(output);
 
         // Replace spaces with hyphens
@@ -33,10 +33,7 @@ public static class StringExtensions
         foreach (var c in normalizedString)
         {
             var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-            {
-                stringBuilder.Append(c);
-            }
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark) stringBuilder.Append(c);
         }
 
         return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
