@@ -94,7 +94,8 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             CompanyId = 1,
             Year = 2021,
             Website = "https://example.com",
-            Tags = new List<string> { "Tag1", "Tag2" }
+            Tags = new List<string> { "Tag1", "Tag2" },
+            Images = new List<CreateProjectImage>()
         };
 
         var content = GetMultipartFormDataContent(newProject);
@@ -373,6 +374,8 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
                 content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
             else if (value is int intValue)
                 content.Add(new StringContent(intValue.ToString()), property.Name);
+            else if (value is object)
+                content.Add(new StringContent(JsonConvert.SerializeObject(value)), property.Name);
             else
                 throw new Exception($"Unsupported type: {value.GetType()}");
         }

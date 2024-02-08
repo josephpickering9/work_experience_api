@@ -134,13 +134,6 @@ public class CreateProjectImage
     public int? Id { get; set; }
 
     public IFormFile? Image { get; set; }
-    // public IFormFileWrapper? Image { get; set; }
-    //
-    // // a dummy wrapper
-    // public class IFormFileWrapper
-    // {
-    //     public IFormFile File { get; set;}
-    // }
 
     [Required] public ImageType Type { get; set; }
 }
