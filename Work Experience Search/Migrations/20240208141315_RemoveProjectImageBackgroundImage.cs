@@ -22,7 +22,17 @@ namespace Work_Experience_Search.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<string>(
+                name: "BackgroundImage",
+                table: "Project",
+                type: "text",
+                nullable: true);
 
+            migrationBuilder.AddColumn<string>(
+                name: "Image",
+                table: "Project",
+                type: "text",
+                nullable: true);
         }
     }
 }

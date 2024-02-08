@@ -12,8 +12,8 @@ using Work_Experience_Search;
 namespace Work_Experience_Search.Migrations
 {
     [DbContext(typeof(Database))]
-    [Migration("20240208132555_MoveProjectImages")]
-    partial class MoveProjectImages
+    [Migration("20240208141103_CreateProjectImage")]
+    partial class CreateProjectImage
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

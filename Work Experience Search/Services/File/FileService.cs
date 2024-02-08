@@ -26,4 +26,10 @@ public class FileService : IFileService
 
         return filePath;
     }
+
+    public void DeleteFile(string? filePath)
+    {
+        if (string.IsNullOrEmpty(filePath)) return;
+        if (File.Exists(filePath)) File.Delete(filePath);
+    }
 }

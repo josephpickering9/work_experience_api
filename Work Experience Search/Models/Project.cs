@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 
 namespace Work_Experience_Search.Models;
 
@@ -15,9 +17,6 @@ public class Project
     public int? CompanyId { get; set; } = null!;
     public Company? Company { get; set; } = null!;
 
-    public string? Image { get; set; }
-    public string? BackgroundImage { get; set; }
-
     [Required] public int Year { get; set; }
 
     public string? Website { get; set; }
@@ -27,4 +26,13 @@ public class Project
     [Required] public List<ProjectImage> Images { get; set; } = new();
 
     [Required] public List<Tag> Tags { get; set; } = new();
+
+    [JsonIgnore] [NotMapped] public ProjectImage? Logo => Images.SingleOrDefault(i => i.Type == ImageType.Logo);
+    [NotMapped] public string? LogoUrl => Logo?.Image;
+
+    [JsonIgnore] [NotMapped] public ProjectImage? Card => Images.SingleOrDefault(i => i.Type == ImageType.Card);
+    [NotMapped] public string? CardUrl => Card?.Image;
+
+    [JsonIgnore] [NotMapped] public ProjectImage? Banner => Images.SingleOrDefault(i => i.Type == ImageType.Banner);
+    [NotMapped] public string? BannerUrl => Banner?.Image;
 }

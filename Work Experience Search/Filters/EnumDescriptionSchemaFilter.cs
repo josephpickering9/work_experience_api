@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -16,7 +17,7 @@ public class EnumDescriptionSchemaFilter : ISchemaFilter
             foreach (var enumValue in Enum.GetValues(context.Type))
             {
                 var value = enumValue.ToString();
-                if (value == null) continue;
+                if (value.IsNullOrEmpty()) continue;
 
                 var memberInfo = context.Type.GetMember(value).FirstOrDefault();
                 var descriptionAttribute = memberInfo?.GetCustomAttribute<DescriptionAttribute>();

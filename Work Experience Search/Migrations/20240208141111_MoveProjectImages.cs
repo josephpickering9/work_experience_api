@@ -21,7 +21,7 @@ namespace Work_Experience_Search.Migrations
             // Migrate 'BackgroundImage' to 'ProjectImages' as type Banner (assuming Banner = 1)
             migrationBuilder.Sql(@"
                 INSERT INTO ""ProjectImage"" (""Image"", ""Type"", ""ProjectId"")
-                SELECT ""Image"", 'Banner', ""Id""
+                SELECT ""BackgroundImage"", 'Banner', ""Id""
                 FROM ""Project""
                 WHERE ""BackgroundImage"" IS NOT NULL
             ");
