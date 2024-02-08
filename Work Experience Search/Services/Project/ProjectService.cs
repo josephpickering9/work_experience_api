@@ -8,19 +8,21 @@ namespace Work_Experience_Search.Services;
 public class ProjectService : IProjectService
 {
     private readonly Database _context;
-    private readonly IFileService _fileService;
+    private readonly IProjectImageService _projectImageService;
     private readonly ITagService _tagService;
 
-    public ProjectService(Database context, IFileService fileService, ITagService tagService)
+    public ProjectService(Database context, IProjectImageService projectImageService, ITagService tagService)
     {
         _context = context;
-        _fileService = fileService;
+        _projectImageService = projectImageService;
         _tagService = tagService;
     }
 
     public async Task<IEnumerable<Project>> GetProjectsAsync(string? search)
     {
-        IQueryable<Project> projects = _context.Project.Include(p => p.Tags);
+        IQueryable<Project> projects = _context.Project
+            .Include(p => p.Tags)
+            .Include(p => p.Images);
 
         if (!string.IsNullOrEmpty(search))
             projects = projects.Where(p =>
@@ -31,7 +33,10 @@ public class ProjectService : IProjectService
 
     public async Task<Project> GetProjectAsync(int id)
     {
-        var project = await _context.Project.Include(p => p.Tags).SingleOrDefaultAsync(p => p.Id == id);
+        var project = await _context.Project
+            .Include(p => p.Tags)
+            .Include(p => p.Images)
+            .SingleOrDefaultAsync(p => p.Id == id);
         if (project == null) throw new NotFoundException("Project not found.");
 
         return project;
@@ -39,7 +44,10 @@ public class ProjectService : IProjectService
 
     public async Task<Project> GetProjectBySlugAsync(string slug)
     {
-        var project = await _context.Project.Include(p => p.Tags).FirstOrDefaultAsync(p => p.Slug == slug);
+        var project = await _context.Project.Include(p => p.Tags)
+            .Include(p => p.Images)
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync(p => p.Slug == slug);
         if (project == null) throw new NotFoundException("Project not found.");
 
         return project;
@@ -52,21 +60,12 @@ public class ProjectService : IProjectService
 
         if (projectExists) throw new ConflictException("A project with the same title already exists");
 
-        var imagePath = createProject.Image != null
-            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image))
-            : null;
-        var bgImagePath = createProject.BackgroundImage != null
-            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage))
-            : null;
-
         var project = new Project
         {
             Title = createProject.Title,
             ShortDescription = createProject.ShortDescription,
             Description = createProject.Description,
             CompanyId = createProject.CompanyId,
-            Image = imagePath,
-            BackgroundImage = bgImagePath,
             Year = createProject.Year,
             Website = createProject.Website,
             Slug = createProject.Title.ToSlug(),
@@ -76,6 +75,11 @@ public class ProjectService : IProjectService
         if (createProject.Tags.Count > 0) project.Tags = await _tagService.SyncTagsAsync(createProject.Tags);
 
         _context.Project.Add(project);
+        await _context.SaveChangesAsync();
+
+        if (createProject.Images.Count > 0)
+            project.Images = await _projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+
         await _context.SaveChangesAsync();
 
         return project;
@@ -91,16 +95,6 @@ public class ProjectService : IProjectService
 
         if (projectExists) throw new ConflictException("A project with the same title already exists");
 
-        var imagePath = createProject.Image != null
-            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.Image))
-            : null;
-        var bgImagePath = createProject.BackgroundImage != null
-            ? Path.GetFileName(await _fileService.SaveFileAsync(createProject.BackgroundImage))
-            : null;
-
-        if (imagePath != null) project.Image = imagePath;
-        if (bgImagePath != null) project.BackgroundImage = bgImagePath;
-
         project.Title = createProject.Title;
         project.ShortDescription = createProject.ShortDescription;
         project.Description = createProject.Description;
@@ -112,6 +106,12 @@ public class ProjectService : IProjectService
         if (createProject.Tags.Count > 0)
         {
             project.Tags = await _tagService.SyncTagsAsync(createProject.Tags);
+            await _context.SaveChangesAsync();
+        }
+
+        if (createProject.Images.Count > 0)
+        {
+            project.Images = await _projectImageService.SyncProjectImagesAsync(project, createProject.Images);
             await _context.SaveChangesAsync();
         }
 

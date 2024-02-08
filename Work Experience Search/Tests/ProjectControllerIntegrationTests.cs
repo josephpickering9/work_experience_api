@@ -66,8 +66,6 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         Assert.Equal(expectedProject.Description, actualProject.Description);
         Assert.Equal(expectedProject.Company, actualProject.Company);
         Assert.Equal(expectedProject.Website, actualProject.Website);
-        Assert.Equal(expectedProject.Image, actualProject.Image);
-        Assert.Equal(expectedProject.BackgroundImage, actualProject.BackgroundImage);
         Assert.Equal(expectedProject.Tags.Count, actualProject.Tags.Count);
     }
 
@@ -94,11 +92,10 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             ShortDescription = "A short description",
             Description = "A long description",
             CompanyId = 1,
-            Image = null,
-            BackgroundImage = null,
             Year = 2021,
             Website = "https://example.com",
-            Tags = new List<string> { "Tag1", "Tag2" }
+            Tags = new List<string> { "Tag1", "Tag2" },
+            Images = new List<CreateProjectImage>()
         };
 
         var content = GetMultipartFormDataContent(newProject);
@@ -153,8 +150,6 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             ShortDescription = "A short description",
             Description = "A long description",
             CompanyId = 1,
-            Image = null,
-            BackgroundImage = null,
             Year = 2021,
             Website = "https://example.com",
             Tags = new List<string> { "Tag1", "Tag2" }
@@ -179,8 +174,6 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             ShortDescription = "A short description",
             Description = "A long description",
             CompanyId = 1,
-            Image = null,
-            BackgroundImage = null,
             Year = 2021,
             Website = "https://example.com",
             Tags = new List<string> { "Tag1", "Tag2" }
@@ -338,8 +331,6 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         string description = "Test Description",
         string shortDescription = "Test Short Description",
         int companyId = 1,
-        string? image = null,
-        string? backgroundImage = null,
         int year = 2021,
         string website = "https://example.com",
         List<Tag>? tags = null
@@ -352,8 +343,6 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             Description = description,
             ShortDescription = shortDescription,
             CompanyId = companyId,
-            Image = image,
-            BackgroundImage = backgroundImage,
             Year = year,
             Website = website,
             Tags = tags ?? new List<Tag>()
@@ -385,6 +374,8 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
                 content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
             else if (value is int intValue)
                 content.Add(new StringContent(intValue.ToString()), property.Name);
+            else if (value is object)
+                content.Add(new StringContent(JsonConvert.SerializeObject(value)), property.Name);
             else
                 throw new Exception($"Unsupported type: {value.GetType()}");
         }

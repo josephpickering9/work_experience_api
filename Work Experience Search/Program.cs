@@ -17,6 +17,7 @@ builder.Services.AddDbContext<Database>(options =>
 
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IProjectImageService, ProjectImageService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 
@@ -88,11 +89,6 @@ app.UseExceptionHandler(errorApp =>
             await context.Response.WriteAsync(conflictException.Message);
     });
 });
-// app.UseForwardedHeaders(new ForwardedHeadersOptions
-// {
-//     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-// });
-// app.UseAuthentication();
 app.Run();
 
 public partial class Program

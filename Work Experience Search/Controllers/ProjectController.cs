@@ -124,8 +124,16 @@ public class CreateProject
 
     public string? Website { get; set; }
 
-    public IFormFile? Image { get; set; }
-    public IFormFile? BackgroundImage { get; set; }
+    public List<CreateProjectImage> Images { get; set; } = new();
 
     [Required] public List<string> Tags { get; set; } = new();
+}
+
+public class CreateProjectImage
+{
+    public int? Id { get; set; }
+
+    public IFormFile? Image { get; set; }
+
+    [Required] public ImageType Type { get; set; }
 }
