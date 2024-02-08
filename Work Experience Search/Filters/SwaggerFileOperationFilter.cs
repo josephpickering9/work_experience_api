@@ -9,60 +9,47 @@ public class SwaggerFileOperationFilter : IOperationFilter
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
         var formParameters = context.MethodInfo.GetParameters()
-            .Where(p => p.GetCustomAttributes(typeof(FromFormAttribute), false).Any() ||
-                        IsFileUploadType(p.ParameterType));
+            .Where(p => p.GetCustomAttributes(typeof(FromFormAttribute), false).Length > 0
+                        || p.ParameterType == typeof(IFormFile)
+                        || p.ParameterType == typeof(IFormFileCollection)
+                        || p.ParameterType == typeof(List<IFormFile>));
 
         if (!formParameters.Any())
             return;
 
         operation.RequestBody.Content.Clear();
-        var schema = new OpenApiSchema { Type = "object", Properties = new Dictionary<string, OpenApiSchema>() };
+        var schema = new OpenApiSchema();
 
-        foreach (var parameter in formParameters)
-            ProcessParameter(schema, parameter.ParameterType, parameter.Name, context);
+        foreach (var p in formParameters)
+            if (p.ParameterType == typeof(IFormFile))
+            {
+                schema.Properties.Add(p.Name, new OpenApiSchema
+                {
+                    Type = "string",
+                    Format = "binary"
+                });
+            }
+            else if (p.ParameterType == typeof(IFormCollection) || p.ParameterType == typeof(List<IFormFile>))
+            {
+                schema.Properties.Add(p.Name, new OpenApiSchema
+                {
+                    Type = "array",
+                    Items = new OpenApiSchema
+                    {
+                        Type = "string",
+                        Format = "binary"
+                    }
+                });
+            }
+            else
+            {
+                var reference = context.SchemaGenerator.GenerateSchema(p.ParameterType, context.SchemaRepository);
+                schema.Properties.Add(p.Name, reference);
+            }
 
         operation.RequestBody.Content.Add("multipart/form-data", new OpenApiMediaType
         {
             Schema = schema
         });
-    }
-
-    private void ProcessParameter(OpenApiSchema schema, Type type, string name, OperationFilterContext context,
-        string parentName = null)
-    {
-        var fullName = string.IsNullOrEmpty(parentName) ? name : $"{parentName}.{name}";
-
-        if (IsFileUploadType(type))
-            AddFileSchema(schema, fullName, type);
-        else if (type.IsClass && type != typeof(string))
-            foreach (var property in type.GetProperties())
-                ProcessParameter(schema, property.PropertyType, property.Name, context, fullName);
-    }
-
-    private static bool IsFileUploadType(Type type)
-    {
-        return type == typeof(IFormFile)
-               || type == typeof(IFormFileCollection)
-               || typeof(IEnumerable<IFormFile>).IsAssignableFrom(type);
-    }
-
-    private static void AddFileSchema(OpenApiSchema schema, string name, Type type)
-    {
-        if (type == typeof(IFormFile) || type == typeof(IFormFileCollection))
-            schema.Properties[name] = new OpenApiSchema
-            {
-                Type = "string",
-                Format = "binary"
-            };
-        else if (typeof(IEnumerable<IFormFile>).IsAssignableFrom(type))
-            schema.Properties[name] = new OpenApiSchema
-            {
-                Type = "array",
-                Items = new OpenApiSchema
-                {
-                    Type = "string",
-                    Format = "binary"
-                }
-            };
     }
 }

@@ -77,7 +77,8 @@ public class ProjectImageService : IProjectImageService
             var projectImage = new ProjectImage
             {
                 Image = imagePath,
-                Type = image.Type
+                Type = image.Type,
+                Project = project
             };
 
             _context.ProjectImage.Add(projectImage);
