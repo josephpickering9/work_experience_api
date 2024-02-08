@@ -24,5 +24,7 @@ public class Project
 
     [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
 
+    [Required] public List<ProjectImage> Images { get; set; } = new();
+
     [Required] public List<Tag> Tags { get; set; } = new();
 }
