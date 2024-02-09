@@ -27,6 +27,8 @@ public class Project
 
     [Required] public List<Tag> Tags { get; set; } = new();
 
+    [NotMapped] public List<Project> RelatedProjects { get; set; } = new();
+
     [JsonIgnore] [NotMapped] public ProjectImage? Logo => Images.SingleOrDefault(i => i.Type == ImageType.Logo);
     [NotMapped] public string? LogoUrl => Logo?.Image;
 

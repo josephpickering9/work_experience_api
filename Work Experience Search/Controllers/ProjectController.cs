@@ -50,6 +50,19 @@ public class ProjectController : ControllerBase
         }
     }
 
+    [HttpGet("{id}/related")]
+    public async Task<ActionResult<IEnumerable<Project>>> GetRelatedProjects(int id)
+    {
+        try
+        {
+            return Ok(await _projectService.GetRelatedProjectsAsync(id));
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
     [HttpPost]
     [Authorize]
     [Consumes("multipart/form-data")]

@@ -8,6 +8,7 @@ public interface IProjectService
     Task<IEnumerable<Project>> GetProjectsAsync(string? search);
     Task<Project> GetProjectAsync(int id);
     Task<Project> GetProjectBySlugAsync(string slug);
+    Task<IEnumerable<Project>> GetRelatedProjectsAsync(int projectId);
     Task<Project> CreateProjectAsync(CreateProject createProject);
     Task<Project> UpdateProjectAsync(int id, CreateProject createProject);
     Task<Project> DeleteProjectAsync(int id);

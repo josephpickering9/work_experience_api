@@ -54,6 +54,32 @@ public class ProjectService : IProjectService
         return project;
     }
 
+    public async Task<IEnumerable<Project>> GetRelatedProjectsAsync(int projectId)
+    {
+        var projectTags = _context.Project
+            .Include(pt => pt.Tags)
+            .Where(pt => pt.Id == projectId)
+            .SelectMany(pt => pt.Tags.Select(t => t.Id));
+
+        if (!projectTags.Any()) return new List<Project>();
+
+        var relatedProjects = await _context.Project
+            .Where(p => p.Id != projectId && p.Tags.Any(t => projectTags.Contains(t.Id)))
+            .Select(p => new
+            {
+                Project = p,
+                SharedTagsCount = p.Tags.Count(t => projectTags.Contains(t.Id))
+            })
+            .OrderByDescending(x => x.SharedTagsCount)
+            .Take(3)
+            .Select(x => x.Project)
+            .Include(p => p.Tags)
+            .Include(p => p.Images)
+            .ToListAsync();
+
+        return relatedProjects;
+    }
+
     public async Task<Project> CreateProjectAsync(CreateProject createProject)
     {
         var projectExists = await _context.Project
@@ -85,7 +111,6 @@ public class ProjectService : IProjectService
 
         return project;
     }
-
 
     public async Task<Project> UpdateProjectAsync(int id, CreateProject createProject)
     {
@@ -132,5 +157,18 @@ public class ProjectService : IProjectService
         await _context.SaveChangesAsync();
 
         return project;
+    }
+
+    private class TagComparer : IEqualityComparer<Tag>
+    {
+        public bool Equals(Tag x, Tag y)
+        {
+            return x.Id == y.Id;
+        }
+
+        public int GetHashCode(Tag obj)
+        {
+            return obj.Id.GetHashCode();
+        }
     }
 }
