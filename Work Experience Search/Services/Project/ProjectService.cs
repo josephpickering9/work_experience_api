@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -22,7 +23,7 @@ public class ProjectService : IProjectService
     {
         IQueryable<Project> projects = _context.Project
             .Include(p => p.Tags)
-            .Include(p => p.Images);
+            .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order != null ? i.Order : 0));
 
         if (!string.IsNullOrEmpty(search))
             projects = projects.Where(p =>
@@ -35,7 +36,7 @@ public class ProjectService : IProjectService
     {
         var project = await _context.Project
             .Include(p => p.Tags)
-            .Include(p => p.Images)
+            .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order != null ? i.Order : 0))
             .SingleOrDefaultAsync(p => p.Id == id);
         if (project == null) throw new NotFoundException("Project not found.");
 
@@ -44,9 +45,9 @@ public class ProjectService : IProjectService
 
     public async Task<Project> GetProjectBySlugAsync(string slug)
     {
-        var project = await _context.Project.Include(p => p.Tags)
-            .Include(p => p.Images)
-            .Include(p => p.Images)
+        var project = await _context.Project
+            .Include(p => p.Tags)
+            .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order != null ? i.Order : 0))
             .FirstOrDefaultAsync(p => p.Slug == slug);
         if (project == null) throw new NotFoundException("Project not found.");
 

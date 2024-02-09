@@ -12,6 +12,8 @@ public class ProjectImage
 
     [Required] public ImageType Type { get; set; }
 
+    public int? Order { get; set; }
+
     [Required] [JsonIgnore] public Project Project { get; set; }
 }
 
