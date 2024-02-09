@@ -21,6 +21,8 @@ public class Project
 
     public string? Website { get; set; }
 
+    [Required] public bool ShowMockup { get; set; } = false;
+
     [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
 
     [Required] public List<ProjectImage> Images { get; set; } = new();

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -95,6 +94,7 @@ public class ProjectService : IProjectService
             CompanyId = createProject.CompanyId,
             Year = createProject.Year,
             Website = createProject.Website,
+            ShowMockup = createProject.ShowMockup,
             Slug = createProject.Title.ToSlug(),
             Tags = new List<Tag>()
         };
@@ -127,6 +127,7 @@ public class ProjectService : IProjectService
         project.CompanyId = createProject.CompanyId;
         project.Year = createProject.Year;
         project.Website = createProject.Website;
+        project.ShowMockup = createProject.ShowMockup;
         project.Slug = createProject.Title.ToSlug();
 
         if (createProject.Tags.Count > 0)

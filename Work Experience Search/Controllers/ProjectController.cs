@@ -137,6 +137,8 @@ public class CreateProject
 
     public string? Website { get; set; }
 
+    [Required] public bool ShowMockup { get; set; } = false;
+
     public List<CreateProjectImage> Images { get; set; } = new();
 
     [Required] public List<string> Tags { get; set; } = new();
