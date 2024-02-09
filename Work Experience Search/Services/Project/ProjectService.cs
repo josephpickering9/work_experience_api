@@ -22,7 +22,7 @@ public class ProjectService : IProjectService
     {
         IQueryable<Project> projects = _context.Project
             .Include(p => p.Tags)
-            .Include(p => p.Images);
+            .Include(p => p.Images.OrderBy(i => i.Order));
 
         if (!string.IsNullOrEmpty(search))
             projects = projects.Where(p =>
@@ -35,7 +35,7 @@ public class ProjectService : IProjectService
     {
         var project = await _context.Project
             .Include(p => p.Tags)
-            .Include(p => p.Images)
+            .Include(p => p.Images.OrderBy(i => i.Order))
             .SingleOrDefaultAsync(p => p.Id == id);
         if (project == null) throw new NotFoundException("Project not found.");
 
