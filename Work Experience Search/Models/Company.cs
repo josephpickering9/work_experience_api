@@ -13,4 +13,6 @@ public class Company
     public string? Website { get; set; } = null!;
 
     public string? Logo { get; set; } = null!;
+
+    [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
 }

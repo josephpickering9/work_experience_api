@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -23,7 +24,7 @@ public class ProjectController : ControllerBase
         return Ok(await _projectService.GetProjectsAsync(search));
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<Project>> GetProject(int id)
     {
         try
@@ -36,7 +37,34 @@ public class ProjectController : ControllerBase
         }
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<Project>> GetProject(string slug)
+    {
+        try
+        {
+            return await _projectService.GetProjectBySlugAsync(slug);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
+    [HttpGet("{id}/related")]
+    public async Task<ActionResult<IEnumerable<Project>>> GetRelatedProjects(int id)
+    {
+        try
+        {
+            return Ok(await _projectService.GetRelatedProjectsAsync(id));
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
     [HttpPost]
+    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PostProject([FromForm] CreateProject createProject)
     {
@@ -56,6 +84,7 @@ public class ProjectController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
     {
@@ -74,7 +103,8 @@ public class ProjectController : ControllerBase
         }
     }
 
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteProject(int id)
     {
         try
@@ -95,11 +125,11 @@ public class ProjectController : ControllerBase
 
 public class CreateProject
 {
-    [Required] public string Title { get; set; }
+    [Required] public string Title { get; set; } = null!;
 
-    [Required] public string ShortDescription { get; set; }
+    [Required] public string ShortDescription { get; set; } = null!;
 
-    [Required] public string Description { get; set; }
+    [Required] public string Description { get; set; } = null!;
 
     public int? CompanyId { get; set; }
 
@@ -107,8 +137,18 @@ public class CreateProject
 
     public string? Website { get; set; }
 
-    public IFormFile? Image { get; set; }
-    public IFormFile? BackgroundImage { get; set; }
+    [Required] public bool ShowMockup { get; set; } = false;
 
-    [Required] public List<string> Tags { get; set; }
+    public List<CreateProjectImage> Images { get; set; } = new();
+
+    [Required] public List<string> Tags { get; set; } = new();
+}
+
+public class CreateProjectImage
+{
+    public int? Id { get; set; }
+
+    public IFormFile? Image { get; set; }
+
+    [Required] public ImageType Type { get; set; }
 }

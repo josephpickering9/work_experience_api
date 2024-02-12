@@ -1,10 +1,11 @@
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Work_Experience_Search;
+namespace Work_Experience_Search.Filters;
 
 public class EnumDescriptionSchemaFilter : ISchemaFilter
 {
@@ -15,9 +16,12 @@ public class EnumDescriptionSchemaFilter : ISchemaFilter
             var enumDescriptions = new List<string>();
             foreach (var enumValue in Enum.GetValues(context.Type))
             {
-                var memberInfo = context.Type.GetMember(enumValue.ToString()).FirstOrDefault();
+                var value = enumValue.ToString();
+                if (value.IsNullOrEmpty()) continue;
+
+                var memberInfo = context.Type.GetMember(value).FirstOrDefault();
                 var descriptionAttribute = memberInfo?.GetCustomAttribute<DescriptionAttribute>();
-                enumDescriptions.Add(descriptionAttribute?.Description ?? enumValue.ToString());
+                enumDescriptions.Add(descriptionAttribute?.Description ?? value);
             }
 
             schema.Enum.Clear();

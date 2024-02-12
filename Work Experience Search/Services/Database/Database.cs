@@ -10,6 +10,7 @@ public class Database : DbContext
     }
 
     public DbSet<Project> Project { get; set; }
+    public DbSet<ProjectImage> ProjectImage { get; set; }
     public DbSet<Tag> Tag { get; set; }
     public DbSet<Company> Company { get; set; }
 
@@ -21,5 +22,25 @@ public class Database : DbContext
             .HasConversion(
                 v => v.ToDescriptionString(),
                 v => EnumExtensions.FromDescriptionString<TagType>(v));
+
+        modelBuilder
+            .Entity<ProjectImage>()
+            .Property(e => e.Type)
+            .HasConversion(
+                v => v.ToDescriptionString(),
+                v => EnumExtensions.FromDescriptionString<ImageType>(v));
+
+        // TODO: Apply this
+        // modelBuilder.Entity<Project>()
+        //     .HasIndex(b => b.Slug)
+        //     .IsUnique();
+        //
+        // modelBuilder.Entity<Tag>()
+        //     .HasIndex(b => b.Slug)
+        //     .IsUnique();
+        //
+        // modelBuilder.Entity<Company>()
+        //     .HasIndex(b => b.Slug)
+        //     .IsUnique();
     }
 }

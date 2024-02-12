@@ -1,10 +1,12 @@
 using System.Text.Json.Serialization;
+using Auth0.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using Work_Experience_Search;
 using Work_Experience_Search.Exceptions;
+using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,7 @@ builder.Services.AddDbContext<Database>(options =>
 
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IProjectImageService, ProjectImageService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 
@@ -44,6 +47,20 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
+});
+builder.Services.AddAuth0WebAppAuthentication(options =>
+{
+    options.Domain = builder.Configuration["Auth0:Domain"] ?? "";
+    options.ClientId = builder.Configuration["Auth0:ClientId"] ?? "";
+});
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.Authority = builder.Configuration["Auth0:Domain"];
+    options.Audience = builder.Configuration["Auth0:Audience"];
 });
 
 var app = builder.Build();

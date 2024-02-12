@@ -33,15 +33,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 var scopedServices = scope.ServiceProvider;
                 var db = scopedServices.GetRequiredService<Database>();
                 db.Database.EnsureCreated();
-
-                try
-                {
-                    // Seed the database with test data if needed
-                }
-                catch (Exception)
-                {
-                    // Log errors or clean up the database if seeding fails
-                }
             }
         });
     }

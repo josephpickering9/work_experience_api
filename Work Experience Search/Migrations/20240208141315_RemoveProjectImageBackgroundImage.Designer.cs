@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Work_Experience_Search;
@@ -11,9 +12,11 @@ using Work_Experience_Search;
 namespace Work_Experience_Search.Migrations
 {
     [DbContext(typeof(Database))]
-    partial class DatabaseModelSnapshot : ModelSnapshot
+    [Migration("20240208141315_RemoveProjectImageBackgroundImage")]
+    partial class RemoveProjectImageBackgroundImage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -87,9 +90,6 @@ namespace Work_Experience_Search.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("ShowMockup")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text");
@@ -122,9 +122,6 @@ namespace Work_Experience_Search.Migrations
                     b.Property<string>("Image")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int?>("Order")
-                        .HasColumnType("integer");
 
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer");

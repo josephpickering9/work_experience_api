@@ -1,7 +1,3 @@
-using Work_Experience_Search.Exceptions;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.StaticFiles;
-
 namespace Work_Experience_Search.Services;
 
 public class FileService : IFileService
@@ -13,9 +9,9 @@ public class FileService : IFileService
         _hostEnvironment = hostEnvironment;
     }
 
-    public async Task<string> SaveFileAsync(IFormFile file)
+    public async Task<string?> SaveFileAsync(IFormFile? file)
     {
-        if (file == null || file.Length == 0) return null;
+        if (file == null || file.Length == 0) return "";
 
         var uploadDir = Path.Combine(_hostEnvironment.WebRootPath ?? _hostEnvironment.ContentRootPath, "uploads");
         if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
@@ -29,5 +25,11 @@ public class FileService : IFileService
         }
 
         return filePath;
+    }
+
+    public void DeleteFile(string? filePath)
+    {
+        if (string.IsNullOrEmpty(filePath)) return;
+        if (File.Exists(filePath)) File.Delete(filePath);
     }
 }

@@ -34,6 +34,14 @@ public class CompanyService : ICompanyService
         return company;
     }
 
+    public async Task<Company> GetCompanyBySlugAsync(string slug)
+    {
+        var company = await _context.Company.FirstOrDefaultAsync(p => p.Slug == slug);
+        if (company == null) throw new NotFoundException("Company not found.");
+
+        return company;
+    }
+
     public async Task<Company> CreateCompanyAsync(CreateCompany createCompany)
     {
         var companyExists = await _context.Company
@@ -51,6 +59,7 @@ public class CompanyService : ICompanyService
             Description = createCompany.Description,
             Logo = logoPath,
             Website = createCompany.Website,
+            Slug = createCompany.Name.ToSlug()
         };
 
         _context.Company.Add(company);
@@ -78,6 +87,7 @@ public class CompanyService : ICompanyService
         company.Name = createCompany.Name;
         company.Description = createCompany.Description;
         company.Website = createCompany.Website;
+        company.Slug = createCompany.Name.ToSlug();
 
         await _context.SaveChangesAsync();
 

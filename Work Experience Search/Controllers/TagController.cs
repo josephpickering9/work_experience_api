@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -23,7 +24,7 @@ public class TagController : ControllerBase
         return Ok(await _tagService.GetTagsAsync(search));
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<Tag>> GetTag(int id)
     {
         try
@@ -36,7 +37,21 @@ public class TagController : ControllerBase
         }
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<Tag>> GetTag(string slug)
+    {
+        try
+        {
+            return await _tagService.GetTagBySlugAsync(slug);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<Tag>> PostTag([FromBody] CreateTag createTag)
     {
         try
@@ -55,6 +70,7 @@ public class TagController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<ActionResult<Tag>> PutTag(int id, [FromBody] CreateTag createTag)
     {
         try
@@ -72,7 +88,8 @@ public class TagController : ControllerBase
         }
     }
 
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteTag(int id)
     {
         try
@@ -93,11 +110,11 @@ public class TagController : ControllerBase
 
 public class CreateTag
 {
-    [Required] public string Title { get; set; }
+    [Required] public string Title { get; set; } = null!;
 
     [Required] public TagType Type { get; set; }
 
-    public string Icon { get; set; } = null!;
+    public string? Icon { get; set; } = null!;
 
     public string? CustomColour { get; set; } = null!;
 }

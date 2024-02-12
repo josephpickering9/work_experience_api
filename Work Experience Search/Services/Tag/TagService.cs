@@ -32,6 +32,14 @@ public class TagService : ITagService
         return tag;
     }
 
+    public async Task<Tag> GetTagBySlugAsync(string slug)
+    {
+        var tag = await _context.Tag.FirstOrDefaultAsync(t => t.Slug == slug);
+        if (tag == null) throw new NotFoundException("Tag not found.");
+
+        return tag;
+    }
+
     public async Task<Tag> CreateTagAsync(CreateTag createTag)
     {
         var tagExists = await _context.Tag
@@ -44,7 +52,8 @@ public class TagService : ITagService
             Title = createTag.Title,
             Type = createTag.Type,
             Icon = createTag.Icon,
-            CustomColour = createTag.CustomColour
+            CustomColour = createTag.CustomColour,
+            Slug = createTag.Title.ToSlug()
         };
 
         _context.Tag.Add(tag);
@@ -95,6 +104,7 @@ public class TagService : ITagService
         tag.Type = createTag.Type;
         tag.Icon = createTag.Icon;
         tag.CustomColour = createTag.CustomColour;
+        tag.Slug = createTag.Title.ToSlug();
 
         await _context.SaveChangesAsync();
 

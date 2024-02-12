@@ -11,6 +11,7 @@ public class ProjectServiceTests
 {
     private readonly Database _context;
     private readonly Mock<IFileService> _mockFileService;
+    private readonly Mock<IProjectImageService> _mockProjectImageService;
     private readonly Mock<ITagService> _mockTagService;
     private readonly ProjectService _projectService;
 
@@ -22,8 +23,9 @@ public class ProjectServiceTests
 
         _context = new Database(options);
         _mockFileService = new Mock<IFileService>();
+        _mockProjectImageService = new Mock<IProjectImageService>();
         _mockTagService = new Mock<ITagService>();
-        _projectService = new ProjectService(_context, _mockFileService.Object, _mockTagService.Object);
+        _projectService = new ProjectService(_context, _mockProjectImageService.Object, _mockTagService.Object);
 
         SeedDatabase();
 
@@ -82,8 +84,6 @@ public class ProjectServiceTests
             Description = "Test Description",
             ShortDescription = "Test Short Description",
             CompanyId = 1,
-            Image = null,
-            BackgroundImage = null,
             Year = 2021,
             Website = "https://example.com",
             Tags = new List<string> { "Test Tag" }
@@ -127,8 +127,6 @@ public class ProjectServiceTests
             Description = "Updated Description",
             ShortDescription = "Updated Short Description",
             CompanyId = 1,
-            Image = null,
-            BackgroundImage = null,
             Year = 2021,
             Website = "https://updated.com",
             Tags = new List<string> { "Updated Tag" }
@@ -258,8 +256,6 @@ public class ProjectServiceTests
             Description = description,
             ShortDescription = shortDescription,
             CompanyId = companyId,
-            Image = image,
-            BackgroundImage = backgroundImage,
             Year = year,
             Website = website,
             Tags = tags

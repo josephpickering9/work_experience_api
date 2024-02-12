@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Work_Experience_Search;
@@ -11,9 +12,11 @@ using Work_Experience_Search;
 namespace Work_Experience_Search.Migrations
 {
     [DbContext(typeof(Database))]
-    partial class DatabaseModelSnapshot : ModelSnapshot
+    [Migration("20240205220557_Slugs")]
+    partial class Slugs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -76,6 +79,9 @@ namespace Work_Experience_Search.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BackgroundImage")
+                        .HasColumnType("text");
+
                     b.Property<int?>("CompanyId")
                         .HasColumnType("integer");
 
@@ -83,12 +89,12 @@ namespace Work_Experience_Search.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Image")
+                        .HasColumnType("text");
+
                     b.Property<string>("ShortDescription")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("ShowMockup")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -109,35 +115,6 @@ namespace Work_Experience_Search.Migrations
                     b.HasIndex("CompanyId");
 
                     b.ToTable("Project");
-                });
-
-            modelBuilder.Entity("Work_Experience_Search.Models.ProjectImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Image")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("ProjectImage");
                 });
 
             modelBuilder.Entity("Work_Experience_Search.Models.Tag", b =>
@@ -193,22 +170,6 @@ namespace Work_Experience_Search.Migrations
                         .HasForeignKey("CompanyId");
 
                     b.Navigation("Company");
-                });
-
-            modelBuilder.Entity("Work_Experience_Search.Models.ProjectImage", b =>
-                {
-                    b.HasOne("Work_Experience_Search.Models.Project", "Project")
-                        .WithMany("Images")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("Work_Experience_Search.Models.Project", b =>
-                {
-                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }

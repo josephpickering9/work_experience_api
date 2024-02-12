@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Work_Experience_Search;
+namespace Work_Experience_Search.Filters;
 
 public class SwaggerFileOperationFilter : IOperationFilter
 {

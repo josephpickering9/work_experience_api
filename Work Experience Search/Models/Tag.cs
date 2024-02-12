@@ -12,11 +12,13 @@ public class Tag
 
     [Required] public TagType Type { get; set; }
 
-    public string? Icon { get; set; } = null!;
+    public string? Icon { get; set; }
 
-    public string? CustomColour { get; set; } = null!;
+    public string? CustomColour { get; set; }
 
-    [Required] [JsonIgnore] public List<Project> Projects { get; set; }
+    [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
+
+    [Required] [JsonIgnore] public List<Project> Projects { get; set; } = new();
 }
 
 public enum TagType
