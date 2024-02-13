@@ -32,7 +32,7 @@ public class ProjectServiceTests : IAsyncLifetime
         _mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync((IFormFile? file) => file != null ? "testPath" : null);
     }
-    
+
     public async Task InitializeAsync()
     {
         await ClearDatabase();
@@ -84,7 +84,7 @@ public class ProjectServiceTests : IAsyncLifetime
         Assert.NotNull(result);
         Assert.Equal(testProjectId, result.Id);
     }
-    
+
     [Fact]
     public async Task GetProjectBySlugAsync_ValidSlug_ReturnsProject()
     {
@@ -246,7 +246,7 @@ public class ProjectServiceTests : IAsyncLifetime
         _context.Tag.RemoveRange(_context.Tag);
         await _context.SaveChangesAsync();
     }
-    
+
     private async Task<Project> SaveProject(Project project)
     {
         await _context.Project.AddAsync(project);
