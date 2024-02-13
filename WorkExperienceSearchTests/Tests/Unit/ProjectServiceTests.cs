@@ -1,13 +1,15 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Work_Experience_Search.Controllers;
+using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Xunit;
 
 namespace Work_Experience_Search.Tests;
 
-public class ProjectServiceTests
+public class ProjectServiceTests : IAsyncLifetime
 {
     private readonly Database _context;
     private readonly Mock<IFileService> _mockFileService;
@@ -18,7 +20,7 @@ public class ProjectServiceTests
     public ProjectServiceTests()
     {
         var options = new DbContextOptionsBuilder<Database>()
-            .UseInMemoryDatabase("TestDatabase-" + new Guid())
+            .UseInMemoryDatabase($"TestDatabase-{Guid.NewGuid()}")
             .Options;
 
         _context = new Database(options);
@@ -27,10 +29,19 @@ public class ProjectServiceTests
         _mockTagService = new Mock<ITagService>();
         _projectService = new ProjectService(_context, _mockProjectImageService.Object, _mockTagService.Object);
 
-        SeedDatabase();
-
         _mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync((IFormFile? file) => file != null ? "testPath" : null);
+    }
+    
+    public async Task InitializeAsync()
+    {
+        await ClearDatabase();
+        await SeedDatabase();
+    }
+
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
     }
 
     [Fact]
@@ -72,6 +83,47 @@ public class ProjectServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(testProjectId, result.Id);
+    }
+    
+    [Fact]
+    public async Task GetProjectBySlugAsync_ValidSlug_ReturnsProject()
+    {
+        // Arrange
+        var validSlug = "visit-northumberland";
+        await SaveProject(CreateProject(5, "Visit Northumberland", "Visit Northumberland Description",
+            "Visit Northumberland Short Description", 1, new Guid().ToString(), new Guid().ToString(), 2021,
+            "https://visitnorthumberland.com", new List<Tag>()));
+
+        // Act
+        var result = await _projectService.GetProjectBySlugAsync(validSlug);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(validSlug, result.Slug);
+    }
+
+    [Fact]
+    public async Task GetProjectBySlugAsync_InvalidSlug_ThrowsNotFoundException()
+    {
+        // Arrange
+        var invalidSlug = "non-existent-slug";
+
+        // Act & Assert
+        await Assert.ThrowsAsync<NotFoundException>(() => _projectService.GetProjectBySlugAsync(invalidSlug));
+    }
+
+    [Fact]
+    public async Task GetRelatedProjectsAsync_WithCommonTags_ReturnsRelatedProjects()
+    {
+        // Arrange
+        var projectIdWithTags = 1; // Use an ID for a project that has tags and related projects
+
+        // Act
+        var result = await _projectService.GetRelatedProjectsAsync(projectIdWithTags);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Any()); // Ensure there are related projects
     }
 
     [Fact]
@@ -179,15 +231,22 @@ public class ProjectServiceTests
         Assert.Null(projectInDb);
     }
 
-    private void SeedDatabase()
+    private async Task SeedDatabase()
     {
         if (!_context.Project.Any())
         {
             _context.Project.AddRange(GetTestProjects());
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 
+    private async Task ClearDatabase()
+    {
+        _context.Project.RemoveRange(_context.Project);
+        _context.Tag.RemoveRange(_context.Tag);
+        await _context.SaveChangesAsync();
+    }
+    
     private async Task<Project> SaveProject(Project project)
     {
         await _context.Project.AddAsync(project);
@@ -258,7 +317,8 @@ public class ProjectServiceTests
             CompanyId = companyId,
             Year = year,
             Website = website,
-            Tags = tags
+            Tags = tags,
+            Slug = title.ToSlug()
         };
     }
 }
