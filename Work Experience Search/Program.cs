@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Auth0.AspNetCore.Authentication;
+using dotenv.net;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,8 @@ using Work_Experience_Search;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
+
+DotEnv.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
