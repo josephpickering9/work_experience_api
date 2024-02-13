@@ -53,8 +53,8 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddAuth0WebAppAuthentication(options =>
 {
-    options.Domain = builder.Configuration["Auth0Domain"] ?? "";
-    options.ClientId = builder.Configuration["Auth0ClientId"] ?? "";
+    options.Domain = builder.Configuration["Auth0:Domain"] ?? "";
+    options.ClientId = builder.Configuration["Auth0:ClientId"] ?? "";
 });
 builder.Services.AddAuthentication(options =>
 {
@@ -62,8 +62,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    options.Authority = builder.Configuration["Auth0Domain"];
-    options.Audience = builder.Configuration["Auth0Audience"];
+    options.Authority = builder.Configuration["Auth0:Domain"];
+    options.Audience = builder.Configuration["Auth0:Audience"];
 });
 
 var app = builder.Build();

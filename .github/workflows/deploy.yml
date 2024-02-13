@@ -162,10 +162,10 @@ jobs:
             cd "$RELEASE_PATH"
             echo '
             DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}
-            Auth0Domain=${{ secrets.AUTH0_DOMAIN }}
-            Auth0ClientId=${{ secrets.AUTH0_CLIENT_ID }}
-            Auth0ClientSecret=${{ secrets.AUTH0_CLIENT_SECRET }}
-            Auth0Audience=${{ secrets.AUTH0_AUDIENCE }}' > .env  
+            Auth0:Domain=${{ secrets.AUTH0_DOMAIN }}
+            Auth0:ClientId=${{ secrets.AUTH0_CLIENT_ID }}
+            Auth0:ClientSecret=${{ secrets.AUTH0_CLIENT_SECRET }}
+            Auth0:Audience=${{ secrets.AUTH0_AUDIENCE }}' > .env  
             dotnet publish -c Release
             dotnet ef database update
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
