@@ -9,9 +9,8 @@ using Xunit;
 
 namespace Work_Experience_Search.Tests;
 
-public class ProjectServiceTests : IAsyncLifetime
+public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
 {
-    private readonly Database _context;
     private readonly Mock<IFileService> _mockFileService;
     private readonly Mock<IProjectImageService> _mockProjectImageService;
     private readonly Mock<ITagService> _mockTagService;
@@ -19,11 +18,6 @@ public class ProjectServiceTests : IAsyncLifetime
 
     public ProjectServiceTests()
     {
-        var options = new DbContextOptionsBuilder<Database>()
-            .UseInMemoryDatabase($"TestDatabase-{Guid.NewGuid()}")
-            .Options;
-
-        _context = new Database(options);
         _mockFileService = new Mock<IFileService>();
         _mockProjectImageService = new Mock<IProjectImageService>();
         _mockTagService = new Mock<ITagService>();
@@ -313,55 +307,5 @@ public class ProjectServiceTests : IAsyncLifetime
                 "A website for taxigoat", company.Id, 2021,
                 "https://taxigoat.co.uk/", [xamarinFormsTag])
         ];
-    }
-
-    private static Tag CreateTag(int id, string title, TagType type, List<Project>? projects = null)
-    {
-        return new Tag
-        {
-            Id = id,
-            Title = title,
-            Type = type,
-            Icon = "testIcon",
-            CustomColour = null,
-            Projects = projects ?? new List<Project>()
-        };
-    }
-
-    private static Company CreateCompany(int id, string name, string description, string logo, string website)
-    {
-        return new Company
-        {
-            Id = id,
-            Name = name,
-            Description = description,
-            Logo = logo,
-            Website = website
-        };
-    }
-
-    private static Project CreateProject(
-        int id,
-        string title = "Title",
-        string description = "Description",
-        string shortDescription = "Short Description",
-        int companyId = 1,
-        int year = 2020,
-        string website = null!,
-        List<Tag> tags = null!
-    )
-    {
-        return new Project
-        {
-            Id = id,
-            Title = title,
-            Description = description,
-            ShortDescription = shortDescription,
-            CompanyId = companyId,
-            Year = year,
-            Website = website,
-            Tags = tags,
-            Slug = title.ToSlug()
-        };
     }
 }
