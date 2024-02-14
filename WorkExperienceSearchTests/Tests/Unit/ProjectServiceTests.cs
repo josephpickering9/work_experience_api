@@ -50,11 +50,11 @@ public class ProjectServiceTests : IAsyncLifetime
         // Arrange is done in the constructor
 
         // Act
-        var result = await _projectService.GetProjectsAsync(null);
+        var result = (await _projectService.GetProjectsAsync(null)).ToList();
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(3, ((List<Project>)result).Count); // Assuming GetTestProjects() returns 3 projects
+        Assert.Equal(3, result.Count); // Assuming GetTestProjects() returns 3 projects
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class ProjectServiceTests : IAsyncLifetime
         // Arrange is done in the constructor
 
         // Act
-        var result = await _projectService.GetProjectsAsync("ViSIT");
+        var result = (await _projectService.GetProjectsAsync("ViSIT")).ToList();
 
         // Assert
         Assert.NotNull(result);
@@ -75,7 +75,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task GetProjectAsync_ValidId_ReturnsProject()
     {
         // Arrange
-        var testProjectId = 1; // Assuming this ID exists in GetTestProjects()
+        const int testProjectId = 1; // Assuming this ID exists in GetTestProjects()
 
         // Act
         var result = await _projectService.GetProjectAsync(testProjectId);
@@ -89,9 +89,9 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task GetProjectBySlugAsync_ValidSlug_ReturnsProject()
     {
         // Arrange
-        var validSlug = "visit-northumberland";
+        const string validSlug = "visit-northumberland";
         await SaveProject(CreateProject(5, "Visit Northumberland", "Visit Northumberland Description",
-            "Visit Northumberland Short Description", 1, new Guid().ToString(), new Guid().ToString(), 2021,
+            "Visit Northumberland Short Description", 1, 2021,
             "https://visitnorthumberland.com", new List<Tag>()));
 
         // Act
@@ -106,7 +106,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task GetProjectBySlugAsync_InvalidSlug_ThrowsNotFoundException()
     {
         // Arrange
-        var invalidSlug = "non-existent-slug";
+        const string invalidSlug = "non-existent-slug";
 
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() => _projectService.GetProjectBySlugAsync(invalidSlug));
@@ -116,7 +116,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task GetRelatedProjectsAsync_WithCommonTags_ReturnsRelatedProjects()
     {
         // Arrange
-        var projectIdWithTags = 1; // Use an ID for a project that has tags and related projects
+        const int projectIdWithTags = 1; // Use an ID for a project that has tags and related projects
 
         // Act
         var result = await _projectService.GetRelatedProjectsAsync(projectIdWithTags);
@@ -124,6 +124,41 @@ public class ProjectServiceTests : IAsyncLifetime
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Any()); // Ensure there are related projects
+    }
+
+    [Fact]
+    public async Task GetRelatedProjectsAsync_GetsProjectsWithMostRelatedTags()
+    {
+        // Arrange
+        await ClearDatabase();
+
+        var tag1 = CreateTag(1, "Tag 1", TagType.Default);
+        var tag2 = CreateTag(2, "Tag 2", TagType.Backend);
+        var tag3 = CreateTag(3, "Tag 3", TagType.Frontend);
+        var tag4 = CreateTag(4, "Tag 4", TagType.DevOps);
+        var tag5 = CreateTag(5, "Tag 5", TagType.Data);
+        var tag6 = CreateTag(6, "Tag 6", TagType.Mobile);
+
+        var mainProject = await SaveProject(CreateProject(1, "Project 1", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
+
+        var relatedProject1 = await SaveProject(CreateProject(2, "Project 2", tags: [tag1, tag2]));
+        var relatedProject2 = await SaveProject(CreateProject(3, "Project 3", tags: [tag1, tag2, tag3]));
+        var relatedProject3 = await SaveProject(CreateProject(4, "Project 4", tags: [tag1, tag2, tag3, tag4]));
+        var relatedProject4 = await SaveProject(CreateProject(5, "Project 5", tags: [tag1, tag2, tag3, tag4, tag5]));
+        var relatedProject5 =
+            await SaveProject(CreateProject(6, "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
+
+        // Act
+        var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ToList();
+
+        // Assert
+        Assert.NotNull(relatedProjects);
+        Assert.Equal(3, relatedProjects.Count);
+        Assert.DoesNotContain(relatedProjects, p => p.Id == relatedProject1.Id);
+        Assert.DoesNotContain(relatedProjects, p => p.Id == relatedProject2.Id);
+        Assert.Contains(relatedProjects, p => p.Id == relatedProject3.Id);
+        Assert.Contains(relatedProjects, p => p.Id == relatedProject4.Id);
+        Assert.Contains(relatedProjects, p => p.Id == relatedProject5.Id);
     }
 
     [Fact]
@@ -138,7 +173,7 @@ public class ProjectServiceTests : IAsyncLifetime
             CompanyId = 1,
             Year = 2021,
             Website = "https://example.com",
-            Tags = new List<string> { "Test Tag" }
+            Tags = ["Test Tag"]
         };
 
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
@@ -170,8 +205,8 @@ public class ProjectServiceTests : IAsyncLifetime
         // Arrange
         var tag = CreateTag(5, "Updated Tag", TagType.Backend);
         var existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description",
-            "Test Short Description", 1, new Guid().ToString(), new Guid().ToString(), 2021,
-            "https://example.com", new List<Tag> { tag }));
+            "Test Short Description", 1, 2021,
+            "https://example.com", [tag]));
 
         var updateData = new CreateProject
         {
@@ -216,9 +251,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task DeleteProjectAsync_ExistingProject_DeletesProject()
     {
         // Arrange
-        var existingProject = await SaveProject(CreateProject(6, "Test Delete Project", "Test Description",
-            "Test Short Description", 1, new Guid().ToString(), new Guid().ToString(), 2021,
-            "https://example.com", new List<Tag> { CreateTag(6, "Updated Tag", TagType.Backend) }));
+        var existingProject = await SaveProject(CreateProject(6, "Test Delete Project"));
 
         // Act
         var result = await _projectService.DeleteProjectAsync(existingProject.Id);
@@ -264,20 +297,22 @@ public class ProjectServiceTests : IAsyncLifetime
             "https://drummondcentral.co.uk/wp-content/uploads/2019/10/DC-Logo-White.png",
             "https://drummondcentral.co.uk/");
 
-        return new List<Project>
-        {
+        return
+        [
             CreateProject(1, "Visit Northumberland",
                 "A website for Visit Northumberland using C# and ASP.NET Core MVC.",
-                "A website for Visit Northumberland", company.Id, new Guid().ToString(), new Guid().ToString(),
-                2021, "https://visitnorthumberland.com/", new List<Tag> { cSharpTag, aspNetCoreTag }),
+                "A website for Visit Northumberland", company.Id,
+                2021, "https://visitnorthumberland.com/", [cSharpTag, aspNetCoreTag]),
+
             CreateProject(2, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
-                "A website for BeatCovidNE", company.Id, new Guid().ToString(), new Guid().ToString(), 2021,
-                "https://beatcovidne.co.uk/", new List<Tag> { cSharpTag, aspNetCoreTag }),
+                "A website for BeatCovidNE", company.Id, 2021,
+                "https://beatcovidne.co.uk/", [cSharpTag, aspNetCoreTag]),
+
             CreateProject(3, "taxigoat",
                 "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.",
-                "A website for taxigoat", company.Id, new Guid().ToString(), new Guid().ToString(), 2021,
-                "https://taxigoat.co.uk/", new List<Tag> { xamarinFormsTag })
-        };
+                "A website for taxigoat", company.Id, 2021,
+                "https://taxigoat.co.uk/", [xamarinFormsTag])
+        ];
     }
 
     private static Tag CreateTag(int id, string title, TagType type, List<Project>? projects = null)
@@ -305,8 +340,16 @@ public class ProjectServiceTests : IAsyncLifetime
         };
     }
 
-    private static Project CreateProject(int id, string title, string description, string shortDescription,
-        int companyId, string image, string backgroundImage, int year, string website, List<Tag> tags)
+    private static Project CreateProject(
+        int id,
+        string title = "Title",
+        string description = "Description",
+        string shortDescription = "Short Description",
+        int companyId = 1,
+        int year = 2020,
+        string website = null!,
+        List<Tag> tags = null!
+    )
     {
         return new Project
         {

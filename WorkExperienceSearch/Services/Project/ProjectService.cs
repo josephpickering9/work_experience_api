@@ -26,7 +26,8 @@ public class ProjectService : IProjectService
 
         if (!string.IsNullOrEmpty(search))
             projects = projects.Where(p =>
-                p.Title.ToLower().Contains(search.ToLower()) || p.Description.ToLower().Contains(search.ToLower()));
+                p.Title.Contains(search, StringComparison.CurrentCultureIgnoreCase) ||
+                p.Description.Contains(search, StringComparison.CurrentCultureIgnoreCase));
 
         return await projects.OrderByDescending(p => p.Year).ToListAsync();
     }
@@ -44,7 +45,6 @@ public class ProjectService : IProjectService
 
     public async Task<Project> GetProjectBySlugAsync(string slug)
     {
-        var test = _context.Project.ToList();
         var project = await _context.Project
             .Include(p => p.Tags)
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
@@ -83,7 +83,7 @@ public class ProjectService : IProjectService
     public async Task<Project> CreateProjectAsync(CreateProject createProject)
     {
         var projectExists = await _context.Project
-            .AnyAsync(p => p.Title.ToLower() == createProject.Title.ToLower());
+            .AnyAsync(p => p.Title.Equals(createProject.Title, StringComparison.CurrentCultureIgnoreCase));
 
         if (projectExists) throw new ConflictException("A project with the same title already exists");
 
@@ -97,7 +97,7 @@ public class ProjectService : IProjectService
             Website = createProject.Website,
             ShowMockup = createProject.ShowMockup,
             Slug = createProject.Title.ToSlug(),
-            Tags = new List<Tag>()
+            Tags = []
         };
 
         if (createProject.Tags.Count > 0) project.Tags = await _tagService.SyncTagsAsync(createProject.Tags);
@@ -118,7 +118,8 @@ public class ProjectService : IProjectService
         var project = await GetProjectAsync(id);
 
         var projectExists = await _context.Project
-            .AnyAsync(p => p.Id != project.Id && p.Title.ToLower() == createProject.Title.ToLower());
+            .AnyAsync(p =>
+                p.Id != project.Id && p.Title.Equals(createProject.Title, StringComparison.CurrentCultureIgnoreCase));
 
         if (projectExists) throw new ConflictException("A project with the same title already exists");
 
@@ -159,18 +160,5 @@ public class ProjectService : IProjectService
         await _context.SaveChangesAsync();
 
         return project;
-    }
-
-    private class TagComparer : IEqualityComparer<Tag>
-    {
-        public bool Equals(Tag x, Tag y)
-        {
-            return x.Id == y.Id;
-        }
-
-        public int GetHashCode(Tag obj)
-        {
-            return obj.Id.GetHashCode();
-        }
     }
 }

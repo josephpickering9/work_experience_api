@@ -9,11 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Services;
 using Xunit;
 
 namespace Work_Experience_Search.Tests;
 
-public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
+public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
     private readonly IConfigurationSection _auth0Settings;
     private readonly HttpClient _authenticatedClient;
@@ -32,10 +33,21 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         _authenticatedClient = GetAuthenticatedClient().GetAwaiter().GetResult();
     }
 
+    public async Task InitializeAsync()
+    {
+        await ClearDatabase();
+    }
+
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
+    }
+
     [Fact]
     public async Task GetProjects_ReturnsProjects()
     {
         // Arrange
+        await CreateProjectAsync(1);
         var httpResponse = await _client.GetAsync("/project");
 
         // Act
@@ -52,7 +64,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task GetProject_ExistingId_ReturnsProject()
     {
         // Arrange
-        var testProjectId = 10;
+        const int testProjectId = 10;
         var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -76,13 +88,71 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task GetProject_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        var nonExistingProjectId = 999;
+        const int nonExistingProjectId = 999;
 
         // Act
         var httpResponse = await _client.GetAsync($"/project/{nonExistingProjectId}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProject_ExistingSlug_ReturnsProject()
+    {
+        // Arrange
+        const int testProjectId = 11;
+        var expectedProject = await CreateProjectAsync(testProjectId);
+
+        // Act
+        var httpResponse = await _client.GetAsync($"/project/slug/{expectedProject.Slug}");
+
+        // Assert
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+
+        Assert.NotNull(actualProject);
+        Assert.Equal(expectedProject.Id, actualProject.Id);
+        Assert.Equal(expectedProject.Title, actualProject.Title);
+        Assert.Equal(expectedProject.Description, actualProject.Description);
+        Assert.Equal(expectedProject.Company, actualProject.Company);
+        Assert.Equal(expectedProject.Website, actualProject.Website);
+        Assert.Equal(expectedProject.Tags.Count, actualProject.Tags.Count);
+    }
+
+    [Fact]
+    public async Task GetProject_NonExistingSlug_ReturnsNotFound()
+    {
+        // Arrange
+        const string nonExistingProjectSlug = "non-existing-slug";
+
+        // Act
+        var httpResponse = await _client.GetAsync($"/project/slug/{nonExistingProjectSlug}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetRelatedProjects_ExistingId_ReturnsProjects()
+    {
+        // Arrange
+        var tags = new List<string> { "Tag1", "Tag2" };
+        var expectedProject = await CreateProjectAsync(1, tags: tags);
+        var relatedProject = await CreateProjectAsync(2, tags: tags);
+
+        // Act
+        var httpResponse = await _client.GetAsync($"/project/{expectedProject.Id}/related");
+
+        // Assert
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProjects = JsonConvert.DeserializeObject<List<Project>>(stringResponse);
+
+        Assert.NotNull(actualProjects);
+        Assert.NotEmpty(actualProjects);
+        Assert.Contains(relatedProject.Id, actualProjects.Select(p => p.Id));
     }
 
     [Fact]
@@ -97,8 +167,8 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             CompanyId = 1,
             Year = 2021,
             Website = "https://example.com",
-            Tags = new List<string> { "Tag1", "Tag2" },
-            Images = new List<CreateProjectImage>()
+            Tags = ["Tag1", "Tag2"],
+            Images = []
         };
 
         var content = GetMultipartFormDataContent(newProject);
@@ -155,7 +225,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             CompanyId = 1,
             Year = 2021,
             Website = "https://example.com",
-            Tags = new List<string> { "Tag1", "Tag2" }
+            Tags = ["Tag1", "Tag2"]
         };
 
         var content = GetMultipartFormDataContent(newProject);
@@ -179,7 +249,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             CompanyId = 1,
             Year = 2021,
             Website = "https://example.com",
-            Tags = new List<string> { "Tag1", "Tag2" }
+            Tags = ["Tag1", "Tag2"]
         };
 
         var content = GetMultipartFormDataContent(duplicateProject);
@@ -209,7 +279,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task PutProject_ExistingId_UpdatesProject()
     {
         // Arrange
-        var testProjectId = 12;
+        const int testProjectId = 13;
         var existingProject = await CreateProjectAsync(testProjectId);
 
         var updateProject = new CreateProject
@@ -220,7 +290,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             CompanyId = 1,
             Year = 2021,
             Website = "https://updated-example.com",
-            Tags = new List<string> { "UpdatedTag1", "UpdatedTag2" }
+            Tags = ["UpdatedTag1", "UpdatedTag2"]
         };
 
         var content = GetMultipartFormDataContent(updateProject);
@@ -269,7 +339,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task PutProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
-        var testProjectId = 13;
+        const int testProjectId = 14;
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -281,7 +351,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             CompanyId = 1,
             Year = 2021,
             Website = "https://updated-example.com",
-            Tags = new List<string> { "UpdatedTag1", "UpdatedTag2" }
+            Tags = ["UpdatedTag1", "UpdatedTag2"]
         };
 
         var content = GetMultipartFormDataContent(updateProject);
@@ -297,7 +367,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task DeleteProject_ExistingId_DeletesProject()
     {
         // Arrange
-        var testProjectId = 14;
+        const int testProjectId = 15;
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -318,7 +388,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
     public async Task DeleteProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
-        var testProjectId = 15;
+        const int testProjectId = 16;
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -326,6 +396,16 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    private async Task ClearDatabase()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+
+        context.Project.RemoveRange(context.Project);
+        context.Tag.RemoveRange(context.Tag);
+        await context.SaveChangesAsync();
     }
 
     private async Task<Project> CreateProjectAsync(
@@ -336,7 +416,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         int companyId = 1,
         int year = 2021,
         string website = "https://example.com",
-        List<Tag>? tags = null
+        List<string>? tags = null
     )
     {
         var project = new Project
@@ -348,18 +428,26 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
             CompanyId = companyId,
             Year = year,
             Website = website,
-            Tags = tags ?? new List<Tag>()
+            Tags = []
         };
 
         using var scope = _factory.Services.CreateScope();
+
+        if (tags?.Count > 0)
+        {
+            var tagService = scope.ServiceProvider.GetRequiredService<ITagService>();
+            project.Tags = await tagService.SyncTagsAsync(tags);
+        }
+
         var context = scope.ServiceProvider.GetRequiredService<Database>();
 
         context.Project.Add(project);
         await context.SaveChangesAsync();
+
         return project;
     }
 
-    private MultipartFormDataContent GetMultipartFormDataContent<T>(T data) where T : class
+    private static MultipartFormDataContent GetMultipartFormDataContent<T>(T data) where T : class
     {
         var content = new MultipartFormDataContent();
 
@@ -377,10 +465,8 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
                 content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
             else if (value is int intValue)
                 content.Add(new StringContent(intValue.ToString()), property.Name);
-            else if (value is object)
-                content.Add(new StringContent(JsonConvert.SerializeObject(value)), property.Name);
             else
-                throw new Exception($"Unsupported type: {value.GetType()}");
+                content.Add(new StringContent(JsonConvert.SerializeObject(value)), property.Name);
         }
 
         return content;

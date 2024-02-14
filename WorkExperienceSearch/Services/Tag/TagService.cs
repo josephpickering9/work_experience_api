@@ -68,7 +68,9 @@ public class TagService : ITagService
 
         foreach (var tag in tags)
         {
-            var newTag = await _context.Tag.FirstOrDefaultAsync(t => t.Title.ToLower() == tag.ToLower());
+            var newTag =
+                await _context.Tag.FirstOrDefaultAsync(t =>
+                    t.Title.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
 
             if (newTag == null)
             {
