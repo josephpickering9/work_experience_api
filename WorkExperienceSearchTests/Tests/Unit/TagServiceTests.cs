@@ -1,25 +1,19 @@
-using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Tests.Unit;
 using Xunit;
 
-namespace Work_Experience_Search.Tests;
+namespace WorkExperienceSearchTests.Tests.Unit;
 
 public class TagServiceTests : BaseServiceTests, IAsyncLifetime
 {
-    private readonly Database _context;
     private readonly TagService _tagService;
 
     public TagServiceTests()
     {
-        var options = new DbContextOptionsBuilder<Database>()
-            .UseInMemoryDatabase($"TestDatabase-{Guid.NewGuid()}")
-            .Options;
-
-        _context = new Database(options);
-        _tagService = new TagService(_context);
+        _tagService = new TagService(Context);
     }
     
     public async Task InitializeAsync()
@@ -156,7 +150,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         Assert.NotNull(result);
         Assert.Equal(tagId, result.Id);
 
-        var tagInDb = await _context.Tag.FindAsync(tagId);
+        var tagInDb = await Context.Tag.FindAsync(tagId);
         Assert.Null(tagInDb);
     }
     
@@ -172,18 +166,11 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     
     private async Task SeedDatabase()
     {
-        if (!_context.Tag.Any())
+        if (!Context.Tag.Any())
         {
-            _context.Tag.AddRange(GetTestTags());
-            await _context.SaveChangesAsync();
+            Context.Tag.AddRange(GetTestTags());
+            await Context.SaveChangesAsync();
         }
-    }
-    
-    private async Task ClearDatabase()
-    {
-        _context.Project.RemoveRange(_context.Project);
-        _context.Tag.RemoveRange(_context.Tag);
-        await _context.SaveChangesAsync();
     }
     
     private static List<Tag> GetTestTags()

@@ -1,29 +1,27 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Tests.Unit;
 using Xunit;
 
-namespace Work_Experience_Search.Tests;
+namespace WorkExperienceSearchTests.Tests.Unit;
 
 public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
 {
-    private readonly Mock<IFileService> _mockFileService;
-    private readonly Mock<IProjectImageService> _mockProjectImageService;
     private readonly Mock<ITagService> _mockTagService;
     private readonly ProjectService _projectService;
 
     public ProjectServiceTests()
     {
-        _mockFileService = new Mock<IFileService>();
-        _mockProjectImageService = new Mock<IProjectImageService>();
+        var mockFileService = new Mock<IFileService>();
+        var mockProjectImageService = new Mock<IProjectImageService>();
         _mockTagService = new Mock<ITagService>();
-        _projectService = new ProjectService(_context, _mockProjectImageService.Object, _mockTagService.Object);
+        _projectService = new ProjectService(Context, mockProjectImageService.Object, _mockTagService.Object);
 
-        _mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
+        mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync((IFormFile? file) => file != null ? "testPath" : null);
     }
 
@@ -185,7 +183,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         Assert.Equal(newProject.Year, result.Year);
         Assert.Equal(newProject.Website, result.Website);
 
-        var projectInDb = await _context.Project.FindAsync(result.Id);
+        var projectInDb = await Context.Project.FindAsync(result.Id);
         Assert.NotNull(projectInDb);
         Assert.Equal(newProject.Title, projectInDb.Title);
         Assert.NotNull(projectInDb.Tags);
@@ -228,7 +226,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         Assert.Equal(updateData.Year, result.Year);
         Assert.Equal(updateData.Website, result.Website);
 
-        var projectInDb = await _context.Project.FindAsync(existingProject.Id);
+        var projectInDb = await Context.Project.FindAsync(existingProject.Id);
         Assert.NotNull(projectInDb);
         Assert.Equal(updateData.Title, projectInDb.Title);
         Assert.Equal(updateData.Description, projectInDb.Description);
@@ -254,30 +252,23 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         Assert.NotNull(result);
         Assert.Equal(existingProject.Id, result.Id);
 
-        var projectInDb = await _context.Project.FindAsync(existingProject.Id);
+        var projectInDb = await Context.Project.FindAsync(existingProject.Id);
         Assert.Null(projectInDb);
     }
 
     private async Task SeedDatabase()
     {
-        if (!_context.Project.Any())
+        if (!Context.Project.Any())
         {
-            _context.Project.AddRange(GetTestProjects());
-            await _context.SaveChangesAsync();
+            Context.Project.AddRange(GetTestProjects());
+            await Context.SaveChangesAsync();
         }
     }
-
-    private async Task ClearDatabase()
-    {
-        _context.Project.RemoveRange(_context.Project);
-        _context.Tag.RemoveRange(_context.Tag);
-        await _context.SaveChangesAsync();
-    }
-
+    
     private async Task<Project> SaveProject(Project project)
     {
-        await _context.Project.AddAsync(project);
-        await _context.SaveChangesAsync();
+        await Context.Project.AddAsync(project);
+        await Context.SaveChangesAsync();
         return project;
     }
 

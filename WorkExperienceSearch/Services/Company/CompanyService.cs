@@ -45,7 +45,7 @@ public class CompanyService : ICompanyService
     public async Task<Company> CreateCompanyAsync(CreateCompany createCompany)
     {
         var companyExists = await _context.Company
-            .AnyAsync(p => p.Name.ToLower() == createCompany.Name.ToLower());
+            .AnyAsync(p => p.Name.Equals(createCompany.Name, StringComparison.CurrentCultureIgnoreCase));
 
         if (companyExists) throw new ConflictException("A company with the same title already exists");
 

@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
 
-namespace Work_Experience_Search.Tests;
+namespace Work_Experience_Search.Tests.Unit;
 
 public class BaseServiceTests
 {
-    protected readonly Database _context;
+    protected readonly Database Context;
 
     protected BaseServiceTests()
     {
@@ -13,7 +13,16 @@ public class BaseServiceTests
             .UseInMemoryDatabase($"TestDatabase-{Guid.NewGuid()}")
             .Options;
 
-        _context = new Database(options);
+        Context = new Database(options);
+    }
+    
+    protected async Task ClearDatabase()
+    {
+        Context.Project.RemoveRange(Context.Project);
+        Context.Tag.RemoveRange(Context.Tag);
+        Context.Company.RemoveRange(Context.Company);
+        Context.ProjectImage.RemoveRange(Context.ProjectImage);
+        await Context.SaveChangesAsync();
     }
     
     protected static Tag CreateTag(int id, string title, TagType type, List<Project>? projects = null)
