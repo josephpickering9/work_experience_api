@@ -95,7 +95,11 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         await context.SaveChangesAsync();
 
         if (createProject.Images.Count > 0)
-            project.Images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+        {
+            var images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+            project.Images = images.Data;
+            await context.SaveChangesAsync();
+        }
 
         await context.SaveChangesAsync();
 
@@ -129,7 +133,8 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
         if (createProject.Images.Count > 0)
         {
-            project.Images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+            var images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+            project.Images = images.Data;
             await context.SaveChangesAsync();
         }
 
@@ -138,7 +143,6 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
         return new Success<Project>(project);
     }
-
 
     public async Task<Result<Project>> DeleteProjectAsync(int id)
     {
