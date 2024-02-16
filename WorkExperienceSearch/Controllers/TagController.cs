@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 
@@ -20,84 +19,41 @@ public class TagController(ITagService tagService) : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Tag>> GetTag(int id)
     {
-        try
-        {
-            return await tagService.GetTagAsync(id);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
+        var result = await tagService.GetTagAsync(id);
+        return result.ToResponse();
     }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<Tag>> GetTag(string slug)
     {
-        try
-        {
-            return await tagService.GetTagBySlugAsync(slug);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
+        var result = await tagService.GetTagBySlugAsync(slug);
+        return result.ToResponse();
     }
 
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<Tag>> PostTag([FromBody] CreateTag createTag)
     {
-        try
-        {
-            var tag = await tagService.CreateTagAsync(createTag);
-            return CreatedAtAction("GetTag", new { id = tag.Id }, tag);
-        }
-        catch (ConflictException e)
-        {
-            return Conflict(e.Message);
-        }
-        catch (InvalidOperationException e)
-        {
-            return BadRequest(e.Message);
-        }
+        var result = await tagService.CreateTagAsync(createTag);
+        if (!result.IsSuccess) return result.ToErrorResponse();
+
+        return CreatedAtAction("GetTag", new { id = result.Data.Id }, result.Data);
     }
 
     [HttpPut("{id:int}")]
     [Authorize]
     public async Task<ActionResult<Tag>> PutTag(int id, [FromBody] CreateTag createTag)
     {
-        try
-        {
-            var tag = await tagService.UpdateTagAsync(id, createTag);
-            return CreatedAtAction("GetTag", new { id = tag.Id }, tag);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (InvalidOperationException e)
-        {
-            return BadRequest(e.Message);
-        }
+        var result = await tagService.UpdateTagAsync(id, createTag);
+        return result.ToResponse();
     }
 
     [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteTag(int id)
     {
-        try
-        {
-            await tagService.DeleteTagAsync(id);
-            return NoContent();
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var result = await tagService.DeleteTagAsync(id);
+        return result.ToResponse();
     }
 }
 

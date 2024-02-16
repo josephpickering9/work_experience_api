@@ -8,27 +8,21 @@ namespace Work_Experience_Search.Services;
 public class ProjectService(Database context, IProjectImageService projectImageService, ITagService tagService)
     : IProjectService
 {
-    private readonly Database _context = context;
-    private readonly IProjectImageService _projectImageService = projectImageService;
-    private readonly ITagService _tagService = tagService;
-
     public async Task<IEnumerable<Project>> GetProjectsAsync(string? search)
     {
-        IQueryable<Project> projects = _context.Project
+        IQueryable<Project> projects = context.Project
             .Include(p => p.Tags)
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0));
 
         if (!string.IsNullOrEmpty(search))
-            projects = projects.Where(p =>
-                p.Title.Contains(search, StringComparison.CurrentCultureIgnoreCase) ||
-                p.Description.Contains(search, StringComparison.CurrentCultureIgnoreCase));
+            projects = projects.Where(p => EF.Functions.ILike(p.Title, search) || EF.Functions.ILike(p.ShortDescription, search));
 
         return await projects.OrderByDescending(p => p.Year).ToListAsync();
     }
 
     public async Task<Project> GetProjectAsync(int id)
     {
-        var project = await _context.Project
+        var project = await context.Project
             .Include(p => p.Tags)
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
             .SingleOrDefaultAsync(p => p.Id == id);
@@ -39,7 +33,7 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
     public async Task<Project> GetProjectBySlugAsync(string slug)
     {
-        var project = await _context.Project
+        var project = await context.Project
             .Include(p => p.Tags)
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
             .FirstOrDefaultAsync(p => p.Slug == slug);
@@ -50,14 +44,14 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
     public async Task<IEnumerable<Project>> GetRelatedProjectsAsync(int projectId)
     {
-        var projectTags = _context.Project
+        var projectTags = context.Project
             .Include(pt => pt.Tags)
             .Where(pt => pt.Id == projectId)
             .SelectMany(pt => pt.Tags.Select(t => t.Id));
 
         if (!projectTags.Any()) return new List<Project>();
 
-        var relatedProjects = await _context.Project
+        var relatedProjects = await context.Project
             .Where(p => p.Id != projectId && p.Tags.Any(t => projectTags.Contains(t.Id)))
             .Select(p => new
             {
@@ -76,9 +70,7 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
     public async Task<Project> CreateProjectAsync(CreateProject createProject)
     {
-        var projectExists = await _context.Project
-            .AnyAsync(p => p.Title.Equals(createProject.Title, StringComparison.CurrentCultureIgnoreCase));
-
+        var projectExists = await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, createProject.Title));
         if (projectExists) throw new ConflictException("A project with the same title already exists");
 
         var project = new Project
@@ -94,15 +86,19 @@ public class ProjectService(Database context, IProjectImageService projectImageS
             Tags = []
         };
 
-        if (createProject.Tags.Count > 0) project.Tags = await _tagService.SyncTagsAsync(createProject.Tags);
+        if (createProject.Tags.Count > 0)
+        {
+            var tags = await tagService.SyncTagsAsync(createProject.Tags);
+            project.Tags = tags.Data;
+        }
 
-        _context.Project.Add(project);
-        await _context.SaveChangesAsync();
+        context.Project.Add(project);
+        await context.SaveChangesAsync();
 
         if (createProject.Images.Count > 0)
-            project.Images = await _projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+            project.Images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return project;
     }
@@ -110,11 +106,9 @@ public class ProjectService(Database context, IProjectImageService projectImageS
     public async Task<Project> UpdateProjectAsync(int id, CreateProject createProject)
     {
         var project = await GetProjectAsync(id);
+        if (project == null) throw new NotFoundException("Project not found.");
 
-        var projectExists = await _context.Project
-            .AnyAsync(p =>
-                p.Id != project.Id && p.Title.Equals(createProject.Title, StringComparison.CurrentCultureIgnoreCase));
-
+        var projectExists = await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title));
         if (projectExists) throw new ConflictException("A project with the same title already exists");
 
         project.Title = createProject.Title;
@@ -128,18 +122,19 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
         if (createProject.Tags.Count > 0)
         {
-            project.Tags = await _tagService.SyncTagsAsync(createProject.Tags);
-            await _context.SaveChangesAsync();
+            var tags = await tagService.SyncTagsAsync(createProject.Tags);
+            project.Tags = tags.Data;
+            await context.SaveChangesAsync();
         }
 
         if (createProject.Images.Count > 0)
         {
-            project.Images = await _projectImageService.SyncProjectImagesAsync(project, createProject.Images);
-            await _context.SaveChangesAsync();
+            project.Images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+            await context.SaveChangesAsync();
         }
 
-        _context.Entry(project).State = EntityState.Modified;
-        await _context.SaveChangesAsync();
+        context.Entry(project).State = EntityState.Modified;
+        await context.SaveChangesAsync();
 
         return project;
     }
@@ -147,11 +142,11 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
     public async Task<Project> DeleteProjectAsync(int id)
     {
-        var project = await _context.Project.FindAsync(id);
+        var project = await context.Project.FindAsync(id);
         if (project == null) throw new NotFoundException("Project not found.");
 
-        _context.Project.Remove(project);
-        await _context.SaveChangesAsync();
+        context.Project.Remove(project);
+        await context.SaveChangesAsync();
 
         return project;
     }
