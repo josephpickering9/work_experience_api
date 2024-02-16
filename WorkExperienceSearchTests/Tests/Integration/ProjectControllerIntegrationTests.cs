@@ -34,7 +34,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         var httpResponse = await Client.GetAsync("/project");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var response = JsonConvert.DeserializeObject<List<Project>>(stringResponse);
+        var response = GetJsonContent<List<Project>>(stringResponse);
 
         // Assert
         Assert.NotNull(response);
@@ -56,7 +56,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+        var actualProject = GetJsonContent<Project>(stringResponse);
 
         Assert.NotNull(actualProject);
         Assert.Equal(expectedProject.Id, actualProject.Id);
@@ -93,7 +93,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+        var actualProject = GetJsonContent<Project>(stringResponse);
 
         Assert.NotNull(actualProject);
         Assert.Equal(expectedProject.Id, actualProject.Id);
@@ -131,7 +131,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var actualProjects = JsonConvert.DeserializeObject<List<Project>>(stringResponse);
+        var actualProjects = GetJsonContent<List<Project>>(stringResponse);
 
         Assert.NotNull(actualProjects);
         Assert.NotEmpty(actualProjects);
@@ -162,7 +162,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+        var actualProject = GetJsonContent<Project>(stringResponse);
 
         Assert.NotNull(actualProject);
         Assert.Equal(newProject.Title, actualProject.Title);
@@ -280,7 +280,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var actualProject = JsonConvert.DeserializeObject<Project>(stringResponse);
+        var actualProject = GetJsonContent<Project>(stringResponse);
 
         Assert.NotNull(actualProject);
         Assert.Equal(updateProject.Title, actualProject.Title);

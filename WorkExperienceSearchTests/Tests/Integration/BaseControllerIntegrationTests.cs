@@ -176,7 +176,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         return new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
     }
     
-    protected static T? DeserializeJson<T>(string json)
+    protected static T? GetJsonContent<T>(string json)
     {
         return JsonConvert.DeserializeObject<T>(json);
     }

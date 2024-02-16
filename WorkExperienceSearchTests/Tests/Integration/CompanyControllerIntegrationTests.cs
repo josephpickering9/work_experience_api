@@ -25,7 +25,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         var httpResponse = await Client.GetAsync("/company");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var response = JsonConvert.DeserializeObject<List<Company>>(stringResponse);
+        var response = GetJsonContent<List<Company>>(stringResponse);
 
         // Assert
         Assert.NotNull(response);
@@ -44,7 +44,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         var httpResponse = await Client.GetAsync($"/company/{testCompanyId}");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var company = JsonConvert.DeserializeObject<Company>(stringResponse);
+        var company = GetJsonContent<Company>(stringResponse);
 
         // Assert
         Assert.NotNull(company);
@@ -101,7 +101,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var actualCompany = JsonConvert.DeserializeObject<Company>(stringResponse);
+        var actualCompany = GetJsonContent<Company>(stringResponse);
 
         Assert.NotNull(actualCompany);
         Assert.Equal(newCompany.Name, actualCompany.Name);
@@ -149,7 +149,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var actualCompany = JsonConvert.DeserializeObject<Company>(stringResponse);
+        var actualCompany = GetJsonContent<Company>(stringResponse);
 
         Assert.NotNull(actualCompany);
         Assert.Equal(companyId, actualCompany.Id);

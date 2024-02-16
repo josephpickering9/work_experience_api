@@ -25,7 +25,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         var httpResponse = await Client.GetAsync("/tag");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var response = JsonConvert.DeserializeObject<List<Tag>>(stringResponse);
+        var response = GetJsonContent<List<Tag>>(stringResponse);
 
         // Assert
         Assert.NotNull(response);
@@ -44,7 +44,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         var httpResponse = await Client.GetAsync($"/tag/{testTagId}");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var tag = JsonConvert.DeserializeObject<Tag>(stringResponse);
+        var tag = GetJsonContent<Tag>(stringResponse);
         
         // Assert
         Assert.NotNull(tag);
@@ -99,7 +99,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         var httpResponse = await AuthenticatedClient.PostAsync("/tag", CreateJsonContent(createTag));
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var tag = JsonConvert.DeserializeObject<Tag>(stringResponse);
+        var tag = GetJsonContent<Tag>(stringResponse);
         
         // Assert
         Assert.NotNull(tag);
@@ -164,7 +164,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         var httpResponse = await AuthenticatedClient.PutAsync($"/tag/{tagId}", CreateJsonContent(updateTag));
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var tag = JsonConvert.DeserializeObject<Tag>(stringResponse);
+        var tag = GetJsonContent<Tag>(stringResponse);
         
         // Assert
         Assert.NotNull(tag);
