@@ -9,19 +9,12 @@ namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class TagController : ControllerBase
+public class TagController(ITagService tagService) : ControllerBase
 {
-    private readonly ITagService _tagService;
-
-    public TagController(ITagService tagService)
-    {
-        _tagService = tagService;
-    }
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Tag>>> GetTags(string? search)
     {
-        return Ok(await _tagService.GetTagsAsync(search));
+        return Ok(await tagService.GetTagsAsync(search));
     }
 
     [HttpGet("{id}")]
@@ -29,7 +22,7 @@ public class TagController : ControllerBase
     {
         try
         {
-            return await _tagService.GetTagAsync(id);
+            return await tagService.GetTagAsync(id);
         }
         catch (NotFoundException e)
         {
@@ -42,7 +35,7 @@ public class TagController : ControllerBase
     {
         try
         {
-            return await _tagService.GetTagBySlugAsync(slug);
+            return await tagService.GetTagBySlugAsync(slug);
         }
         catch (NotFoundException e)
         {
@@ -56,7 +49,7 @@ public class TagController : ControllerBase
     {
         try
         {
-            var tag = await _tagService.CreateTagAsync(createTag);
+            var tag = await tagService.CreateTagAsync(createTag);
             return CreatedAtAction("GetTag", new { id = tag.Id }, tag);
         }
         catch (ConflictException e)
@@ -75,7 +68,7 @@ public class TagController : ControllerBase
     {
         try
         {
-            var tag = await _tagService.UpdateTagAsync(id, createTag);
+            var tag = await tagService.UpdateTagAsync(id, createTag);
             return CreatedAtAction("GetTag", new { id = tag.Id }, tag);
         }
         catch (NotFoundException e)
@@ -94,7 +87,7 @@ public class TagController : ControllerBase
     {
         try
         {
-            await _tagService.DeleteTagAsync(id);
+            await tagService.DeleteTagAsync(id);
             return NoContent();
         }
         catch (NotFoundException e)
@@ -114,7 +107,7 @@ public class CreateTag
 
     [Required] public TagType Type { get; set; }
 
-    public string? Icon { get; set; } = null!;
+    public string? Icon { get; set; }
 
-    public string? CustomColour { get; set; } = null!;
+    public string? CustomColour { get; set; }
 }

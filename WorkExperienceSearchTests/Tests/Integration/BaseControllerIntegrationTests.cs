@@ -171,9 +171,14 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         return projectImage;
     }
     
-    protected static StringContent GetJsonContent<T>(T data) where T : class
+    protected static StringContent CreateJsonContent<T>(T data) where T : class
     {
         return new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
+    }
+    
+    protected static T? DeserializeJson<T>(string json)
+    {
+        return JsonConvert.DeserializeObject<T>(json);
     }
     
     protected static MultipartFormDataContent GetMultipartFormDataContent<T>(T data) where T : class

@@ -9,27 +9,20 @@ namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class CompanyController : ControllerBase
+public class CompanyController(ICompanyService tagService) : ControllerBase
 {
-    private readonly ICompanyService _tagService;
-
-    public CompanyController(ICompanyService tagService)
-    {
-        _tagService = tagService;
-    }
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Company>>> GetCompanies(string? search)
     {
-        return Ok(await _tagService.GetCompaniesAsync(search));
+        return Ok(await tagService.GetCompaniesAsync(search));
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<Company>> GetCompany(int id)
     {
         try
         {
-            return await _tagService.GetCompanyAsync(id);
+            return await tagService.GetCompanyAsync(id);
         }
         catch (NotFoundException e)
         {
@@ -37,12 +30,12 @@ public class CompanyController : ControllerBase
         }
     }
 
-    [HttpGet("slug/{slug}")]
+    [HttpGet("{slug}")]
     public async Task<ActionResult<Company>> GetCompany(string slug)
     {
         try
         {
-            return await _tagService.GetCompanyBySlugAsync(slug);
+            return await tagService.GetCompanyBySlugAsync(slug);
         }
         catch (NotFoundException e)
         {
@@ -57,7 +50,7 @@ public class CompanyController : ControllerBase
     {
         try
         {
-            var tag = await _tagService.CreateCompanyAsync(createCompany);
+            var tag = await tagService.CreateCompanyAsync(createCompany);
             return CreatedAtAction("GetCompany", new { id = tag.Id }, tag);
         }
         catch (ConflictException e)
@@ -70,14 +63,14 @@ public class CompanyController : ControllerBase
         }
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Company>> PutCompany(int id, [FromForm] CreateCompany createCompany)
     {
         try
         {
-            var tag = await _tagService.UpdateCompanyAsync(id, createCompany);
+            var tag = await tagService.UpdateCompanyAsync(id, createCompany);
             return CreatedAtAction("GetCompany", new { id = tag.Id }, tag);
         }
         catch (NotFoundException e)
@@ -90,13 +83,13 @@ public class CompanyController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteCompany(int id)
     {
         try
         {
-            await _tagService.DeleteCompanyAsync(id);
+            await tagService.DeleteCompanyAsync(id);
             return NoContent();
         }
         catch (NotFoundException e)

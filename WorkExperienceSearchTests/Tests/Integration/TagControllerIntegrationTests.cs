@@ -77,7 +77,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         };
         
         // Act
-        var httpResponse = await Client.PostAsync("/tag", GetJsonContent(createTag));
+        var httpResponse = await Client.PostAsync("/tag", CreateJsonContent(createTag));
         
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
@@ -96,7 +96,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         };
         
         // Act
-        var httpResponse = await AuthenticatedClient.PostAsync("/tag", GetJsonContent(createTag));
+        var httpResponse = await AuthenticatedClient.PostAsync("/tag", CreateJsonContent(createTag));
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var tag = JsonConvert.DeserializeObject<Tag>(stringResponse);
@@ -121,7 +121,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         };
         
         // Act
-        var httpResponse = await AuthenticatedClient.PostAsync("/tag", GetJsonContent(createTag));
+        var httpResponse = await AuthenticatedClient.PostAsync("/tag", CreateJsonContent(createTag));
         
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, httpResponse.StatusCode);
@@ -140,7 +140,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         };
         
         // Act
-        var httpResponse = await Client.PutAsync("/tag/1", GetJsonContent(updateTag));
+        var httpResponse = await Client.PutAsync("/tag/1", CreateJsonContent(updateTag));
         
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
@@ -161,7 +161,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         };
         
         // Act
-        var httpResponse = await AuthenticatedClient.PutAsync($"/tag/{tagId}", GetJsonContent(updateTag));
+        var httpResponse = await AuthenticatedClient.PutAsync($"/tag/{tagId}", CreateJsonContent(updateTag));
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var tag = JsonConvert.DeserializeObject<Tag>(stringResponse);
@@ -186,7 +186,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         };
         
         // Act
-        var httpResponse = await AuthenticatedClient.PutAsync($"/tag/{nonExistingTagId}", GetJsonContent(updateTag));
+        var httpResponse = await AuthenticatedClient.PutAsync($"/tag/{nonExistingTagId}", CreateJsonContent(updateTag));
         
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);

@@ -9,27 +9,20 @@ namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ProjectController : ControllerBase
+public class ProjectController(IProjectService projectService) : ControllerBase
 {
-    private readonly IProjectService _projectService;
-
-    public ProjectController(IProjectService projectService)
-    {
-        _projectService = projectService;
-    }
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Project>>> GetProjects(string? search)
     {
-        return Ok(await _projectService.GetProjectsAsync(search));
+        return Ok(await projectService.GetProjectsAsync(search));
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<Project>> GetProject(int id)
     {
         try
         {
-            return await _projectService.GetProjectAsync(id);
+            return await projectService.GetProjectAsync(id);
         }
         catch (NotFoundException e)
         {
@@ -37,12 +30,12 @@ public class ProjectController : ControllerBase
         }
     }
 
-    [HttpGet("slug/{slug}")]
+    [HttpGet("{slug}")]
     public async Task<ActionResult<Project>> GetProject(string slug)
     {
         try
         {
-            return await _projectService.GetProjectBySlugAsync(slug);
+            return await projectService.GetProjectBySlugAsync(slug);
         }
         catch (NotFoundException e)
         {
@@ -50,12 +43,12 @@ public class ProjectController : ControllerBase
         }
     }
 
-    [HttpGet("{id}/related")]
+    [HttpGet("{id:int}/related")]
     public async Task<ActionResult<IEnumerable<Project>>> GetRelatedProjects(int id)
     {
         try
         {
-            return Ok(await _projectService.GetRelatedProjectsAsync(id));
+            return Ok(await projectService.GetRelatedProjectsAsync(id));
         }
         catch (NotFoundException e)
         {
@@ -70,7 +63,7 @@ public class ProjectController : ControllerBase
     {
         try
         {
-            var project = await _projectService.CreateProjectAsync(createProject);
+            var project = await projectService.CreateProjectAsync(createProject);
             return CreatedAtAction("GetProject", new { id = project.Id }, project);
         }
         catch (ConflictException e)
@@ -83,14 +76,14 @@ public class ProjectController : ControllerBase
         }
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
     {
         try
         {
-            var project = await _projectService.UpdateProjectAsync(id, createProject);
+            var project = await projectService.UpdateProjectAsync(id, createProject);
             return CreatedAtAction("GetProject", new { id = project.Id }, project);
         }
         catch (NotFoundException e)
@@ -103,13 +96,13 @@ public class ProjectController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteProject(int id)
     {
         try
         {
-            await _projectService.DeleteProjectAsync(id);
+            await projectService.DeleteProjectAsync(id);
             return NoContent();
         }
         catch (NotFoundException e)
@@ -139,9 +132,9 @@ public class CreateProject
 
     [Required] public bool ShowMockup { get; set; } = false;
 
-    public List<CreateProjectImage> Images { get; set; } = new();
+    public List<CreateProjectImage> Images { get; set; } = [];
 
-    [Required] public List<string> Tags { get; set; } = new();
+    [Required] public List<string> Tags { get; set; } = [];
 }
 
 public class CreateProjectImage

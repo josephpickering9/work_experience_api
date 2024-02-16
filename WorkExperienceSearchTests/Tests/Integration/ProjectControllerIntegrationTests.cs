@@ -23,17 +23,23 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetProjects_ReturnsProjects()
     {
         // Arrange
-        await CreateProjectAsync(1);
+        var projects = new List<Project>
+        {
+            await CreateProjectAsync(1),
+            await CreateProjectAsync(2),
+            await CreateProjectAsync(3)
+        };
         
         // Act
         var httpResponse = await Client.GetAsync("/project");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-        var projects = JsonConvert.DeserializeObject<IEnumerable<Project>>(stringResponse);
+        var response = JsonConvert.DeserializeObject<List<Project>>(stringResponse);
 
         // Assert
-        Assert.NotNull(projects);
-        Assert.NotEmpty(projects);
+        Assert.NotNull(response);
+        Assert.NotEmpty(response);
+        Assert.Equal(projects.Count, response.Count);
     }
 
     [Fact]
@@ -41,7 +47,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     {
         // Arrange
         const int testProjectId = 10;
-        var expectedProject = await CreateProjectAsync(testProjectId);
+        var tags = new List<string> { "Tag1", "Tag2" };
+        var expectedProject = await CreateProjectAsync(testProjectId, tags: tags);
 
         // Act
         var httpResponse = await Client.GetAsync($"/project/{testProjectId}");
@@ -81,7 +88,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        var httpResponse = await Client.GetAsync($"/project/slug/{expectedProject.Slug}");
+        var httpResponse = await Client.GetAsync($"/project/{expectedProject.Slug}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -104,7 +111,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         const string nonExistingProjectSlug = "non-existing-slug";
 
         // Act
-        var httpResponse = await Client.GetAsync($"/project/slug/{nonExistingProjectSlug}");
+        var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectSlug}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
@@ -167,25 +174,23 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(newProject.Tags.Count, actualProject.Tags.Count);
 
-        using (var scope = Factory.Services.CreateScope())
-        {
-            var context = scope.ServiceProvider.GetRequiredService<Database>();
-            var projectInDb = await context.Project.FindAsync(actualProject.Id);
-            Assert.NotNull(projectInDb);
-            Assert.Equal(newProject.Title, projectInDb.Title);
-            Assert.Equal(newProject.Description, projectInDb.Description);
-            Assert.Equal(newProject.ShortDescription, projectInDb.ShortDescription);
-            Assert.Equal(newProject.CompanyId, projectInDb.CompanyId);
-            Assert.Equal(newProject.Year, projectInDb.Year);
-            Assert.Equal(newProject.Website, projectInDb.Website);
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectInDb = await context.Project.FindAsync(actualProject.Id);
+        Assert.NotNull(projectInDb);
+        Assert.Equal(newProject.Title, projectInDb.Title);
+        Assert.Equal(newProject.Description, projectInDb.Description);
+        Assert.Equal(newProject.ShortDescription, projectInDb.ShortDescription);
+        Assert.Equal(newProject.CompanyId, projectInDb.CompanyId);
+        Assert.Equal(newProject.Year, projectInDb.Year);
+        Assert.Equal(newProject.Website, projectInDb.Website);
 
-            if (projectInDb != null)
-            {
-                projectInDb.Tags =
-                    await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
-                Assert.NotNull(projectInDb.Tags);
-                Assert.Equal(newProject.Tags.Count, projectInDb.Tags.Count);
-            }
+        if (projectInDb != null)
+        {
+            projectInDb.Tags =
+                await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
+            Assert.NotNull(projectInDb.Tags);
+            Assert.Equal(newProject.Tags.Count, projectInDb.Tags.Count);
         }
     }
 
@@ -243,12 +248,10 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
 
         Assert.Contains("A project with the same title already exists", stringResponse);
 
-        using (var scope = Factory.Services.CreateScope())
-        {
-            var context = scope.ServiceProvider.GetRequiredService<Database>();
-            var projectCount = await context.Project.CountAsync(p => p.Title == duplicateProject.Title);
-            Assert.Equal(1, projectCount);
-        }
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectCount = await context.Project.CountAsync(p => p.Title == duplicateProject.Title);
+        Assert.Equal(1, projectCount);
     }
 
     [Fact]
@@ -289,25 +292,23 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(updateProject.Tags.Count, actualProject.Tags.Count);
 
-        using (var scope = Factory.Services.CreateScope())
-        {
-            var context = scope.ServiceProvider.GetRequiredService<Database>();
-            var projectInDb = await context.Project.FindAsync(existingProject.Id);
-            Assert.NotNull(projectInDb);
-            Assert.Equal(updateProject.Title, projectInDb.Title);
-            Assert.Equal(updateProject.Description, projectInDb.Description);
-            Assert.Equal(updateProject.ShortDescription, projectInDb.ShortDescription);
-            Assert.Equal(updateProject.CompanyId, projectInDb.CompanyId);
-            Assert.Equal(updateProject.Year, projectInDb.Year);
-            Assert.Equal(updateProject.Website, projectInDb.Website);
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectInDb = await context.Project.FindAsync(existingProject.Id);
+        Assert.NotNull(projectInDb);
+        Assert.Equal(updateProject.Title, projectInDb.Title);
+        Assert.Equal(updateProject.Description, projectInDb.Description);
+        Assert.Equal(updateProject.ShortDescription, projectInDb.ShortDescription);
+        Assert.Equal(updateProject.CompanyId, projectInDb.CompanyId);
+        Assert.Equal(updateProject.Year, projectInDb.Year);
+        Assert.Equal(updateProject.Website, projectInDb.Website);
 
-            if (projectInDb != null)
-            {
-                projectInDb.Tags =
-                    await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
-                Assert.NotNull(projectInDb.Tags);
-                Assert.Equal(updateProject.Tags.Count, projectInDb.Tags.Count);
-            }
+        if (projectInDb != null)
+        {
+            projectInDb.Tags =
+                await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
+            Assert.NotNull(projectInDb.Tags);
+            Assert.Equal(updateProject.Tags.Count, projectInDb.Tags.Count);
         }
     }
 
