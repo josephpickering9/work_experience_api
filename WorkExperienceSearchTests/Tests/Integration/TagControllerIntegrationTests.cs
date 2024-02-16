@@ -1,11 +1,14 @@
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Services;
 using Work_Experience_Search.Tests;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;
 
+[Collection("Sequential")]
 public class TagControllerIntegrationTests(CustomWebApplicationFactory customWebApplicationFactory)
     : BaseControllerIntegrationTests(customWebApplicationFactory), IClassFixture<CustomWebApplicationFactory>
 {
@@ -102,8 +105,10 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
 
         // Assert
         Assert.NotNull(tag);
-        Assert.Equal(1, tag.Id);
         Assert.Equal(createTag.Title, tag.Title);
+        Assert.Equal(createTag.Type, tag.Type);
+        Assert.Equal(createTag.Icon, tag.Icon);
+        Assert.Equal(createTag.CustomColour, tag.CustomColour);
     }
 
     [Fact]

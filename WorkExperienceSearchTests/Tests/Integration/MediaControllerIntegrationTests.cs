@@ -6,6 +6,7 @@ using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;
 
+[Collection("Sequential")]
 public class MediaControllerIntegrationTests(CustomWebApplicationFactory customWebApplicationFactory)
     : BaseControllerIntegrationTests(customWebApplicationFactory), IClassFixture<CustomWebApplicationFactory>
 {

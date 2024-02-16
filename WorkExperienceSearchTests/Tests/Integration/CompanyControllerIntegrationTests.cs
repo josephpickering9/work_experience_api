@@ -6,6 +6,7 @@ using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;
 
+[Collection("Sequential")]
 public class CompanyControllerIntegrationTests(CustomWebApplicationFactory customWebApplicationFactory)
     : BaseControllerIntegrationTests(customWebApplicationFactory), IClassFixture<CustomWebApplicationFactory>
 {

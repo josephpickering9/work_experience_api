@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
-using Work_Experience_Search.Services;
 using Work_Experience_Search.Tests;
 using Xunit;
 
@@ -49,10 +48,11 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<Database>();
 
+        context.ProjectImage.RemoveRange(context.ProjectImage);
+        context.ProjectTag.RemoveRange(context.ProjectTag);
         context.Project.RemoveRange(context.Project);
         context.Tag.RemoveRange(context.Tag);
         context.Company.RemoveRange(context.Company);
-        context.ProjectImage.RemoveRange(context.ProjectImage);
         await context.SaveChangesAsync();
     }
 
@@ -143,32 +143,6 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         return company;
-    }
-
-    protected async Task<ProjectImage> CreateProjectImageAsync(
-        int projectId,
-        int imageId,
-        ImageType type = ImageType.Logo,
-        string image = "testImage",
-        int? order = null
-    )
-    {
-        var projectImage = new ProjectImage
-        {
-            Id = imageId,
-            ProjectId = projectId,
-            Type = type,
-            Image = image,
-            Order = order
-        };
-
-        using var scope = Factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<Database>();
-
-        context.ProjectImage.Add(projectImage);
-        await context.SaveChangesAsync();
-
-        return projectImage;
     }
 
     protected static StringContent CreateJsonContent<T>(T data) where T : class
