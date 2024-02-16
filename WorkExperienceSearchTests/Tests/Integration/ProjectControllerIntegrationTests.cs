@@ -16,43 +16,17 @@ using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;
 
-public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
+public class ProjectControllerIntegrationTests(CustomWebApplicationFactory customWebApplicationFactory)
+    : BaseControllerIntegrationTests(customWebApplicationFactory), IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly IConfigurationSection _auth0Settings;
-    private readonly HttpClient _authenticatedClient;
-    private readonly HttpClient _client;
-    private readonly CustomWebApplicationFactory _factory;
-
-    public ProjectControllerIntegrationTests(CustomWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-        _auth0Settings = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json")
-            .Build()
-            .GetSection("Auth0");
-        _authenticatedClient = GetAuthenticatedClient().GetAwaiter().GetResult();
-    }
-
-    public async Task InitializeAsync()
-    {
-        await ClearDatabase();
-    }
-
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
-    }
-
     [Fact]
     public async Task GetProjects_ReturnsProjects()
     {
         // Arrange
         await CreateProjectAsync(1);
-        var httpResponse = await _client.GetAsync("/project");
-
+        
         // Act
+        var httpResponse = await Client.GetAsync("/project");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var projects = JsonConvert.DeserializeObject<IEnumerable<Project>>(stringResponse);
@@ -70,7 +44,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        var httpResponse = await _client.GetAsync($"/project/{testProjectId}");
+        var httpResponse = await Client.GetAsync($"/project/{testProjectId}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -93,7 +67,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         const int nonExistingProjectId = 999;
 
         // Act
-        var httpResponse = await _client.GetAsync($"/project/{nonExistingProjectId}");
+        var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectId}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
@@ -107,7 +81,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        var httpResponse = await _client.GetAsync($"/project/slug/{expectedProject.Slug}");
+        var httpResponse = await Client.GetAsync($"/project/slug/{expectedProject.Slug}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -130,7 +104,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         const string nonExistingProjectSlug = "non-existing-slug";
 
         // Act
-        var httpResponse = await _client.GetAsync($"/project/slug/{nonExistingProjectSlug}");
+        var httpResponse = await Client.GetAsync($"/project/slug/{nonExistingProjectSlug}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
@@ -145,7 +119,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var relatedProject = await CreateProjectAsync(2, tags: tags);
 
         // Act
-        var httpResponse = await _client.GetAsync($"/project/{expectedProject.Id}/related");
+        var httpResponse = await Client.GetAsync($"/project/{expectedProject.Id}/related");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -176,7 +150,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(newProject);
 
         // Act
-        var httpResponse = await _authenticatedClient.PostAsync("/project", content);
+        var httpResponse = await AuthenticatedClient.PostAsync("/project", content);
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -193,7 +167,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(newProject.Tags.Count, actualProject.Tags.Count);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = Factory.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<Database>();
             var projectInDb = await context.Project.FindAsync(actualProject.Id);
@@ -233,7 +207,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(newProject);
 
         // Act
-        var httpResponse = await _client.PostAsync("/project", content);
+        var httpResponse = await Client.PostAsync("/project", content);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
@@ -257,11 +231,11 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(duplicateProject);
 
         // Act - First attempt (should succeed)
-        var firstResponse = await _authenticatedClient.PostAsync("/project", content);
+        var firstResponse = await AuthenticatedClient.PostAsync("/project", content);
         firstResponse.EnsureSuccessStatusCode();
 
         // Act - Second attempt (should fail)
-        var secondResponse = await _authenticatedClient.PostAsync("/project", content);
+        var secondResponse = await AuthenticatedClient.PostAsync("/project", content);
 
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
@@ -269,7 +243,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
 
         Assert.Contains("A project with the same title already exists", stringResponse);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = Factory.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<Database>();
             var projectCount = await context.Project.CountAsync(p => p.Title == duplicateProject.Title);
@@ -298,7 +272,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(updateProject);
 
         // Act
-        var httpResponse = await _authenticatedClient.PutAsync($"/project/{existingProject.Id}", content);
+        var httpResponse = await AuthenticatedClient.PutAsync($"/project/{existingProject.Id}", content);
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
@@ -315,7 +289,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(updateProject.Tags.Count, actualProject.Tags.Count);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = Factory.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<Database>();
             var projectInDb = await context.Project.FindAsync(existingProject.Id);
@@ -359,7 +333,7 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var content = GetMultipartFormDataContent(updateProject);
 
         // Act
-        var httpResponse = await _client.PutAsync($"/project/{existingProject.Id}", content);
+        var httpResponse = await Client.PutAsync($"/project/{existingProject.Id}", content);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
@@ -373,12 +347,12 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        var httpResponse = await _authenticatedClient.DeleteAsync($"/project/{existingProject.Id}");
+        var httpResponse = await AuthenticatedClient.DeleteAsync($"/project/{existingProject.Id}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
 
-        using var scope = _factory.Services.CreateScope();
+        using var scope = Factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<Database>();
         var projectInDb = await context.Project.FindAsync(existingProject.Id);
         Assert.Null(projectInDb);
@@ -392,104 +366,9 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
-        var httpResponse = await _client.DeleteAsync($"/project/{existingProject.Id}");
+        var httpResponse = await Client.DeleteAsync($"/project/{existingProject.Id}");
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
-    }
-
-    private async Task ClearDatabase()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<Database>();
-
-        context.Project.RemoveRange(context.Project);
-        context.Tag.RemoveRange(context.Tag);
-        await context.SaveChangesAsync();
-    }
-
-    private async Task<Project> CreateProjectAsync(
-        int projectId,
-        string title = "Test Project",
-        string description = "Test Description",
-        string shortDescription = "Test Short Description",
-        int companyId = 1,
-        int year = 2021,
-        string website = "https://example.com",
-        List<string>? tags = null
-    )
-    {
-        var project = new Project
-        {
-            Id = projectId,
-            Title = title,
-            Description = description,
-            ShortDescription = shortDescription,
-            CompanyId = companyId,
-            Year = year,
-            Website = website,
-            Tags = []
-        };
-
-        using var scope = _factory.Services.CreateScope();
-
-        if (tags?.Count > 0)
-        {
-            var tagService = scope.ServiceProvider.GetRequiredService<ITagService>();
-            project.Tags = await tagService.SyncTagsAsync(tags);
-        }
-
-        var context = scope.ServiceProvider.GetRequiredService<Database>();
-
-        context.Project.Add(project);
-        await context.SaveChangesAsync();
-
-        return project;
-    }
-
-    private static MultipartFormDataContent GetMultipartFormDataContent<T>(T data) where T : class
-    {
-        var content = new MultipartFormDataContent();
-
-        foreach (var property in data.GetType().GetProperties())
-        {
-            var value = property.GetValue(data);
-            if (value == null) continue;
-
-            if (value is string stringValue)
-                content.Add(new StringContent(stringValue), property.Name);
-            else if (value is List<string> stringListValue)
-                foreach (var item in stringListValue)
-                    content.Add(new StringContent(item), property.Name);
-            else if (value is IFormFile fileValue)
-                content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
-            else if (value is int intValue)
-                content.Add(new StringContent(intValue.ToString()), property.Name);
-            else
-                content.Add(new StringContent(JsonConvert.SerializeObject(value)), property.Name);
-        }
-
-        return content;
-    }
-
-    private async Task<string> GetAccessToken()
-    {
-        var auth0Client = new AuthenticationApiClient(new Uri(_auth0Settings["Domain"] ?? ""));
-        var tokenRequest = new ClientCredentialsTokenRequest
-        {
-            ClientId = _auth0Settings["ApiClientId"],
-            ClientSecret = _auth0Settings["ApiClientSecret"],
-            Audience = _auth0Settings["Audience"]
-        };
-        var tokenResponse = await auth0Client.GetTokenAsync(tokenRequest);
-
-        return tokenResponse.AccessToken;
-    }
-
-    private async Task<HttpClient> GetAuthenticatedClient()
-    {
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessToken());
-        return client;
     }
 }

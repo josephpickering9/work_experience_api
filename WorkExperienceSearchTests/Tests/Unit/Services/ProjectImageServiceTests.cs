@@ -22,7 +22,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
         _projectImageService = new ProjectImageService(Context, mockFileService.Object);
         
         mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
-            .ReturnsAsync((IFormFile? file) => "testPath");
+            .ReturnsAsync(() => "testPath");
     }
     
     public async Task InitializeAsync()
