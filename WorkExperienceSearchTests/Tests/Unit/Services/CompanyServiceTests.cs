@@ -3,6 +3,7 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Utils;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
@@ -45,7 +46,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         var companyId = 1;
 
         // Act
-        var result = await _companyService.GetCompanyAsync(companyId);
+        var result = (await _companyService.GetCompanyAsync(companyId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -75,7 +76,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         // Act
-        var result = await _companyService.CreateCompanyAsync(createCompany);
+        var result = (await _companyService.CreateCompanyAsync(createCompany)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -116,7 +117,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         // Act
-        var result = await _companyService.UpdateCompanyAsync(companyId, updateCompany);
+        var result = (await _companyService.UpdateCompanyAsync(companyId, updateCompany)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -150,12 +151,9 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         var companyId = 1;
 
         // Act
-        var result = await _companyService.DeleteCompanyAsync(companyId);
+        (await _companyService.DeleteCompanyAsync(companyId)).ExpectSuccess();
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(companyId, result.Id);
-
         var companyInDb = await Context.Company.FindAsync(companyId);
         Assert.Null(companyInDb);
     }
