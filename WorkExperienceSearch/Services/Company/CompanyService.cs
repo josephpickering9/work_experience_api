@@ -7,10 +7,10 @@ namespace Work_Experience_Search.Services;
 
 public class CompanyService : ICompanyService
 {
-    private readonly Database _context;
+    private readonly Database.Database _context;
     private readonly IFileService _fileService;
 
-    public CompanyService(Database context, IFileService fileService)
+    public CompanyService(Database.Database context, IFileService fileService)
     {
         _context = context;
         _fileService = fileService;

@@ -7,9 +7,9 @@ namespace Work_Experience_Search.Services;
 
 public class TagService : ITagService
 {
-    private readonly Database _context;
+    private readonly Database.Database _context;
 
-    public TagService(Database context)
+    public TagService(Database.Database context)
     {
         _context = context;
     }

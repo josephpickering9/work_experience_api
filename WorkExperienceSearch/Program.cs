@@ -9,6 +9,7 @@ using Work_Experience_Search;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Services.Database;
 
 DotEnv.Load();
 

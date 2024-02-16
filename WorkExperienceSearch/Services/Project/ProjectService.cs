@@ -7,11 +7,11 @@ namespace Work_Experience_Search.Services;
 
 public class ProjectService : IProjectService
 {
-    private readonly Database _context;
+    private readonly Database.Database _context;
     private readonly IProjectImageService _projectImageService;
     private readonly ITagService _tagService;
 
-    public ProjectService(Database context, IProjectImageService projectImageService, ITagService tagService)
+    public ProjectService(Database.Database context, IProjectImageService projectImageService, ITagService tagService)
     {
         _context = context;
         _projectImageService = projectImageService;
