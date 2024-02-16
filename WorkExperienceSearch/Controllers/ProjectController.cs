@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 
@@ -14,46 +13,29 @@ public class ProjectController(IProjectService projectService) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Project>>> GetProjects(string? search)
     {
-        return Ok(await projectService.GetProjectsAsync(search));
+        var projects = await projectService.GetProjectsAsync(search);
+        return projects.ToResponse();
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Project>> GetProject(int id)
     {
-        try
-        {
-            return await projectService.GetProjectAsync(id);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
+        var project = await projectService.GetProjectAsync(id);
+        return project.ToResponse();
     }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<Project>> GetProject(string slug)
     {
-        try
-        {
-            return await projectService.GetProjectBySlugAsync(slug);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
+        var project = await projectService.GetProjectBySlugAsync(slug);
+        return project.ToResponse();
     }
 
     [HttpGet("{id:int}/related")]
     public async Task<ActionResult<IEnumerable<Project>>> GetRelatedProjects(int id)
     {
-        try
-        {
-            return Ok(await projectService.GetRelatedProjectsAsync(id));
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
+        var projects = await projectService.GetRelatedProjectsAsync(id);
+        return projects.ToResponse();
     }
 
     [HttpPost]
@@ -61,19 +43,10 @@ public class ProjectController(IProjectService projectService) : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PostProject([FromForm] CreateProject createProject)
     {
-        try
-        {
-            var project = await projectService.CreateProjectAsync(createProject);
-            return CreatedAtAction("GetProject", new { id = project.Id }, project);
-        }
-        catch (ConflictException e)
-        {
-            return Conflict(e.Message);
-        }
-        catch (InvalidOperationException e)
-        {
-            return BadRequest(e.Message);
-        }
+        var project = await projectService.CreateProjectAsync(createProject);
+        if (!project.IsSuccess) return project.ToErrorResponse();
+
+        return CreatedAtAction("GetProject", new { id = project.Data.Id }, project);
     }
 
     [HttpPut("{id:int}")]
@@ -81,38 +54,16 @@ public class ProjectController(IProjectService projectService) : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
     {
-        try
-        {
-            var project = await projectService.UpdateProjectAsync(id, createProject);
-            return CreatedAtAction("GetProject", new { id = project.Id }, project);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (InvalidOperationException e)
-        {
-            return BadRequest(e.Message);
-        }
+        var project = await projectService.UpdateProjectAsync(id, createProject);
+        return project.ToResponse();
     }
 
     [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteProject(int id)
     {
-        try
-        {
-            await projectService.DeleteProjectAsync(id);
-            return NoContent();
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var project = await projectService.DeleteProjectAsync(id);
+        return project.ToResponse();
     }
 }
 

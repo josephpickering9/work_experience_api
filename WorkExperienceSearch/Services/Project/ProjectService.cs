@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Controllers;
-using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Services;
 
 public class ProjectService(Database context, IProjectImageService projectImageService, ITagService tagService)
     : IProjectService
 {
-    public async Task<IEnumerable<Project>> GetProjectsAsync(string? search)
+    public async Task<Result<IEnumerable<Project>>> GetProjectsAsync(string? search)
     {
         IQueryable<Project> projects = context.Project
             .Include(p => p.Tags)
@@ -17,39 +17,38 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         if (!string.IsNullOrEmpty(search))
             projects = projects.Where(p => EF.Functions.ILike(p.Title, search) || EF.Functions.ILike(p.ShortDescription, search));
 
-        return await projects.OrderByDescending(p => p.Year).ToListAsync();
+        return new Success<IEnumerable<Project>>(await projects.OrderByDescending(p => p.Year).ToListAsync());
     }
 
-    public async Task<Project> GetProjectAsync(int id)
+    public async Task<Result<Project>> GetProjectAsync(int id)
     {
         var project = await context.Project
             .Include(p => p.Tags)
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
             .SingleOrDefaultAsync(p => p.Id == id);
-        if (project == null) throw new NotFoundException("Project not found.");
+        if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
-        return project;
+        return new Success<Project>(project);
     }
 
-    public async Task<Project> GetProjectBySlugAsync(string slug)
+    public async Task<Result<Project>> GetProjectBySlugAsync(string slug)
     {
         var project = await context.Project
             .Include(p => p.Tags)
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
             .FirstOrDefaultAsync(p => p.Slug == slug);
-        if (project == null) throw new NotFoundException("Project not found.");
+        if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
-        return project;
+        return new Success<Project>(project);
     }
 
-    public async Task<IEnumerable<Project>> GetRelatedProjectsAsync(int projectId)
+    public async Task<Result<IEnumerable<Project>>> GetRelatedProjectsAsync(int projectId)
     {
         var projectTags = context.Project
             .Include(pt => pt.Tags)
             .Where(pt => pt.Id == projectId)
             .SelectMany(pt => pt.Tags.Select(t => t.Id));
-
-        if (!projectTags.Any()) return new List<Project>();
+        if (!projectTags.Any()) return new Success<IEnumerable<Project>>(new List<Project>());
 
         var relatedProjects = await context.Project
             .Where(p => p.Id != projectId && p.Tags.Any(t => projectTags.Contains(t.Id)))
@@ -65,13 +64,13 @@ public class ProjectService(Database context, IProjectImageService projectImageS
             .Include(p => p.Images)
             .ToListAsync();
 
-        return relatedProjects;
+        return new Success<IEnumerable<Project>>(relatedProjects);
     }
 
-    public async Task<Project> CreateProjectAsync(CreateProject createProject)
+    public async Task<Result<Project>> CreateProjectAsync(CreateProject createProject)
     {
         var projectExists = await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, createProject.Title));
-        if (projectExists) throw new ConflictException("A project with the same title already exists");
+        if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         var project = new Project
         {
@@ -100,16 +99,17 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
         await context.SaveChangesAsync();
 
-        return project;
+        return new Success<Project>(project);
     }
 
-    public async Task<Project> UpdateProjectAsync(int id, CreateProject createProject)
+    public async Task<Result<Project>> UpdateProjectAsync(int id, CreateProject createProject)
     {
-        var project = await GetProjectAsync(id);
-        if (project == null) throw new NotFoundException("Project not found.");
+        var projectResult = await GetProjectAsync(id);
+        if (!projectResult.IsSuccess) return projectResult;
 
+        var project = projectResult.Data;
         var projectExists = await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title));
-        if (projectExists) throw new ConflictException("A project with the same title already exists");
+        if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         project.Title = createProject.Title;
         project.ShortDescription = createProject.ShortDescription;
@@ -136,18 +136,18 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         context.Entry(project).State = EntityState.Modified;
         await context.SaveChangesAsync();
 
-        return project;
+        return new Success<Project>(project);
     }
 
 
-    public async Task<Project> DeleteProjectAsync(int id)
+    public async Task<Result<Project>> DeleteProjectAsync(int id)
     {
         var project = await context.Project.FindAsync(id);
-        if (project == null) throw new NotFoundException("Project not found.");
+        if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
         context.Project.Remove(project);
         await context.SaveChangesAsync();
 
-        return project;
+        return new Success<Project>(project);
     }
 }
