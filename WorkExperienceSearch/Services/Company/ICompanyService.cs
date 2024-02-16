@@ -11,5 +11,5 @@ public interface ICompanyService
     Task<Result<Company>> GetCompanyBySlugAsync(string slug);
     Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany);
     Task<Result<Company>> UpdateCompanyAsync(int id, CreateCompany updateCompany);
-    Task<Result> DeleteCompanyAsync(int id);
+    Task<Result<Company>> DeleteCompanyAsync(int id);
 }

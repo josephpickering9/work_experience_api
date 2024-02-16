@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 
@@ -21,14 +20,14 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     public async Task<ActionResult<Company>> GetCompany(int id)
     {
         var result = await companyService.GetCompanyAsync(id);
-        return result.Failure ? result.ToErrorResponse() : Ok(result.Data);
+        return result.IsSuccess ? Ok(result.Data) : result.ToErrorResponse();
     }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<Company>> GetCompany(string slug)
     {
         var result = await companyService.GetCompanyBySlugAsync(slug);
-        return result.Failure ? result.ToErrorResponse() : Ok(result.Data);
+        return result.ToResponse();
     }
 
     [HttpPost]
@@ -37,7 +36,7 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     public async Task<ActionResult<Company>> PostCompany([FromForm] CreateCompany createCompany)
     {
         var result = await companyService.CreateCompanyAsync(createCompany);
-        if (result.Failure) return result.ToErrorResponse();
+        if (!result.IsSuccess) return result.ToErrorResponse();
 
         return CreatedAtAction("GetCompany", new { id = result.Data.Id }, result.Data);
     }
@@ -48,7 +47,7 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     public async Task<ActionResult<Company>> PutCompany(int id, [FromForm] CreateCompany createCompany)
     {
         var result = await companyService.UpdateCompanyAsync(id, createCompany);
-        return result.Failure ? result.ToErrorResponse() : Ok(result.Data);
+        return result.ToResponse();
     }
 
     [HttpDelete("{id:int}")]
@@ -56,7 +55,7 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     public async Task<IActionResult> DeleteCompany(int id)
     {
         var result = await companyService.DeleteCompanyAsync(id);
-        return result.Failure ? result.ToErrorResponse() : NoContent();
+        return result.ToResponse();
     }
 }
 

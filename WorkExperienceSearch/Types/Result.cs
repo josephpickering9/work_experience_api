@@ -1,150 +1,53 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Work_Experience_Search.Exceptions;
 
 namespace Work_Experience_Search.Types;
 
-public abstract class Result
+public class Result<T>
 {
-    public bool Success { get; protected set; }
-    public bool Failure => !Success;
-
-    public ActionResult ToErrorResponse()
-    {
-        return Failure
-            ? ((Failure)this).ToErrorResponse()
-            : throw new Exception($"You can't access this when .{nameof(Failure)} is false");
-    }
-}
-
-public abstract class Result<T> : Result
-{
-    private T _data;
+    public T Data { get; }
+    public Exception? Error { get; }
+    private ErrorType ErrorType { get; }
+    public bool IsSuccess => Error == null;
 
     protected Result(T data)
     {
         Data = data;
-        _data = data;
     }
 
-    public T Data
+    protected Result(Exception error, ErrorType type)
     {
-        get => Success
-            ? _data
-            : throw new Exception($"You can't access .{nameof(Data)} when .{nameof(Success)} is false");
-        set => _data = value;
+        Error = error;
+        ErrorType = type;
     }
-}
 
-public class Success : Result
-{
-    public Success()
+    public ActionResult ToResponse() => IsSuccess ? ToSuccessResponse() : ToErrorResponse();
+
+    public ActionResult ToSuccessResponse()
     {
-        Success = true;
+        return Data != null ? new OkObjectResult(Data) : new NoContentResult();
     }
-}
-
-public class Success<T> : Result<T>
-{
-    public Success(T data) : base(data)
-    {
-        Success = true;
-    }
-}
-
-public class Failure : Result, IFailure
-{
-    public Failure(string message, ErrorType errorType = ErrorType.BadRequest) : this(message, Array.Empty<Error>(),
-        errorType)
-    {
-    }
-
-    private Failure(string message, IReadOnlyCollection<Error> errors, ErrorType errorType = ErrorType.BadRequest)
-    {
-        Message = message;
-        Success = false;
-        Errors = errors ?? Array.Empty<Error>();
-        ErrorType = errorType;
-    }
-
-    public string Message { get; set; }
-    public IReadOnlyCollection<Error> Errors { get; }
-    public ErrorType ErrorType { get; }
-
-    public new ActionResult ToErrorResponse()
-    {
-        return ErrorType switch
-        {
-            ErrorType.NotFound => new NotFoundObjectResult(Message),
-            ErrorType.Conflict => new ConflictObjectResult(Message),
-            ErrorType.BadRequest => new BadRequestObjectResult(Message),
-            ErrorType.Unauthorized => new UnauthorizedObjectResult(Message),
-            ErrorType.Forbidden => new ForbidResult(Message),
-            _ => new BadRequestObjectResult(Message)
-        };
-    }
-}
-
-public class Failure<T> : Result<T>, IFailure
-{
-    public Failure(string message, ErrorType errorType = ErrorType.BadRequest) : this(message, Array.Empty<Error>(),
-        errorType)
-    {
-    }
-
-    private Failure(string message, IReadOnlyCollection<Error> errors, ErrorType errorType = ErrorType.BadRequest) :
-        base(default)
-    {
-        Message = message;
-        Success = false;
-        Errors = errors ?? Array.Empty<Error>();
-        ErrorType = errorType;
-    }
-
-    public string Message { get; set; }
-    public IReadOnlyCollection<Error> Errors { get; }
-    public ErrorType ErrorType { get; }
 
     public ActionResult ToErrorResponse()
     {
         return ErrorType switch
         {
-            ErrorType.NotFound => new NotFoundObjectResult(Message),
-            ErrorType.Conflict => new ConflictObjectResult(Message),
-            ErrorType.BadRequest => new BadRequestObjectResult(Message),
-            ErrorType.Unauthorized => new UnauthorizedObjectResult(Message),
-            ErrorType.Forbidden => new ForbidResult(Message),
-            _ => new BadRequestObjectResult(Message)
+            ErrorType.NotFound => new NotFoundObjectResult(Error?.Message),
+            ErrorType.Conflict => new ConflictObjectResult(Error?.Message),
+            ErrorType.BadRequest => new BadRequestObjectResult(Error?.Message),
+            ErrorType.Unauthorized => new UnauthorizedObjectResult(Error?.Message),
+            ErrorType.Forbidden => new ForbidResult(Error?.Message),
+            _ => new BadRequestObjectResult(Error?.Message)
         };
     }
 }
 
-public class NotFoundFailure<T>(string message = " not found.") : Failure<T>(message, ErrorType.NotFound);
-public class ConflictFailure<T>(string message) : Failure<T>(message, ErrorType.Conflict);
-public class BadRequestFailure<T>(string message) : Failure<T>(message, ErrorType.BadRequest);
-public class UnauthorizedFailure<T>(string message) : Failure<T>(message, ErrorType.Unauthorized);
-public class ForbiddenFailure<T>(string message) : Failure<T>(message, ErrorType.Forbidden);
-
-internal interface IFailure
-{
-    string Message { get; }
-    IReadOnlyCollection<Error> Errors { get; }
-    ErrorType ErrorType { get; }
-}
-
-public class Error
-{
-    public Error(string details) : this(null, details)
-    {
-    }
-
-    private Error(string code, string details)
-    {
-        Code = code;
-        Details = details;
-    }
-
-    public string Code { get; }
-    public string Details { get; }
-}
+public class Success<T>(T data) : Result<T>(data);
+public class NotFoundFailure<T>(string message = "Item not found.") : Result<T>(new NotFoundException(message), ErrorType.NotFound);
+public class ConflictFailure<T>(string message) : Result<T>(new ConflictException(message), ErrorType.Conflict);
+public class BadRequestFailure<T>(string message) : Result<T>(new Exception(message), ErrorType.BadRequest);
+public class UnauthorizedFailure<T>(string message) : Result<T>(new Exception(message), ErrorType.Unauthorized);
+public class ForbiddenFailure<T>(string message) : Result<T>(new Exception(message), ErrorType.Forbidden);
 
 public enum ErrorType
 {

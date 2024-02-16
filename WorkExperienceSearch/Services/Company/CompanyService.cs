@@ -35,9 +35,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
 
     public async Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany)
     {
-        var companyExists = await context.Company
-            .AnyAsync(p => p.Name.Equals(createCompany.Name, StringComparison.CurrentCultureIgnoreCase));
-
+        var companyExists = await context.Company.AnyAsync(c => EF.Functions.Like(c.Name, createCompany.Name));
         if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists");
 
         var logoPath = createCompany.Logo != null
@@ -85,7 +83,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         return new Success<Company>(company);
     }
 
-    public async Task<Result> DeleteCompanyAsync(int id)
+    public async Task<Result<Company>> DeleteCompanyAsync(int id)
     {
         var company = await context.Company.FindAsync(id);
         if (company == null) return new NotFoundFailure<Company>("Company not found.");
@@ -93,6 +91,6 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         context.Company.Remove(company);
         await context.SaveChangesAsync();
 
-        return new Success();
+        return new Success<Company>(company);
     }
 }
