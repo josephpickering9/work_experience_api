@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Work_Experience_Search.Controllers;
 
 namespace Work_Experience_Search.Models;
 
@@ -24,4 +25,18 @@ public enum ImageType
     [Description("Card")] Card, // 2
     [Description("Desktop")] Desktop, // 3
     [Description("Mobile")] Mobile // 4
+}
+
+internal static class ProjectImageExtensions
+{
+    static CreateProjectImage ToCreateProjectImage(this ProjectImage value)
+{
+        return new CreateProjectImage
+        {
+            Id = value.Id,
+            Image = null,
+            Type = value.Type,
+            Order = value.Order
+        };
+    }
 }

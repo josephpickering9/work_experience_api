@@ -74,4 +74,16 @@ public class BaseServiceTests
             Slug = title.ToSlug()
         };
     }
+    
+    protected static ProjectImage CreateProjectImage(int id, string image, ImageType type, int? order = null, Project project = null!)
+    {
+        return new ProjectImage
+        {
+            Id = id,
+            Image = image,
+            Type = type,
+            Order = order,
+            Project = project
+        };
+    }
 }

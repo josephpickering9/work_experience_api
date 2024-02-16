@@ -151,4 +151,6 @@ public class CreateProjectImage
     public IFormFile? Image { get; set; }
 
     [Required] public ImageType Type { get; set; }
+
+    public int? Order { get; set; }
 }

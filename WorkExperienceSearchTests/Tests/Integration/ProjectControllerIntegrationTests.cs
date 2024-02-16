@@ -7,12 +7,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Work_Experience_Search;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Tests;
 using Xunit;
 
-namespace Work_Experience_Search.Tests;
+namespace WorkExperienceSearchTests.Tests.Integration;
 
 public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
@@ -376,12 +378,10 @@ public class ProjectControllerIntegrationTests : IClassFixture<CustomWebApplicat
         // Assert
         httpResponse.EnsureSuccessStatusCode();
 
-        using (var scope = _factory.Services.CreateScope())
-        {
-            var context = scope.ServiceProvider.GetRequiredService<Database>();
-            var projectInDb = await context.Project.FindAsync(existingProject.Id);
-            Assert.Null(projectInDb);
-        }
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectInDb = await context.Project.FindAsync(existingProject.Id);
+        Assert.Null(projectInDb);
     }
 
     [Fact]
