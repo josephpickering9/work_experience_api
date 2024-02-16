@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text;
 using Auth0.AuthenticationApi;
 using Auth0.AuthenticationApi.Models;
 using Microsoft.AspNetCore.Http;
@@ -94,6 +95,32 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         return project;
     }
     
+    protected async Task<Tag> CreateTagAsync(
+        int tagId,
+        string title = "Test Tag",
+        TagType type = TagType.Frontend,
+        string? icon = null,
+        string? customColour = null
+    )
+    {
+        var tag = new Tag
+        {
+            Id = tagId,
+            Title = title,
+            Type = type,
+            Icon = icon,
+            CustomColour = customColour
+        };
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+
+        context.Tag.Add(tag);
+        await context.SaveChangesAsync();
+
+        return tag;
+    }
+    
     protected async Task<Company> CreateCompanyAsync(
         int companyId,
         string name = "Test Company",
@@ -116,6 +143,37 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         return company;
+    }
+    
+    protected async Task<ProjectImage> CreateProjectImageAsync(
+        int projectId,
+        int imageId,
+        ImageType type = ImageType.Logo,
+        string image = "testImage",
+        int? order = null
+    )
+    {
+        var projectImage = new ProjectImage
+        {
+            Id = imageId,
+            ProjectId = projectId,
+            Type = type,
+            Image = image,
+            Order = order
+        };
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+
+        context.ProjectImage.Add(projectImage);
+        await context.SaveChangesAsync();
+
+        return projectImage;
+    }
+    
+    protected static StringContent GetJsonContent<T>(T data) where T : class
+    {
+        return new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
     }
     
     protected static MultipartFormDataContent GetMultipartFormDataContent<T>(T data) where T : class

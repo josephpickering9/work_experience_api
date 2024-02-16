@@ -15,6 +15,7 @@ public class ProjectImage
 
     public int? Order { get; set; }
 
+    public int? ProjectId { get; set; } = null!;
     [Required] [JsonIgnore] public Project Project { get; set; }
 }
 
