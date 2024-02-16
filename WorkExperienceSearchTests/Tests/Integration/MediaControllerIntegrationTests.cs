@@ -16,7 +16,8 @@ public class MediaControllerIntegrationTests(CustomWebApplicationFactory customW
         // Arrange
         const string fileName = "testfile.txt";
         const string testContent = "This is a test file.";
-        var webRoot = Factory.Services.GetRequiredService<IWebHostEnvironment>().WebRootPath;
+        var webHostEnvironment = Factory.Services.GetRequiredService<IWebHostEnvironment>();
+        var webRoot = webHostEnvironment.WebRootPath ?? webHostEnvironment.ContentRootPath;
         var filePath = Path.Combine(webRoot, "uploads", fileName);
 
         // Ensure the directory exists
