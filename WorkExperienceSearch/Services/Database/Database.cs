@@ -3,12 +3,8 @@ using Work_Experience_Search.Models;
 
 namespace Work_Experience_Search;
 
-public class Database : DbContext
+public class Database(DbContextOptions<Database> options) : DbContext(options)
 {
-    public Database(DbContextOptions<Database> options) : base(options)
-    {
-    }
-
     public DbSet<Project> Project { get; set; }
     public DbSet<ProjectImage> ProjectImage { get; set; }
     public DbSet<Tag> Tag { get; set; }

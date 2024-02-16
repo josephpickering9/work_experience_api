@@ -1,10 +1,11 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Work_Experience_Search.Filters;
 
-public class SwaggerFileOperationFilter : IOperationFilter
+public abstract class SwaggerFileOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
@@ -14,13 +15,14 @@ public class SwaggerFileOperationFilter : IOperationFilter
                         || p.ParameterType == typeof(IFormFileCollection)
                         || p.ParameterType == typeof(List<IFormFile>));
 
-        if (!formParameters.Any())
+        var parameterInfos = formParameters.ToList();
+        if (!parameterInfos.Any())
             return;
 
         operation.RequestBody.Content.Clear();
         var schema = new OpenApiSchema();
 
-        foreach (var p in formParameters)
+        foreach (var p in parameterInfos)
             if (p.ParameterType == typeof(IFormFile))
             {
                 schema.Properties.Add(p.Name, new OpenApiSchema
