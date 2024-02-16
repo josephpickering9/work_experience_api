@@ -5,18 +5,11 @@ using Work_Experience_Search.Models;
 
 namespace Work_Experience_Search.Services;
 
-public class TagService : ITagService
+public class TagService(Database context) : ITagService
 {
-    private readonly Database.Database _context;
-
-    public TagService(Database.Database context)
-    {
-        _context = context;
-    }
-
     public async Task<IEnumerable<Tag>> GetTagsAsync(string? search)
     {
-        IQueryable<Tag> tags = _context.Tag;
+        IQueryable<Tag> tags = context.Tag;
 
         if (!string.IsNullOrEmpty(search))
             tags = tags.Where(p => p.Title.ToLower().Contains(search.ToLower()));
@@ -26,7 +19,7 @@ public class TagService : ITagService
 
     public async Task<Tag> GetTagAsync(int id)
     {
-        var tag = await _context.Tag.FindAsync(id);
+        var tag = await context.Tag.FindAsync(id);
         if (tag == null) throw new NotFoundException("Tag not found.");
 
         return tag;
@@ -34,7 +27,7 @@ public class TagService : ITagService
 
     public async Task<Tag> GetTagBySlugAsync(string slug)
     {
-        var tag = await _context.Tag.FirstOrDefaultAsync(t => t.Slug == slug);
+        var tag = await context.Tag.FirstOrDefaultAsync(t => t.Slug == slug);
         if (tag == null) throw new NotFoundException("Tag not found.");
 
         return tag;
@@ -42,7 +35,7 @@ public class TagService : ITagService
 
     public async Task<Tag> CreateTagAsync(CreateTag createTag)
     {
-        var tagExists = await _context.Tag
+        var tagExists = await context.Tag
             .AnyAsync(p => p.Title.ToLower() == createTag.Title.ToLower());
 
         if (tagExists) throw new ConflictException("A tag with the same title already exists");
@@ -56,8 +49,8 @@ public class TagService : ITagService
             Slug = createTag.Title.ToSlug()
         };
 
-        _context.Tag.Add(tag);
-        await _context.SaveChangesAsync();
+        context.Tag.Add(tag);
+        await context.SaveChangesAsync();
 
         return tag;
     }
@@ -69,7 +62,7 @@ public class TagService : ITagService
         foreach (var tag in tags)
         {
             var newTag =
-                await _context.Tag.FirstOrDefaultAsync(t =>
+                await context.Tag.FirstOrDefaultAsync(t =>
                     t.Title.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
 
             if (newTag == null)
@@ -82,8 +75,8 @@ public class TagService : ITagService
                     CustomColour = null
                 };
 
-                _context.Tag.Add(newTag);
-                await _context.SaveChangesAsync();
+                context.Tag.Add(newTag);
+                await context.SaveChangesAsync();
             }
 
             newTags.Add(newTag);
@@ -94,10 +87,10 @@ public class TagService : ITagService
 
     public async Task<Tag> UpdateTagAsync(int id, CreateTag createTag)
     {
-        var tag = await _context.Tag.FindAsync(id);
+        var tag = await context.Tag.FindAsync(id);
         if (tag == null) throw new NotFoundException("Tag not found.");
 
-        var tagExists = await _context.Tag
+        var tagExists = await context.Tag
             .AnyAsync(p => p.Id != tag.Id && p.Title.ToLower() == createTag.Title.ToLower());
 
         if (tagExists) throw new ConflictException("A tag with the same title already exists");
@@ -108,7 +101,7 @@ public class TagService : ITagService
         tag.CustomColour = createTag.CustomColour;
         tag.Slug = createTag.Title.ToSlug();
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return tag;
     }
@@ -116,11 +109,11 @@ public class TagService : ITagService
 
     public async Task<Tag> DeleteTagAsync(int id)
     {
-        var tag = await _context.Tag.FindAsync(id);
+        var tag = await context.Tag.FindAsync(id);
         if (tag == null) throw new NotFoundException("Tag not found.");
 
-        _context.Tag.Remove(tag);
-        await _context.SaveChangesAsync();
+        context.Tag.Remove(tag);
+        await context.SaveChangesAsync();
 
         return tag;
     }

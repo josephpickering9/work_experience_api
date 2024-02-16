@@ -6,10 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Work_Experience_Search;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
-using Work_Experience_Search.Services.Database;
+using Work_Experience_Search.Services;
 using Work_Experience_Search.Tests;
 using Xunit;
 
@@ -18,10 +17,10 @@ namespace WorkExperienceSearchTests.Tests.Integration;
 public class BaseControllerIntegrationTests : IAsyncLifetime
 {
     private readonly IConfigurationSection _auth0Settings;
-    protected readonly CustomWebApplicationFactory Factory;
     protected readonly HttpClient AuthenticatedClient;
     protected readonly HttpClient Client;
-    
+    protected readonly CustomWebApplicationFactory Factory;
+
     protected BaseControllerIntegrationTests(CustomWebApplicationFactory factory)
     {
         _auth0Settings = new ConfigurationBuilder()
@@ -29,12 +28,12 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
             .AddJsonFile("appsettings.json")
             .Build()
             .GetSection("Auth0");
-        
+
         Factory = factory;
         Client = Factory.CreateClient();
         AuthenticatedClient = GetAuthenticatedClient().GetAwaiter().GetResult();
     }
-    
+
     public async Task InitializeAsync()
     {
         await ClearDatabase();
@@ -95,7 +94,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
 
         return project;
     }
-    
+
     protected async Task<Tag> CreateTagAsync(
         int tagId,
         string title = "Test Tag",
@@ -121,7 +120,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
 
         return tag;
     }
-    
+
     protected async Task<Company> CreateCompanyAsync(
         int companyId,
         string name = "Test Company",
@@ -145,7 +144,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
 
         return company;
     }
-    
+
     protected async Task<ProjectImage> CreateProjectImageAsync(
         int projectId,
         int imageId,
@@ -171,17 +170,17 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
 
         return projectImage;
     }
-    
+
     protected static StringContent CreateJsonContent<T>(T data) where T : class
     {
         return new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
     }
-    
+
     protected static T? GetJsonContent<T>(string json)
     {
         return JsonConvert.DeserializeObject<T>(json);
     }
-    
+
     protected static MultipartFormDataContent GetMultipartFormDataContent<T>(T data) where T : class
     {
         var content = new MultipartFormDataContent();

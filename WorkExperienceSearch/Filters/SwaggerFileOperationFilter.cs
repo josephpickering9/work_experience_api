@@ -1,11 +1,10 @@
-using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Work_Experience_Search.Filters;
 
-public abstract class SwaggerFileOperationFilter : IOperationFilter
+public class SwaggerFileOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {

@@ -5,20 +5,11 @@ using Work_Experience_Search.Models;
 
 namespace Work_Experience_Search.Services;
 
-public class CompanyService : ICompanyService
+public class CompanyService(Database context, IFileService fileService) : ICompanyService
 {
-    private readonly Database.Database _context;
-    private readonly IFileService _fileService;
-
-    public CompanyService(Database.Database context, IFileService fileService)
-    {
-        _context = context;
-        _fileService = fileService;
-    }
-
     public async Task<IEnumerable<Company>> GetCompaniesAsync(string? search)
     {
-        IQueryable<Company> companies = _context.Company;
+        IQueryable<Company> companies = context.Company;
 
         if (!string.IsNullOrEmpty(search))
             companies = companies.Where(p => p.Name.ToLower().Contains(search.ToLower()));
@@ -28,7 +19,7 @@ public class CompanyService : ICompanyService
 
     public async Task<Company> GetCompanyAsync(int id)
     {
-        var company = await _context.Company.FindAsync(id);
+        var company = await context.Company.FindAsync(id);
         if (company == null) throw new NotFoundException("Company not found.");
 
         return company;
@@ -36,7 +27,7 @@ public class CompanyService : ICompanyService
 
     public async Task<Company> GetCompanyBySlugAsync(string slug)
     {
-        var company = await _context.Company.FirstOrDefaultAsync(p => p.Slug == slug);
+        var company = await context.Company.FirstOrDefaultAsync(p => p.Slug == slug);
         if (company == null) throw new NotFoundException("Company not found.");
 
         return company;
@@ -44,13 +35,13 @@ public class CompanyService : ICompanyService
 
     public async Task<Company> CreateCompanyAsync(CreateCompany createCompany)
     {
-        var companyExists = await _context.Company
+        var companyExists = await context.Company
             .AnyAsync(p => p.Name.Equals(createCompany.Name, StringComparison.CurrentCultureIgnoreCase));
 
         if (companyExists) throw new ConflictException("A company with the same title already exists");
 
         var logoPath = createCompany.Logo != null
-            ? Path.GetFileName(await _fileService.SaveFileAsync(createCompany.Logo))
+            ? Path.GetFileName(await fileService.SaveFileAsync(createCompany.Logo))
             : null;
 
         var company = new Company
@@ -62,24 +53,24 @@ public class CompanyService : ICompanyService
             Slug = createCompany.Name.ToSlug()
         };
 
-        _context.Company.Add(company);
-        await _context.SaveChangesAsync();
+        context.Company.Add(company);
+        await context.SaveChangesAsync();
 
         return company;
     }
 
     public async Task<Company> UpdateCompanyAsync(int id, CreateCompany createCompany)
     {
-        var company = await _context.Company.FindAsync(id);
+        var company = await context.Company.FindAsync(id);
         if (company == null) throw new NotFoundException("Company not found.");
 
-        var companyExists = await _context.Company
+        var companyExists = await context.Company
             .AnyAsync(p => p.Id != company.Id && p.Name.ToLower() == createCompany.Name.ToLower());
 
         if (companyExists) throw new ConflictException("A company with the same title already exists");
 
         var logoPath = createCompany.Logo != null
-            ? Path.GetFileName(await _fileService.SaveFileAsync(createCompany.Logo))
+            ? Path.GetFileName(await fileService.SaveFileAsync(createCompany.Logo))
             : null;
 
         if (logoPath != null) company.Logo = logoPath;
@@ -89,7 +80,7 @@ public class CompanyService : ICompanyService
         company.Website = createCompany.Website;
         company.Slug = createCompany.Name.ToSlug();
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return company;
     }
@@ -97,11 +88,11 @@ public class CompanyService : ICompanyService
 
     public async Task<Company> DeleteCompanyAsync(int id)
     {
-        var company = await _context.Company.FindAsync(id);
+        var company = await context.Company.FindAsync(id);
         if (company == null) throw new NotFoundException("Company not found.");
 
-        _context.Company.Remove(company);
-        await _context.SaveChangesAsync();
+        context.Company.Remove(company);
+        await context.SaveChangesAsync();
 
         return company;
     }

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
 
-namespace Work_Experience_Search.Services.Database;
+namespace Work_Experience_Search.Services;
 
 public class Database(DbContextOptions<Database> options) : DbContext(options)
 {

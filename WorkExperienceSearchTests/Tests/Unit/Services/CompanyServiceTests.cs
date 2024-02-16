@@ -3,10 +3,9 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
-using Work_Experience_Search.Tests.Unit;
 using Xunit;
 
-namespace WorkExperienceSearchTests.Tests.Unit;
+namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
 public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
 {
@@ -17,7 +16,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         var mockFileService = new Mock<IFileService>();
         _companyService = new CompanyService(Context, mockFileService.Object);
     }
-    
+
     public async Task InitializeAsync()
     {
         await ClearDatabase();
@@ -98,11 +97,11 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
 
         // Act
         await _companyService.CreateCompanyAsync(createCompany);
-        
+
         // Assert
         await Assert.ThrowsAsync<ConflictException>(() => _companyService.CreateCompanyAsync(createCompany));
     }
-    
+
     [Fact]
     public async Task UpdateCompanyAsync_ValidId_ReturnsUpdatedCompany()
     {
@@ -126,7 +125,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         Assert.Equal(updateCompany.Description, result.Description);
         Assert.Equal(updateCompany.Website, result.Website);
     }
-    
+
     [Fact]
     public async Task UpdateCompanyAsync_InvalidId_ThrowsNotFoundException()
     {
@@ -143,7 +142,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() => _companyService.UpdateCompanyAsync(companyId, updateCompany));
     }
-    
+
     [Fact]
     public async Task DeleteCompanyAsync_ValidId_DeletesCompany()
     {
@@ -160,7 +159,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         var companyInDb = await Context.Company.FindAsync(companyId);
         Assert.Null(companyInDb);
     }
-    
+
     [Fact]
     public async Task DeleteCompanyAsync_InvalidId_ThrowsNotFoundException()
     {
@@ -170,7 +169,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() => _companyService.DeleteCompanyAsync(companyId));
     }
-    
+
     private async Task SeedDatabase()
     {
         if (!Context.Company.Any())
@@ -179,11 +178,11 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
             await Context.SaveChangesAsync();
         }
     }
-    
+
     private static List<Company> GetTestCompanies()
     {
         var company = CreateCompany(1, "Test Company", "Test Description", "testLogo", "https://example.com");
-        
+
         return [company];
     }
 }

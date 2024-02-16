@@ -1,17 +1,9 @@
 using System.Net;
-using System.Net.Http.Headers;
-using Auth0.AuthenticationApi;
-using Auth0.AuthenticationApi.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Work_Experience_Search;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
-using Work_Experience_Search.Services.Database;
 using Work_Experience_Search.Tests;
 using Xunit;
 
@@ -30,7 +22,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             await CreateProjectAsync(2),
             await CreateProjectAsync(3)
         };
-        
+
         // Act
         var httpResponse = await Client.GetAsync("/project");
         httpResponse.EnsureSuccessStatusCode();

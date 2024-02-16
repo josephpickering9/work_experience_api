@@ -17,7 +17,7 @@ public class TagController(ITagService tagService) : ControllerBase
         return Ok(await tagService.GetTagsAsync(search));
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<Tag>> GetTag(int id)
     {
         try
@@ -30,7 +30,7 @@ public class TagController(ITagService tagService) : ControllerBase
         }
     }
 
-    [HttpGet("slug/{slug}")]
+    [HttpGet("{slug}")]
     public async Task<ActionResult<Tag>> GetTag(string slug)
     {
         try
@@ -62,7 +62,7 @@ public class TagController(ITagService tagService) : ControllerBase
         }
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     [Authorize]
     public async Task<ActionResult<Tag>> PutTag(int id, [FromBody] CreateTag createTag)
     {
@@ -81,7 +81,7 @@ public class TagController(ITagService tagService) : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteTag(int id)
     {

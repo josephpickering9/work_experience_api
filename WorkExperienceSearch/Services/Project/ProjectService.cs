@@ -5,18 +5,12 @@ using Work_Experience_Search.Models;
 
 namespace Work_Experience_Search.Services;
 
-public class ProjectService : IProjectService
+public class ProjectService(Database context, IProjectImageService projectImageService, ITagService tagService)
+    : IProjectService
 {
-    private readonly Database.Database _context;
-    private readonly IProjectImageService _projectImageService;
-    private readonly ITagService _tagService;
-
-    public ProjectService(Database.Database context, IProjectImageService projectImageService, ITagService tagService)
-    {
-        _context = context;
-        _projectImageService = projectImageService;
-        _tagService = tagService;
-    }
+    private readonly Database _context = context;
+    private readonly IProjectImageService _projectImageService = projectImageService;
+    private readonly ITagService _tagService = tagService;
 
     public async Task<IEnumerable<Project>> GetProjectsAsync(string? search)
     {

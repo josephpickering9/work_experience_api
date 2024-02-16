@@ -52,5 +52,4 @@ public class MediaControllerIntegrationTests(CustomWebApplicationFactory customW
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
-    
 }

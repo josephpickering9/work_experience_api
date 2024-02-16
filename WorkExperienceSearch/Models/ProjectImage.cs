@@ -30,8 +30,8 @@ public enum ImageType
 
 internal static class ProjectImageExtensions
 {
-    static CreateProjectImage ToCreateProjectImage(this ProjectImage value)
-{
+    private static CreateProjectImage ToCreateProjectImage(this ProjectImage value)
+    {
         return new CreateProjectImage
         {
             Id = value.Id,

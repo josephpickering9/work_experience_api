@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System.Net;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
@@ -113,7 +112,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PostCompany_ExistingCompany_ReturnsConflict()
     {
         // Arrange
-        await CreateCompanyAsync(1, name: "Conflict Company");
+        await CreateCompanyAsync(1, "Conflict Company");
         var newCompany = new CreateCompany
         {
             Name = "Conflict Company",
@@ -128,7 +127,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, httpResponse.StatusCode);
     }
-    
+
     [Fact]
     public async Task PutCompany_ExistingId_UpdatesCompany()
     {
@@ -157,7 +156,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.Equal(updateCompany.Description, actualCompany.Description);
         Assert.Equal(updateCompany.Website, actualCompany.Website);
     }
-    
+
     [Fact]
     public async Task PutCompany_NonExistingId_ReturnsNotFound()
     {
@@ -177,21 +176,21 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
-    
+
     [Fact]
     public async Task DeleteCompany_ExistingId_DeletesCompany()
     {
         // Arrange
         const int companyId = 1;
         await CreateCompanyAsync(companyId);
-        
+
         // Act
         var httpResponse = await AuthenticatedClient.DeleteAsync($"/company/{companyId}");
 
         // Assert
         httpResponse.EnsureSuccessStatusCode();
     }
-    
+
     [Fact]
     public async Task DeleteCompany_NonExistingId_ReturnsNotFound()
     {

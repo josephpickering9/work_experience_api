@@ -2,10 +2,9 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
-using Work_Experience_Search.Tests.Unit;
 using Xunit;
 
-namespace WorkExperienceSearchTests.Tests.Unit;
+namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
 public class TagServiceTests : BaseServiceTests, IAsyncLifetime
 {
@@ -15,7 +14,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     {
         _tagService = new TagService(Context);
     }
-    
+
     public async Task InitializeAsync()
     {
         await ClearDatabase();
@@ -97,7 +96,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         // Act & Assert
         await Assert.ThrowsAsync<ConflictException>(() => _tagService.CreateTagAsync(createTag));
     }
-    
+
     [Fact]
     public async Task UpdateTagAsync_ValidId_ReturnsUpdatedTag()
     {
@@ -119,7 +118,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         Assert.Equal(tagId, result.Id);
         Assert.Equal(updateTag.Title, result.Title);
     }
-    
+
     [Fact]
     public async Task UpdateTagAsync_InvalidId_ThrowsNotFoundException()
     {
@@ -136,7 +135,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() => _tagService.UpdateTagAsync(tagId, updateTag));
     }
-    
+
     [Fact]
     public async Task DeleteTagAsync_ValidId_DeletesTag()
     {
@@ -153,7 +152,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         var tagInDb = await Context.Tag.FindAsync(tagId);
         Assert.Null(tagInDb);
     }
-    
+
     [Fact]
     public async Task DeleteTagAsync_InvalidId_ThrowsNotFoundException()
     {
@@ -163,7 +162,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(() => _tagService.DeleteTagAsync(tagId));
     }
-    
+
     private async Task SeedDatabase()
     {
         if (!Context.Tag.Any())
@@ -172,7 +171,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
             await Context.SaveChangesAsync();
         }
     }
-    
+
     private static List<Tag> GetTestTags()
     {
         var cSharpTag = CreateTag(1, "C#", TagType.Backend);

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Work_Experience_Search.Services.Database;
+using Work_Experience_Search.Services;
 
 namespace Work_Experience_Search.Tests;
 

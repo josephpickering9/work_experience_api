@@ -4,10 +4,9 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
-using Work_Experience_Search.Tests.Unit;
 using Xunit;
 
-namespace WorkExperienceSearchTests.Tests.Unit;
+namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
 public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
 {
@@ -264,7 +263,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
             await Context.SaveChangesAsync();
         }
     }
-    
+
     private async Task<Project> SaveProject(Project project)
     {
         await Context.Project.AddAsync(project);

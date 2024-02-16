@@ -5,16 +5,10 @@ using Work_Experience_Search.Models;
 
 namespace Work_Experience_Search.Services;
 
-public class ProjectImageService : IProjectImageService
+public class ProjectImageService(Database context, IFileService fileService) : IProjectImageService
 {
-    private readonly Database.Database _context;
-    private readonly IFileService _fileService;
-
-    public ProjectImageService(Database.Database context, IFileService fileService)
-    {
-        _context = context;
-        _fileService = fileService;
-    }
+    private readonly Database _context = context;
+    private readonly IFileService _fileService = fileService;
 
     public async Task<IEnumerable<ProjectImage>> GetProjectImagesAsync(int projectId)
     {
@@ -43,7 +37,7 @@ public class ProjectImageService : IProjectImageService
         return await SyncProjectImagesAsync(project, images);
     }
 
-    public async Task<List<ProjectImage>> SyncProjectImagesAsync(Models.Project project, List<CreateProjectImage> images)
+    public async Task<List<ProjectImage>> SyncProjectImagesAsync(Project project, List<CreateProjectImage> images)
     {
         var imageIds = images.Select(i => i.Id).ToList();
         var imagesToDelete = project.Images.Where(i => !imageIds.Contains(i.Id)).ToList();

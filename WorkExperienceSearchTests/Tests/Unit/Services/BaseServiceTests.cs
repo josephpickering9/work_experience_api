@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
-using Work_Experience_Search.Services.Database;
+using Work_Experience_Search.Services;
 
-namespace Work_Experience_Search.Tests.Unit;
+namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
 public class BaseServiceTests
 {
@@ -16,7 +16,7 @@ public class BaseServiceTests
 
         Context = new Database(options);
     }
-    
+
     protected async Task ClearDatabase()
     {
         Context.Project.RemoveRange(Context.Project);
@@ -25,7 +25,7 @@ public class BaseServiceTests
         Context.ProjectImage.RemoveRange(Context.ProjectImage);
         await Context.SaveChangesAsync();
     }
-    
+
     protected static Tag CreateTag(int id, string title, TagType type, List<Project>? projects = null)
     {
         return new Tag
@@ -75,8 +75,9 @@ public class BaseServiceTests
             Slug = title.ToSlug()
         };
     }
-    
-    protected static ProjectImage CreateProjectImage(int id, string image, ImageType type, int? order = null, Project project = null!)
+
+    protected static ProjectImage CreateProjectImage(int id, string image, ImageType type, int? order = null,
+        Project project = null!)
     {
         return new ProjectImage
         {
