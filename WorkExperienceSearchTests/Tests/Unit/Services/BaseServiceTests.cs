@@ -35,7 +35,7 @@ public class BaseServiceTests
             Type = type,
             Icon = "testIcon",
             CustomColour = null,
-            Projects = projects ?? new List<Project>()
+            Projects = projects ?? []
         };
     }
 
@@ -76,8 +76,13 @@ public class BaseServiceTests
         };
     }
 
-    protected static ProjectImage CreateProjectImage(int id, string image, ImageType type, int? order = null,
-        Project project = null!)
+    protected static ProjectImage CreateProjectImage(
+        int id,
+        string image,
+        ImageType type,
+        int? order = null,
+        Project project = null!
+    )
     {
         return new ProjectImage
         {

@@ -2,6 +2,7 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Utils;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
@@ -30,7 +31,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetTagsAsync_NoSearch_ReturnsAllTags()
     {
         // Act
-        var result = await _tagService.GetTagsAsync(null);
+        var result = (await _tagService.GetTagsAsync(null)).ExpectSuccess();
 
         // Assert
         Assert.Equal(3, result.Count());
@@ -40,10 +41,10 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetTagAsync_ValidId_ReturnsTag()
     {
         // Arrange
-        var tagId = 1;
+        const int tagId = 1;
 
         // Act
-        var result = await _tagService.GetTagAsync(tagId);
+        var result = (await _tagService.GetTagAsync(tagId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -51,13 +52,17 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetTagAsync_InvalidId_ThrowsNotFoundException()
+    public async Task GetTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var tagId = 99;
+        const int tagId = 99;
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _tagService.GetTagAsync(tagId));
+        // Act 
+        var result = (await _tagService.GetTagAsync(tagId)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Tag not found.", result.Message);
     }
 
     [Fact]
@@ -73,7 +78,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         // Act
-        var result = await _tagService.CreateTagAsync(createTag);
+        var result = (await _tagService.CreateTagAsync(createTag)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -82,7 +87,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateTagAsync_ExistingTag_ThrowsConflictException()
+    public async Task CreateTagAsync_ExistingTag_ThrowsConflictFailure()
     {
         // Arrange
         var createTag = new CreateTag
@@ -93,15 +98,19 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
             CustomColour = null
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ConflictException>(() => _tagService.CreateTagAsync(createTag));
+        // Act 
+        var result = (await _tagService.CreateTagAsync(createTag)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<ConflictException>(result);
+        Assert.Equal("A tag with the same title already exists.", result.Message);
     }
 
     [Fact]
     public async Task UpdateTagAsync_ValidId_ReturnsUpdatedTag()
     {
         // Arrange
-        var tagId = 1;
+        const int tagId = 1;
         var updateTag = new CreateTag
         {
             Title = "Updated Tag",
@@ -111,7 +120,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         // Act
-        var result = await _tagService.UpdateTagAsync(tagId, updateTag);
+        var result = (await _tagService.UpdateTagAsync(tagId, updateTag)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -120,10 +129,10 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateTagAsync_InvalidId_ThrowsNotFoundException()
+    public async Task UpdateTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var tagId = 99;
+        const int tagId = 99;
         var updateTag = new CreateTag
         {
             Title = "Updated Tag",
@@ -132,18 +141,22 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
             CustomColour = null
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _tagService.UpdateTagAsync(tagId, updateTag));
+        // Act 
+        var result = (await _tagService.UpdateTagAsync(tagId, updateTag)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Tag not found.", result.Message);
     }
 
     [Fact]
     public async Task DeleteTagAsync_ValidId_DeletesTag()
     {
         // Arrange
-        var tagId = 1;
+        const int tagId = 1;
 
         // Act
-        var result = await _tagService.DeleteTagAsync(tagId);
+        var result = (await _tagService.DeleteTagAsync(tagId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -154,13 +167,17 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task DeleteTagAsync_InvalidId_ThrowsNotFoundException()
+    public async Task DeleteTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var tagId = 99;
+        const int tagId = 99;
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _tagService.DeleteTagAsync(tagId));
+        // Act 
+        var result = (await _tagService.DeleteTagAsync(tagId)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Tag not found.", result.Message);
     }
 
     private async Task SeedDatabase()
@@ -172,7 +189,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         }
     }
 
-    private static List<Tag> GetTestTags()
+    private static IEnumerable<Tag> GetTestTags()
     {
         var cSharpTag = CreateTag(1, "C#", TagType.Backend);
         var aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);

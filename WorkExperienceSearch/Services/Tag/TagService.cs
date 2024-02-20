@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Controllers;
-using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
@@ -13,7 +13,7 @@ public class TagService(Database context) : ITagService
         IQueryable<Tag> tags = context.Tag;
 
         if (!string.IsNullOrEmpty(search))
-            tags = tags.Where(p => EF.Functions.ILike(p.Title, search));
+            tags = tags.Where(p => DatabaseExtensions.ILike(p.Title, search));
 
         return new Success<IEnumerable<Tag>>(await tags.ToListAsync());
     }
@@ -36,8 +36,8 @@ public class TagService(Database context) : ITagService
 
     public async Task<Result<Tag>> CreateTagAsync(CreateTag createTag)
     {
-        var tagExists = await context.Tag.AnyAsync(p => EF.Functions.ILike(p.Title, createTag.Title));
-        if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists");
+        var tagExists = await context.Tag.AnyAsync(p => DatabaseExtensions.ILike(p.Title, createTag.Title));
+        if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
 
         var tag = new Tag
         {
@@ -89,9 +89,9 @@ public class TagService(Database context) : ITagService
         var tag = await context.Tag.FindAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
 
-        var tagExists = await context.Tag.AnyAsync(t => t.Id != tag.Id && EF.Functions.ILike(t.Title, createTag.Title));
-
-        if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists");
+        var tagExists =
+            await context.Tag.AnyAsync(t => t.Id != tag.Id && DatabaseExtensions.ILike(t.Title, createTag.Title));
+        if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
 
         tag.Title = createTag.Title;
         tag.Type = createTag.Type;

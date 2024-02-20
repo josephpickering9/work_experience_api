@@ -2,6 +2,7 @@
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
@@ -12,7 +13,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         IQueryable<Company> companies = context.Company;
 
         if (!string.IsNullOrEmpty(search))
-            companies = companies.Where(c => EF.Functions.ILike(c.Name, search));
+            companies = companies.Where(c => DatabaseExtensions.ILike(c.Name, search));
 
         return await companies.ToListAsync();
     }
@@ -35,14 +36,14 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
 
     public async Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany)
     {
-        var companyExists = await context.Company.AnyAsync(c => EF.Functions.ILike(c.Name, createCompany.Name));
-        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists");
+        var companyExists = await context.Company.AnyAsync(c => DatabaseExtensions.ILike(c.Name, createCompany.Name));
+        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;
         if (createCompany.Logo != null)
         {
             var logoFile = await fileService.SaveFileAsync(createCompany.Logo);
-            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved");
+            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
 
             logoPath = Path.GetFileName(logoFile.Data);
         }
@@ -67,14 +68,15 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         var company = await context.Company.FindAsync(id);
         if (company == null) return new NotFoundFailure<Company>("Company not found.");
 
-        var companyExists = await context.Company.AnyAsync(p => p.Id != company.Id && EF.Functions.ILike(p.Name, createCompany.Name));
-        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists");
+        var companyExists = await context.Company.AnyAsync(p =>
+            p.Id != company.Id && DatabaseExtensions.ILike(p.Name, createCompany.Name));
+        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;
         if (createCompany.Logo != null)
         {
             var logoFile = await fileService.SaveFileAsync(createCompany.Logo);
-            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved");
+            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
 
             logoPath = Path.GetFileName(logoFile.Data);
         }

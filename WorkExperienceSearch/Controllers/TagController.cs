@@ -13,7 +13,8 @@ public class TagController(ITagService tagService) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Tag>>> GetTags(string? search)
     {
-        return Ok(await tagService.GetTagsAsync(search));
+        var tags = await tagService.GetTagsAsync(search);
+        return tags.ToResponse();
     }
 
     [HttpGet("{id:int}")]

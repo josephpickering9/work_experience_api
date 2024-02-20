@@ -36,14 +36,14 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         var result = await _companyService.GetCompaniesAsync(null);
 
         // Assert
-        Assert.Equal(1, result.Count());
+        Assert.Single(result);
     }
 
     [Fact]
     public async Task GetCompanyAsync_ValidId_ReturnsCompany()
     {
         // Arrange
-        var companyId = 1;
+        const int companyId = 1;
 
         // Act
         var result = (await _companyService.GetCompanyAsync(companyId)).ExpectSuccess();
@@ -54,13 +54,17 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetCompanyAsync_InvalidId_ThrowsNotFoundException()
+    public async Task GetCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var companyId = 99;
+        const int companyId = 99;
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _companyService.GetCompanyAsync(companyId));
+        // Act
+        var result = (await _companyService.GetCompanyAsync(companyId)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Company not found.", result.Message);
     }
 
     [Fact]
@@ -85,29 +89,31 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateCompanyAsync_ExistingCompany_ThrowsConflictException()
+    public async Task CreateCompanyAsync_ExistingCompany_ThrowsConflictFailure()
     {
         // Arrange
         var createCompany = new CreateCompany
         {
-            Name = "New Company",
-            Description = "New Description",
+            Name = "Conflict Company",
+            Description = "Conflict Description",
             Logo = null,
             Website = "https://example.com"
         };
+        (await _companyService.CreateCompanyAsync(createCompany)).ExpectSuccess();
 
         // Act
-        await _companyService.CreateCompanyAsync(createCompany);
+        var result = (await _companyService.CreateCompanyAsync(createCompany)).ExpectFailure();
 
         // Assert
-        await Assert.ThrowsAsync<ConflictException>(() => _companyService.CreateCompanyAsync(createCompany));
+        Assert.IsType<ConflictException>(result);
+        Assert.Equal("A company with the same title already exists.", result.Message);
     }
 
     [Fact]
     public async Task UpdateCompanyAsync_ValidId_ReturnsUpdatedCompany()
     {
         // Arrange
-        var companyId = 1;
+        const int companyId = 1;
         var updateCompany = new CreateCompany
         {
             Name = "Updated Company",
@@ -128,10 +134,10 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateCompanyAsync_InvalidId_ThrowsNotFoundException()
+    public async Task UpdateCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var companyId = 99;
+        const int companyId = 99;
         var updateCompany = new CreateCompany
         {
             Name = "Updated Company",
@@ -140,15 +146,19 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
             Website = "https://updated-example.com"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _companyService.UpdateCompanyAsync(companyId, updateCompany));
+        // Act
+        var result = (await _companyService.UpdateCompanyAsync(companyId, updateCompany)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Company not found.", result.Message);
     }
 
     [Fact]
     public async Task DeleteCompanyAsync_ValidId_DeletesCompany()
     {
         // Arrange
-        var companyId = 1;
+        const int companyId = 1;
 
         // Act
         (await _companyService.DeleteCompanyAsync(companyId)).ExpectSuccess();
@@ -159,13 +169,17 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task DeleteCompanyAsync_InvalidId_ThrowsNotFoundException()
+    public async Task DeleteCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var companyId = 99;
+        const int companyId = 99;
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _companyService.DeleteCompanyAsync(companyId));
+        // Act
+        var result = (await _companyService.DeleteCompanyAsync(companyId)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Company not found.", result.Message);
     }
 
     private async Task SeedDatabase()
@@ -177,7 +191,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         }
     }
 
-    private static List<Company> GetTestCompanies()
+    private static IEnumerable<Company> GetTestCompanies()
     {
         var company = CreateCompany(1, "Test Company", "Test Description", "testLogo", "https://example.com");
 

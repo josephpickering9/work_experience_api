@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
@@ -15,7 +16,8 @@ public class ProjectService(Database context, IProjectImageService projectImageS
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0));
 
         if (!string.IsNullOrEmpty(search))
-            projects = projects.Where(p => EF.Functions.ILike(p.Title, search) || EF.Functions.ILike(p.ShortDescription, search));
+            projects = projects.Where(p =>
+                DatabaseExtensions.ILike(p.Title, search) || DatabaseExtensions.ILike(p.ShortDescription, search));
 
         return new Success<IEnumerable<Project>>(await projects.OrderByDescending(p => p.Year).ToListAsync());
     }
@@ -69,7 +71,7 @@ public class ProjectService(Database context, IProjectImageService projectImageS
 
     public async Task<Result<Project>> CreateProjectAsync(CreateProject createProject)
     {
-        var projectExists = await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, createProject.Title));
+        var projectExists = await context.Project.AnyAsync(p => DatabaseExtensions.ILike(p.Title, createProject.Title));
         if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         var project = new Project
@@ -112,7 +114,8 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         if (!projectResult.IsSuccess) return projectResult;
 
         var project = projectResult.Data;
-        var projectExists = await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title));
+        var projectExists = await context.Project.AnyAsync(p =>
+            p.Id != project.Id && DatabaseExtensions.ILike(p.Title, createProject.Title));
         if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         project.Title = createProject.Title;

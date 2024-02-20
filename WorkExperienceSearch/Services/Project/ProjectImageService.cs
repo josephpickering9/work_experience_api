@@ -33,7 +33,8 @@ public class ProjectImageService(Database context, IFileService fileService) : I
         return await SyncProjectImagesAsync(project, images);
     }
 
-    public async Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(Project project, List<CreateProjectImage> images)
+    public async Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(Project project,
+        List<CreateProjectImage> images)
     {
         var imageIds = images.Select(i => i.Id).ToList();
         var imagesToDelete = project.Images.Where(i => !imageIds.Contains(i.Id)).ToList();
@@ -80,12 +81,4 @@ public class ProjectImageService(Database context, IFileService fileService) : I
 
         return new Success<List<ProjectImage>>(imagesToSave);
     }
-
-    // private async Task<Result<Project>> GetProjectAsync(int projectId)
-    // {
-    //     var project = await context.Project.FindAsync(projectId);
-    //     if (project == null) return new NotFoundFailure<Project>("Project not found.");
-    //
-    //     return new Success<Project>(project);
-    // }
 }

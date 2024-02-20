@@ -46,7 +46,7 @@ public class ProjectController(IProjectService projectService) : ControllerBase
         var project = await projectService.CreateProjectAsync(createProject);
         if (!project.IsSuccess) return project.ToErrorResponse();
 
-        return CreatedAtAction("GetProject", new { id = project.Data.Id }, project);
+        return CreatedAtAction("GetProject", new { id = project.Data.Id }, project.Data);
     }
 
     [HttpPut("{id:int}")]
