@@ -29,7 +29,7 @@ public class ProjectService(
 
     public async Task<Result<Project>> GetProjectBySlugAsync(string slug)
     {
-        var project = await GetProjectsQuery().FirstOrDefaultAsync(p => p.Slug == slug);
+        var project = await GetProjectsQuery().SingleOrDefaultAsync(p => p.Slug == slug);
         if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
         return new Success<Project>(project);
@@ -99,8 +99,7 @@ public class ProjectService(
         if (!projectResult.IsSuccess || projectResult.Data == null) return projectResult;
 
         var project = projectResult.Data;
-        var projectExists = await context.Project.AnyAsync(p =>
-            p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title));
+        var projectExists = await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title));
         if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         project.Title = createProject.Title;
@@ -112,23 +111,14 @@ public class ProjectService(
         project.ShowMockup = createProject.ShowMockup;
         project.Slug = createProject.Title.ToSlug();
 
-        if (createProject.Tags.Count > 0)
-        {
-            var tags = await tagService.SyncTagsAsync(createProject.Tags);
-            if (!tags.IsSuccess || tags.Data == null) return new BadRequestFailure<Project>("Tags could not be created");
+        var tagsResult = await SyncProjectTags(project, createProject);
+        if (!tagsResult.IsSuccess) return tagsResult;
 
-            project.Tags = tags.Data;
-            await context.SaveChangesAsync();
-        }
+        var imagesResult = await SyncProjectImages(project, createProject);
+        if (!imagesResult.IsSuccess) return imagesResult;
 
-        if (createProject.Images.Count > 0)
-        {
-            var images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
-            if (!images.IsSuccess || images.Data == null) return new BadRequestFailure<Project>("Images could not be created");
-
-            project.Images = images.Data;
-            await context.SaveChangesAsync();
-        }
+        var repositoriesResults = await SyncProjectRepositories(project, createProject);
+        if (!repositoriesResults.IsSuccess) return repositoriesResults;
 
         context.Entry(project).State = EntityState.Modified;
         await context.SaveChangesAsync();
@@ -155,17 +145,21 @@ public class ProjectService(
             .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0));
 
         if (!string.IsNullOrEmpty(search))
-            projects = projects.Where(p => DatabaseExtensions.ILike(p.Title, search) || DatabaseExtensions.ILike(p.ShortDescription, search));
+            projects = projects.Where(p => EF.Functions.ILike(p.Title, search) || EF.Functions.ILike(p.ShortDescription, search));
 
-        return projects;
+        return projects.OrderByDescending(p => p.Year);
     }
 
     private async Task<Result<Project>> SyncProjectTags(Project project, CreateProject createProject)
     {
-        if (createProject.Tags.Count <= 0) return new Success<Project>(project);
-
         var tags = await tagService.SyncTagsAsync(createProject.Tags);
         if (!tags.IsSuccess || tags.Data == null) return new BadRequestFailure<Project>("Tags could not be created");
+
+        var projectTagsToDelete = project.Tags.Where(t => tags.Data.All(x => x.Id != t.Id)).ToList();
+        foreach (var tag in projectTagsToDelete)
+        {
+            project.Tags.Remove(tag);
+        }
 
         project.Tags = tags.Data;
 
@@ -174,8 +168,6 @@ public class ProjectService(
 
     private async Task<Result<Project>> SyncProjectImages(Project project, CreateProject createProject)
     {
-        if (createProject.Images.Count <= 0) return new Success<Project>(project);
-
         var images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
         if (!images.IsSuccess || images.Data == null) return new BadRequestFailure<Project>("Images could not be created");
 
@@ -187,8 +179,6 @@ public class ProjectService(
 
     private async Task<Result<Project>> SyncProjectRepositories(Project project, CreateProject createProject)
     {
-        if (project.Repositories.Count <= 0) return new Success<Project>(project);
-
         var repositories = await projectRepositoryService.SyncProjectRepositoriesAsync(project, createProject.Repositories);
         if (!repositories.IsSuccess || repositories.Data == null) return new BadRequestFailure<Project>("Repositories could not be created");
 

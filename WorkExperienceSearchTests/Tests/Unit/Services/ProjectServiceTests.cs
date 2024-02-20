@@ -66,6 +66,21 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetProjectsAsync_OrderedByYearDescending()
+    {
+        // Arrange is done in the constructor
+
+        // Act
+        var result = (await _projectService.GetProjectsAsync(null)).ExpectSuccess().ToList();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("BeatCovidNE", result[0].Title);
+        Assert.Equal("Visit Northumberland", result[1].Title);
+        Assert.Equal("taxigoat", result[2].Title);
+    }
+    
+    [Fact]
     public async Task GetProjectAsync_ValidId_ReturnsProject()
     {
         // Arrange
@@ -83,10 +98,10 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetProjectBySlugAsync_ValidSlug_ReturnsProject()
     {
         // Arrange
-        const string validSlug = "visit-northumberland";
-        await SaveProject(CreateProject(5, "Visit Northumberland", "Visit Northumberland Description",
-            "Visit Northumberland Short Description", 1, 2021,
-            "https://visitnorthumberland.com", []));
+        const string validSlug = "client-portal";
+        await SaveProject(CreateProject(5, "Client Portal", "Client Portal Description",
+            "Client Portal Short Description", 1, 2021,
+            "https://clientportal.com", []));
 
         // Act
         var result = (await _projectService.GetProjectBySlugAsync(validSlug)).ExpectSuccess();
@@ -294,7 +309,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
             CreateProject(1, "Visit Northumberland",
                 "A website for Visit Northumberland using C# and ASP.NET Core MVC.",
                 "A website for Visit Northumberland", company.Id,
-                2021, "https://visitnorthumberland.com/", [cSharpTag, aspNetCoreTag]),
+                2020, "https://visitnorthumberland.com/", [cSharpTag, aspNetCoreTag]),
 
             CreateProject(2, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
                 "A website for BeatCovidNE", company.Id, 2021,
@@ -302,7 +317,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
 
             CreateProject(3, "taxigoat",
                 "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.",
-                "A website for taxigoat", company.Id, 2021,
+                "A website for taxigoat", company.Id, 2019,
                 "https://taxigoat.co.uk/", [xamarinFormsTag])
         ];
     }

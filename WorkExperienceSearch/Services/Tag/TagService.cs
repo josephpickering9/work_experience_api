@@ -13,7 +13,7 @@ public class TagService(Database context) : ITagService
         IQueryable<Tag> tags = context.Tag;
 
         if (!string.IsNullOrEmpty(search))
-            tags = tags.Where(p => DatabaseExtensions.ILike(p.Title, search));
+            tags = tags.Where(p => EF.Functions.ILike(p.Title, search));
 
         return new Success<IEnumerable<Tag>>(await tags.ToListAsync());
     }
@@ -56,17 +56,18 @@ public class TagService(Database context) : ITagService
 
     public async Task<Result<List<Tag>>> SyncTagsAsync(List<string> tags)
     {
-        var newTags = new List<Tag>();
+        var tagsList = new List<Tag>();
 
         foreach (var tag in tags)
         {
-            var newTag =
-                await context.Tag.FirstOrDefaultAsync(t =>
-                    t.Title.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
-
-            if (newTag == null)
+            var existingTag = await context.Tag.FirstOrDefaultAsync(t => EF.Functions.ILike(tag, t.Title));
+            if (existingTag != null)
             {
-                newTag = new Tag
+                tagsList.Add(existingTag);
+            }
+            else
+            {
+                var newTag = new Tag
                 {
                     Title = tag,
                     Type = TagType.Default,
@@ -76,12 +77,12 @@ public class TagService(Database context) : ITagService
 
                 context.Tag.Add(newTag);
                 await context.SaveChangesAsync();
-            }
 
-            newTags.Add(newTag);
+                tagsList.Add(newTag);
+            }
         }
 
-        return new Success<List<Tag>>(newTags);
+        return new Success<List<Tag>>(tagsList);
     }
 
     public async Task<Result<Tag>> UpdateTagAsync(int id, CreateTag createTag)
@@ -89,7 +90,7 @@ public class TagService(Database context) : ITagService
         var tag = await context.Tag.FindAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
 
-        var tagExists = await context.Tag.AnyAsync(t => t.Id != tag.Id && DatabaseExtensions.ILike(t.Title, createTag.Title));
+        var tagExists = await context.Tag.AnyAsync(t => t.Id != tag.Id && EF.Functions.ILike(t.Title, createTag.Title));
         if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
 
         tag.Title = createTag.Title;
