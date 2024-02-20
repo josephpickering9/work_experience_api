@@ -60,11 +60,11 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
 
 public class CreateCompany
 {
-    [Required] public string Name { get; set; } = null!;
+    [Required] public string Name { get; init; } = null!;
 
-    [Required] public string Description { get; set; } = null!;
+    [Required] public string Description { get; init; } = null!;
 
-    public IFormFile? Logo { get; set; }
+    public IFormFile? Logo { get; init; }
 
-    public string? Website { get; set; }
+    public string? Website { get; init; }
 }

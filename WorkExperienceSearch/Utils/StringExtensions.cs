@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
+namespace Work_Experience_Search.Utils;
+
 public static class StringExtensions
 {
     public static string ToSlug(this string phrase)

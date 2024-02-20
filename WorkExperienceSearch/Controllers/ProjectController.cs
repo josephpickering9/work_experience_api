@@ -67,32 +67,32 @@ public class ProjectController(IProjectService projectService) : ControllerBase
 
 public class CreateProject
 {
-    [Required] public string Title { get; set; } = null!;
+    [Required] public string Title { get; init; } = null!;
 
-    [Required] public string ShortDescription { get; set; } = null!;
+    [Required] public string ShortDescription { get; init; } = null!;
 
-    [Required] public string Description { get; set; } = null!;
+    [Required] public string Description { get; init; } = null!;
 
-    public int? CompanyId { get; set; }
+    public int? CompanyId { get; init; }
 
-    [Required] public int Year { get; set; }
+    [Required] public int Year { get; init; }
 
-    public string? Website { get; set; }
+    public string? Website { get; init; }
 
-    [Required] public bool ShowMockup { get; set; } = false;
+    [Required] public bool ShowMockup { get; init; } = false;
 
-    public List<CreateProjectImage> Images { get; set; } = [];
+    public List<CreateProjectImage> Images { get; init; } = [];
 
-    [Required] public List<string> Tags { get; set; } = [];
+    [Required] public List<string> Tags { get; init; } = [];
 }
 
 public class CreateProjectImage
 {
-    public int? Id { get; set; }
+    public int? Id { get; init; }
 
-    public IFormFile? Image { get; set; }
+    public IFormFile? Image { get; init; }
 
-    [Required] public ImageType Type { get; set; }
+    [Required] public ImageType Type { get; init; }
 
     public int? Order { get; set; }
 }

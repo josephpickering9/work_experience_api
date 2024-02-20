@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Utils;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
 

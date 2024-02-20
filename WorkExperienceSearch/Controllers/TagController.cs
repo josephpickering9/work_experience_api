@@ -58,11 +58,11 @@ public class TagController(ITagService tagService) : ControllerBase
 
 public class CreateTag
 {
-    [Required] public string Title { get; set; } = null!;
+    [Required] public string Title { get; init; } = null!;
 
-    [Required] public TagType Type { get; set; }
+    [Required] public TagType Type { get; init; }
 
-    public string? Icon { get; set; }
+    public string? Icon { get; init; }
 
-    public string? CustomColour { get; set; }
+    public string? CustomColour { get; init; }
 }
