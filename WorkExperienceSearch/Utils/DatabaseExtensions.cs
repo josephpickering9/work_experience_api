@@ -15,6 +15,7 @@ public static class DatabaseExtensions
 
     public static bool ILike(string input, string pattern)
     {
+        var test = UnitTestExtensions.IsInUnitTest();
         return UnitTestExtensions.IsInUnitTest() ? InMemoryILike(input, pattern) : EF.Functions.ILike(input, pattern);
     }
 

@@ -19,8 +19,9 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
     {
         var mockFileService = new Mock<IFileService>();
         var mockProjectImageService = new Mock<IProjectImageService>();
+        var mockProjectRepositoryService = new Mock<IProjectRepositoryService>();
         _mockTagService = new Mock<ITagService>();
-        _projectService = new ProjectService(Context, mockProjectImageService.Object, _mockTagService.Object);
+        _projectService = new ProjectService(Context, mockProjectImageService.Object, mockProjectRepositoryService.Object, _mockTagService.Object);
 
         mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync(() => new Success<string>("testPath"));

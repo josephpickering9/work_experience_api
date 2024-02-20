@@ -20,6 +20,7 @@ builder.Services.AddDbContext<Database>(options =>
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProjectImageService, ProjectImageService>();
+builder.Services.AddScoped<IProjectRepositoryService, ProjectRepositoryService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 
