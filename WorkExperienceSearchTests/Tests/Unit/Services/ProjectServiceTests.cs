@@ -4,6 +4,8 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
@@ -21,7 +23,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         _projectService = new ProjectService(Context, mockProjectImageService.Object, _mockTagService.Object);
 
         mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
-            .ReturnsAsync((IFormFile? file) => file != null ? "testPath" : null);
+            .ReturnsAsync(() => new Success<string>("testPath"));
     }
 
     public async Task InitializeAsync()
@@ -41,11 +43,11 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         // Arrange is done in the constructor
 
         // Act
-        var result = (await _projectService.GetProjectsAsync(null)).ToList();
+        var result = (await _projectService.GetProjectsAsync(null)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(3, result.Count); // Assuming GetTestProjects() returns 3 projects
+        Assert.Equal(3, result.Count());
     }
 
     [Fact]
@@ -54,7 +56,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         // Arrange is done in the constructor
 
         // Act
-        var result = (await _projectService.GetProjectsAsync("ViSIT")).ToList();
+        var result = (await _projectService.GetProjectsAsync("ViSIT")).ExpectSuccess().ToList();
 
         // Assert
         Assert.NotNull(result);
@@ -69,7 +71,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         const int testProjectId = 1; // Assuming this ID exists in GetTestProjects()
 
         // Act
-        var result = await _projectService.GetProjectAsync(testProjectId);
+        var result = (await _projectService.GetProjectAsync(testProjectId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -83,10 +85,10 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         const string validSlug = "visit-northumberland";
         await SaveProject(CreateProject(5, "Visit Northumberland", "Visit Northumberland Description",
             "Visit Northumberland Short Description", 1, 2021,
-            "https://visitnorthumberland.com", new List<Tag>()));
+            "https://visitnorthumberland.com", []));
 
         // Act
-        var result = await _projectService.GetProjectBySlugAsync(validSlug);
+        var result = (await _projectService.GetProjectBySlugAsync(validSlug)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -94,27 +96,31 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetProjectBySlugAsync_InvalidSlug_ThrowsNotFoundException()
+    public async Task GetProjectBySlugAsync_InvalidSlug_ThrowsNotFoundFailure()
     {
         // Arrange
         const string invalidSlug = "non-existent-slug";
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _projectService.GetProjectBySlugAsync(invalidSlug));
+        // Act
+        var result = (await _projectService.GetProjectBySlugAsync(invalidSlug)).ExpectFailure();
+
+        // Assert
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Project not found.", result.Message);
     }
 
     [Fact]
     public async Task GetRelatedProjectsAsync_WithCommonTags_ReturnsRelatedProjects()
     {
         // Arrange
-        const int projectIdWithTags = 1; // Use an ID for a project that has tags and related projects
+        const int projectIdWithTags = 1;
 
         // Act
-        var result = await _projectService.GetRelatedProjectsAsync(projectIdWithTags);
+        var result = (await _projectService.GetRelatedProjectsAsync(projectIdWithTags)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.Any()); // Ensure there are related projects
+        Assert.True(result.Any());
     }
 
     [Fact]
@@ -140,7 +146,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
             await SaveProject(CreateProject(6, "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
 
         // Act
-        var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ToList();
+        var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ExpectSuccess()!.ToList();
 
         // Assert
         Assert.NotNull(relatedProjects);
@@ -168,10 +174,11 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
-            .ReturnsAsync((List<string> tags) => tags.Select(t => CreateTag(4, t, TagType.Default)).ToList());
+            .ReturnsAsync((List<string> tags) =>
+                new Success<List<Tag>>(tags.Select(t => CreateTag(4, t, TagType.Default)).ToList()));
 
         // Act
-        var result = await _projectService.CreateProjectAsync(newProject);
+        var result = (await _projectService.CreateProjectAsync(newProject)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -194,8 +201,8 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task UpdateProjectAsync_ExistingProject_UpdatesProject()
     {
         // Arrange
-        var tag = CreateTag(5, "Updated Tag", TagType.Backend);
-        var existingProject = await SaveProject(CreateProject(5, "Test Update Project", "Test Description",
+        var tag = CreateTag(4, "Updated Tag", TagType.Backend);
+        var existingProject = await SaveProject(CreateProject(4, "Test Update Project", "Test Description",
             "Test Short Description", 1, 2021,
             "https://example.com", [tag]));
 
@@ -207,14 +214,14 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
             CompanyId = 1,
             Year = 2021,
             Website = "https://updated.com",
-            Tags = new List<string> { "Updated Tag" }
+            Tags = ["Updated Tag"]
         };
 
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
-            .ReturnsAsync((List<string> tags) => tags.Select(t => tag).ToList());
+            .ReturnsAsync(() => new Success<List<Tag>>([tag]));
 
         // Act
-        var result = await _projectService.UpdateProjectAsync(existingProject.Id, updateData);
+        var result = (await _projectService.UpdateProjectAsync(existingProject.Id, updateData)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -245,7 +252,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         var existingProject = await SaveProject(CreateProject(6, "Test Delete Project"));
 
         // Act
-        var result = await _projectService.DeleteProjectAsync(existingProject.Id);
+        var result = (await _projectService.DeleteProjectAsync(existingProject.Id)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -271,7 +278,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         return project;
     }
 
-    private static List<Project> GetTestProjects()
+    private static IEnumerable<Project> GetTestProjects()
     {
         var cSharpTag = CreateTag(1, "C#", TagType.Backend);
         var aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);

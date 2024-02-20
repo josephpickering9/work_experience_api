@@ -1,48 +1,52 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Controllers;
-using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
 public class CompanyService(Database context, IFileService fileService) : ICompanyService
 {
-    public async Task<IEnumerable<Company>> GetCompaniesAsync(string? search)
+    public async Task<Result<IEnumerable<Company>>> GetCompaniesAsync(string? search)
     {
         IQueryable<Company> companies = context.Company;
 
         if (!string.IsNullOrEmpty(search))
-            companies = companies.Where(p => p.Name.ToLower().Contains(search.ToLower()));
+            companies = companies.Where(c => DatabaseExtensions.ILike(c.Name, search));
 
-        return await companies.ToListAsync();
+        return new Success<IEnumerable<Company>>(await companies.ToListAsync());
     }
 
-    public async Task<Company> GetCompanyAsync(int id)
+    public async Task<Result<Company>> GetCompanyAsync(int id)
     {
         var company = await context.Company.FindAsync(id);
-        if (company == null) throw new NotFoundException("Company not found.");
+        if (company == null) return new NotFoundFailure<Company>("Company not found.");
 
-        return company;
+        return new Success<Company>(company);
     }
 
-    public async Task<Company> GetCompanyBySlugAsync(string slug)
+    public async Task<Result<Company>> GetCompanyBySlugAsync(string slug)
     {
         var company = await context.Company.FirstOrDefaultAsync(p => p.Slug == slug);
-        if (company == null) throw new NotFoundException("Company not found.");
+        if (company == null) return new NotFoundFailure<Company>("Company not found.");
 
-        return company;
+        return new Success<Company>(company);
     }
 
-    public async Task<Company> CreateCompanyAsync(CreateCompany createCompany)
+    public async Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany)
     {
-        var companyExists = await context.Company
-            .AnyAsync(p => p.Name.Equals(createCompany.Name, StringComparison.CurrentCultureIgnoreCase));
+        var companyExists = await context.Company.AnyAsync(c => DatabaseExtensions.ILike(c.Name, createCompany.Name));
+        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
-        if (companyExists) throw new ConflictException("A company with the same title already exists");
+        string? logoPath = null;
+        if (createCompany.Logo != null)
+        {
+            var logoFile = await fileService.SaveFileAsync(createCompany.Logo);
+            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
 
-        var logoPath = createCompany.Logo != null
-            ? Path.GetFileName(await fileService.SaveFileAsync(createCompany.Logo))
-            : null;
+            logoPath = Path.GetFileName(logoFile.Data);
+        }
 
         var company = new Company
         {
@@ -56,22 +60,26 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         context.Company.Add(company);
         await context.SaveChangesAsync();
 
-        return company;
+        return new Success<Company>(company);
     }
 
-    public async Task<Company> UpdateCompanyAsync(int id, CreateCompany createCompany)
+    public async Task<Result<Company>> UpdateCompanyAsync(int id, CreateCompany createCompany)
     {
         var company = await context.Company.FindAsync(id);
-        if (company == null) throw new NotFoundException("Company not found.");
+        if (company == null) return new NotFoundFailure<Company>("Company not found.");
 
-        var companyExists = await context.Company
-            .AnyAsync(p => p.Id != company.Id && p.Name.ToLower() == createCompany.Name.ToLower());
+        var companyExists = await context.Company.AnyAsync(p =>
+            p.Id != company.Id && DatabaseExtensions.ILike(p.Name, createCompany.Name));
+        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
-        if (companyExists) throw new ConflictException("A company with the same title already exists");
+        string? logoPath = null;
+        if (createCompany.Logo != null)
+        {
+            var logoFile = await fileService.SaveFileAsync(createCompany.Logo);
+            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
 
-        var logoPath = createCompany.Logo != null
-            ? Path.GetFileName(await fileService.SaveFileAsync(createCompany.Logo))
-            : null;
+            logoPath = Path.GetFileName(logoFile.Data);
+        }
 
         if (logoPath != null) company.Logo = logoPath;
 
@@ -82,18 +90,17 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
 
         await context.SaveChangesAsync();
 
-        return company;
+        return new Success<Company>(company);
     }
 
-
-    public async Task<Company> DeleteCompanyAsync(int id)
+    public async Task<Result<Company>> DeleteCompanyAsync(int id)
     {
         var company = await context.Company.FindAsync(id);
-        if (company == null) throw new NotFoundException("Company not found.");
+        if (company == null) return new NotFoundFailure<Company>("Company not found.");
 
         context.Company.Remove(company);
         await context.SaveChangesAsync();
 
-        return company;
+        return new Success<Company>(company);
     }
 }

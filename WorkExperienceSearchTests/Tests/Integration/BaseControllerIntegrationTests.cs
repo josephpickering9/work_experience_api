@@ -84,7 +84,8 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         if (tags?.Count > 0)
         {
             var tagService = scope.ServiceProvider.GetRequiredService<ITagService>();
-            project.Tags = await tagService.SyncTagsAsync(tags);
+            var createdTags = await tagService.SyncTagsAsync(tags);
+            if (createdTags.Data != null) project.Tags = createdTags.Data;
         }
 
         var context = scope.ServiceProvider.GetRequiredService<Database>();

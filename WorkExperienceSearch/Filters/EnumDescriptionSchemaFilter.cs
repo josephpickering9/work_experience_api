@@ -17,7 +17,7 @@ public class EnumDescriptionSchemaFilter : ISchemaFilter
         foreach (var enumValue in Enum.GetValues(context.Type))
         {
             var value = enumValue.ToString();
-            if (value.IsNullOrEmpty()) continue;
+            if (value == null || value.IsNullOrEmpty()) continue;
 
             var memberInfo = context.Type.GetMember(value).FirstOrDefault();
             var descriptionAttribute = memberInfo?.GetCustomAttribute<DescriptionAttribute>();

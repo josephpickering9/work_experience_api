@@ -4,6 +4,8 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
@@ -21,7 +23,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
         _projectImageService = new ProjectImageService(Context, mockFileService.Object);
 
         mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
-            .ReturnsAsync(() => "testPath");
+            .ReturnsAsync(() => new Success<string>("testPath"));
     }
 
     public async Task InitializeAsync()
@@ -39,7 +41,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetProjectImagesAsync_ValidProjectId_ReturnsProjectImages()
     {
         // Act
-        var result = await _projectImageService.GetProjectImagesAsync(_project.Id);
+        var result = (await _projectImageService.GetProjectImagesAsync(_project.Id)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -47,19 +49,17 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetProjectImagesAsync_InvalidProjectId_ThrowsNotFoundException()
+    public async Task GetProjectImagesAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
         const int projectId = 99;
 
         // Act
-        async Task Act()
-        {
-            await _projectImageService.GetProjectImagesAsync(projectId);
-        }
+        var result = (await _projectImageService.GetProjectImagesAsync(projectId)).ExpectFailure();
 
         // Assert
-        await Assert.ThrowsAsync<NotFoundException>(Act);
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Project not found.", result.Message);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
         const int imageId = 1;
 
         // Act
-        var result = await _projectImageService.GetProjectImageAsync(_project.Id, imageId);
+        var result = (await _projectImageService.GetProjectImageAsync(_project.Id, imageId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -77,36 +77,32 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetProjectImageAsync_InvalidProjectId_ThrowsNotFoundException()
+    public async Task GetProjectImageAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
         const int projectId = 99;
         const int imageId = 1;
 
         // Act
-        async Task Act()
-        {
-            await _projectImageService.GetProjectImageAsync(projectId, imageId);
-        }
+        var result = (await _projectImageService.GetProjectImageAsync(projectId, imageId)).ExpectFailure();
 
         // Assert
-        await Assert.ThrowsAsync<NotFoundException>(Act);
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Project not found.", result.Message);
     }
 
     [Fact]
-    public async Task GetProjectImageAsync_InvalidImageId_ThrowsNotFoundException()
+    public async Task GetProjectImageAsync_InvalidImageId_ThrowsNotFoundFailure()
     {
         // Arrange
         const int imageId = 99;
 
         // Act
-        async Task Act()
-        {
-            await _projectImageService.GetProjectImageAsync(_project.Id, imageId);
-        }
+        var result = (await _projectImageService.GetProjectImageAsync(_project.Id, imageId)).ExpectFailure();
 
         // Assert
-        await Assert.ThrowsAsync<NotFoundException>(Act);
+        Assert.IsType<NotFoundException>(result);
+        Assert.Equal("Image not found.", result.Message);
     }
 
     [Fact]
@@ -127,7 +123,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         // Act
-        var result = await _projectImageService.SyncProjectImagesAsync(_project, images);
+        var result = (await _projectImageService.SyncProjectImagesAsync(_project, images)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -153,7 +149,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
 
         // Act
         await _projectImageService.SyncProjectImagesAsync(_project, images);
-        var result = await _projectImageService.GetProjectImagesAsync(_project.Id);
+        var result = (await _projectImageService.GetProjectImagesAsync(_project.Id)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);

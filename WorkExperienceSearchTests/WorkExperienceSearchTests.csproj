@@ -34,8 +34,4 @@
         <ProjectReference Include="..\WorkExperienceSearch\WorkExperienceSearch.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="UnitTests\"/>
-    </ItemGroup>
-
 </Project>

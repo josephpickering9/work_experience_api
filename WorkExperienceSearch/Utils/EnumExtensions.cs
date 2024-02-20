@@ -1,5 +1,7 @@
 using System.ComponentModel;
 
+namespace Work_Experience_Search.Utils;
+
 public static class EnumExtensions
 {
     public static string ToDescriptionString(this Enum value)

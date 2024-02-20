@@ -1,8 +1,6 @@
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
-using Work_Experience_Search.Services;
 using Work_Experience_Search.Tests;
 using Xunit;
 

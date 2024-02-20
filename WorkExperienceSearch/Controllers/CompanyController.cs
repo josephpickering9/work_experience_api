@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 
@@ -9,38 +8,27 @@ namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class CompanyController(ICompanyService tagService) : ControllerBase
+public class CompanyController(ICompanyService companyService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Company>>> GetCompanies(string? search)
     {
-        return Ok(await tagService.GetCompaniesAsync(search));
+        var result = await companyService.GetCompaniesAsync(search);
+        return result.ToResponse();
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Company>> GetCompany(int id)
     {
-        try
-        {
-            return await tagService.GetCompanyAsync(id);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
+        var result = await companyService.GetCompanyAsync(id);
+        return result.ToResponse();
     }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<Company>> GetCompany(string slug)
     {
-        try
-        {
-            return await tagService.GetCompanyBySlugAsync(slug);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
+        var result = await companyService.GetCompanyBySlugAsync(slug);
+        return result.ToResponse();
     }
 
     [HttpPost]
@@ -48,19 +36,8 @@ public class CompanyController(ICompanyService tagService) : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Company>> PostCompany([FromForm] CreateCompany createCompany)
     {
-        try
-        {
-            var tag = await tagService.CreateCompanyAsync(createCompany);
-            return CreatedAtAction("GetCompany", new { id = tag.Id }, tag);
-        }
-        catch (ConflictException e)
-        {
-            return Conflict(e.Message);
-        }
-        catch (InvalidOperationException e)
-        {
-            return BadRequest(e.Message);
-        }
+        var result = await companyService.CreateCompanyAsync(createCompany);
+        return result.ToResponse();
     }
 
     [HttpPut("{id:int}")]
@@ -68,48 +45,26 @@ public class CompanyController(ICompanyService tagService) : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<Company>> PutCompany(int id, [FromForm] CreateCompany createCompany)
     {
-        try
-        {
-            var tag = await tagService.UpdateCompanyAsync(id, createCompany);
-            return CreatedAtAction("GetCompany", new { id = tag.Id }, tag);
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (InvalidOperationException e)
-        {
-            return BadRequest(e.Message);
-        }
+        var result = await companyService.UpdateCompanyAsync(id, createCompany);
+        return result.ToResponse();
     }
 
     [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteCompany(int id)
     {
-        try
-        {
-            await tagService.DeleteCompanyAsync(id);
-            return NoContent();
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var result = await companyService.DeleteCompanyAsync(id);
+        return result.ToResponse();
     }
 }
 
 public class CreateCompany
 {
-    [Required] public string Name { get; set; } = null!;
+    [Required] public string Name { get; init; } = null!;
 
-    [Required] public string Description { get; set; } = null!;
+    [Required] public string Description { get; init; } = null!;
 
-    public IFormFile? Logo { get; set; }
+    public IFormFile? Logo { get; init; }
 
-    public string? Website { get; set; } = null!;
+    public string? Website { get; init; }
 }
