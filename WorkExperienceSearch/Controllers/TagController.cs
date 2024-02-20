@@ -36,9 +36,7 @@ public class TagController(ITagService tagService) : ControllerBase
     public async Task<ActionResult<Tag>> PostTag([FromBody] CreateTag createTag)
     {
         var result = await tagService.CreateTagAsync(createTag);
-        if (!result.IsSuccess) return result.ToErrorResponse();
-
-        return CreatedAtAction("GetTag", new { id = result.Data.Id }, result.Data);
+        return result.ToResponse();
     }
 
     [HttpPut("{id:int}")]

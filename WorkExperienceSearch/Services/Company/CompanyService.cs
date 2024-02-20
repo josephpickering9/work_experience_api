@@ -8,14 +8,14 @@ namespace Work_Experience_Search.Services;
 
 public class CompanyService(Database context, IFileService fileService) : ICompanyService
 {
-    public async Task<IEnumerable<Company>> GetCompaniesAsync(string? search)
+    public async Task<Result<IEnumerable<Company>>> GetCompaniesAsync(string? search)
     {
         IQueryable<Company> companies = context.Company;
 
         if (!string.IsNullOrEmpty(search))
             companies = companies.Where(c => DatabaseExtensions.ILike(c.Name, search));
 
-        return await companies.ToListAsync();
+        return new Success<IEnumerable<Company>>(await companies.ToListAsync());
     }
 
     public async Task<Result<Company>> GetCompanyAsync(int id)

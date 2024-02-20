@@ -6,7 +6,7 @@ namespace Work_Experience_Search.Services;
 
 public interface ICompanyService
 {
-    Task<IEnumerable<Company>> GetCompaniesAsync(string? search);
+    Task<Result<IEnumerable<Company>>> GetCompaniesAsync(string? search);
     Task<Result<Company>> GetCompanyAsync(int id);
     Task<Result<Company>> GetCompanyBySlugAsync(string slug);
     Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany);

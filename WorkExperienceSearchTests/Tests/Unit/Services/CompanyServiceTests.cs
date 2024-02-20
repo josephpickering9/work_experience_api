@@ -33,9 +33,10 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetCompaniesAsync_NoSearch_ReturnsAllCompanies()
     {
         // Act
-        var result = await _companyService.GetCompaniesAsync(null);
-
+        var result = (await _companyService.GetCompaniesAsync(null)).ExpectSuccess();
+        
         // Assert
+        Assert.NotNull(result);
         Assert.Single(result);
     }
 

@@ -5,6 +5,11 @@ namespace Work_Experience_Search.Types;
 
 public class Result<T>
 {
+    public T? Data { get; }
+    public Exception? Error { get; }
+    private ErrorType ErrorType { get; }
+    public bool IsSuccess => Error == null;
+
     protected Result(T data)
     {
         Data = data;
@@ -16,17 +21,12 @@ public class Result<T>
         ErrorType = type;
     }
 
-    public T Data { get; }
-    public Exception? Error { get; }
-    private ErrorType ErrorType { get; }
-    public bool IsSuccess => Error == null;
-
     public ActionResult ToResponse()
     {
         return IsSuccess ? ToSuccessResponse() : ToErrorResponse();
     }
 
-    public ActionResult ToSuccessResponse()
+    private ActionResult ToSuccessResponse()
     {
         return Data != null ? new OkObjectResult(Data) : new NoContentResult();
     }

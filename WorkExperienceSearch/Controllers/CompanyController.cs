@@ -13,14 +13,15 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Company>>> GetCompanies(string? search)
     {
-        return Ok(await companyService.GetCompaniesAsync(search));
+        var result = await companyService.GetCompaniesAsync(search);
+        return result.ToResponse();
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Company>> GetCompany(int id)
     {
         var result = await companyService.GetCompanyAsync(id);
-        return result.IsSuccess ? Ok(result.Data) : result.ToErrorResponse();
+        return result.ToResponse();
     }
 
     [HttpGet("{slug}")]
@@ -36,9 +37,7 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     public async Task<ActionResult<Company>> PostCompany([FromForm] CreateCompany createCompany)
     {
         var result = await companyService.CreateCompanyAsync(createCompany);
-        if (!result.IsSuccess) return result.ToErrorResponse();
-
-        return CreatedAtAction("GetCompany", new { id = result.Data.Id }, result.Data);
+        return result.ToResponse();
     }
 
     [HttpPut("{id:int}")]
@@ -67,5 +66,5 @@ public class CreateCompany
 
     public IFormFile? Logo { get; set; }
 
-    public string? Website { get; set; } = null!;
+    public string? Website { get; set; }
 }
