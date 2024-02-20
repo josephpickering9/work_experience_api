@@ -70,7 +70,7 @@ jobs:
         id: export-deployment-matrix
         run: |
           delimiter="$(openssl rand -hex 8)"
-          JSON="$(cat ./'Work Experience Search'/deployment-config.json)"
+          JSON="$(cat ./'WorkExperienceSearch'/deployment-config.json)"
           echo "deployment-matrix<<${delimiter}" >> "${GITHUB_OUTPUT}"
           echo "$JSON" >> "${GITHUB_OUTPUT}"
           echo "${delimiter}" >> "${GITHUB_OUTPUT}"
@@ -146,8 +146,8 @@ jobs:
         uses: appleboy/ssh-action@master
         env:
           GITHUB_SHA: ${{ github.sha }}
-          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search
-          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search/bin/Release/net8.0
+          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/WorkExperienceSearch
+          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/WorkExperienceSearch/bin/Release/net8.0
           ROOT_PATH: ${{ matrix.server.path }}/wwwroot
           ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
           BASE_PATH: ${{ matrix.server.path }}
@@ -171,7 +171,7 @@ jobs:
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
             ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
             cd "$RELEASE_BIN_PATH"
-            nohup dotnet "Work Experience Search.dll" > /dev/null 2>&1 &  
+            nohup dotnet "WorkExperienceSearch.dll" > /dev/null 2>&1 &  
   
   run-after-hooks:
     name: '${{ matrix.server.name }}: After hook'
