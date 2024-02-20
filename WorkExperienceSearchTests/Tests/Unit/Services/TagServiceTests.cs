@@ -34,6 +34,7 @@ public class TagServiceTests : BaseServiceTests, IAsyncLifetime
         var result = (await _tagService.GetTagsAsync(null)).ExpectSuccess();
 
         // Assert
+        Assert.NotNull(result);
         Assert.Equal(3, result.Count());
     }
 

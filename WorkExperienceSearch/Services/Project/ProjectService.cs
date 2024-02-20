@@ -90,6 +90,8 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         if (createProject.Tags.Count > 0)
         {
             var tags = await tagService.SyncTagsAsync(createProject.Tags);
+            if (!tags.IsSuccess || tags.Data == null) return new BadRequestFailure<Project>("Tags could not be created");
+
             project.Tags = tags.Data;
         }
 
@@ -99,6 +101,8 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         if (createProject.Images.Count > 0)
         {
             var images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+            if (!images.IsSuccess || images.Data == null) return new BadRequestFailure<Project>("Images could not be created");
+
             project.Images = images.Data;
             await context.SaveChangesAsync();
         }
@@ -111,7 +115,7 @@ public class ProjectService(Database context, IProjectImageService projectImageS
     public async Task<Result<Project>> UpdateProjectAsync(int id, CreateProject createProject)
     {
         var projectResult = await GetProjectAsync(id);
-        if (!projectResult.IsSuccess) return projectResult;
+        if (!projectResult.IsSuccess || projectResult.Data == null) return projectResult;
 
         var project = projectResult.Data;
         var projectExists = await context.Project.AnyAsync(p =>
@@ -130,6 +134,8 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         if (createProject.Tags.Count > 0)
         {
             var tags = await tagService.SyncTagsAsync(createProject.Tags);
+            if (!tags.IsSuccess || tags.Data == null) return new BadRequestFailure<Project>("Tags could not be created");
+
             project.Tags = tags.Data;
             await context.SaveChangesAsync();
         }
@@ -137,6 +143,8 @@ public class ProjectService(Database context, IProjectImageService projectImageS
         if (createProject.Images.Count > 0)
         {
             var images = await projectImageService.SyncProjectImagesAsync(project, createProject.Images);
+            if (!images.IsSuccess || images.Data == null) return new BadRequestFailure<Project>("Images could not be created");
+
             project.Images = images.Data;
             await context.SaveChangesAsync();
         }

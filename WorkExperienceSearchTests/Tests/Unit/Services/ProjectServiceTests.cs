@@ -43,11 +43,11 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         // Arrange is done in the constructor
 
         // Act
-        var result = (await _projectService.GetProjectsAsync(null)).ExpectSuccess().ToList();
+        var result = (await _projectService.GetProjectsAsync(null)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(3, result.Count); // Assuming GetTestProjects() returns 3 projects
+        Assert.Equal(3, result.Count());
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         const string validSlug = "visit-northumberland";
         await SaveProject(CreateProject(5, "Visit Northumberland", "Visit Northumberland Description",
             "Visit Northumberland Short Description", 1, 2021,
-            "https://visitnorthumberland.com", new List<Tag>()));
+            "https://visitnorthumberland.com", []));
 
         // Act
         var result = (await _projectService.GetProjectBySlugAsync(validSlug)).ExpectSuccess();
@@ -146,7 +146,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
             await SaveProject(CreateProject(6, "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
 
         // Act
-        var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ExpectSuccess().ToList();
+        var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ExpectSuccess()!.ToList();
 
         // Assert
         Assert.NotNull(relatedProjects);
@@ -276,25 +276,6 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         await Context.Project.AddAsync(project);
         await Context.SaveChangesAsync();
         return project;
-    }
-
-    private static IEnumerable<Tag> GetTestTags()
-    {
-        return
-        [
-            CreateTag(1, "C#", TagType.Backend),
-            CreateTag(2, "ASP.NET Core", TagType.Backend),
-            CreateTag(3, "Xamarin Forms", TagType.Frontend)
-        ];
-    }
-
-    private static Company GetTestCompany()
-    {
-        var company = CreateCompany(1, "Drummond Central", "A marketing agency based in Newcastle upon Tyne.",
-            "https://drummondcentral.co.uk/wp-content/uploads/2019/10/DC-Logo-White.png",
-            "https://drummondcentral.co.uk/");
-
-        return company;
     }
 
     private static IEnumerable<Project> GetTestProjects()

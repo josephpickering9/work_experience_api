@@ -89,8 +89,7 @@ public class TagService(Database context) : ITagService
         var tag = await context.Tag.FindAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
 
-        var tagExists =
-            await context.Tag.AnyAsync(t => t.Id != tag.Id && DatabaseExtensions.ILike(t.Title, createTag.Title));
+        var tagExists = await context.Tag.AnyAsync(t => t.Id != tag.Id && DatabaseExtensions.ILike(t.Title, createTag.Title));
         if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
 
         tag.Title = createTag.Title;

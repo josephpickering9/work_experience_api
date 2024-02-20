@@ -61,8 +61,8 @@ public class ProjectImageService(Database context, IFileService fileService) : I
             }
 
             var imageFile = await fileService.SaveFileAsync(image.Image);
-            if (!imageFile.IsSuccess) return new BadRequestFailure<List<ProjectImage>>("Image path is null or empty");
             var imagePath = Path.GetFileName(imageFile.Data);
+            if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<List<ProjectImage>>("Image path is null or empty");
 
             var projectImage = new ProjectImage
             {
