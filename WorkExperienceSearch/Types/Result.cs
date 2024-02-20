@@ -5,11 +5,6 @@ namespace Work_Experience_Search.Types;
 
 public class Result<T>
 {
-    public T? Data { get; }
-    public Exception? Error { get; }
-    private ErrorType ErrorType { get; }
-    public bool IsSuccess => Error == null;
-
     protected Result(T data)
     {
         Data = data;
@@ -21,6 +16,11 @@ public class Result<T>
         ErrorType = type;
     }
 
+    public T? Data { get; }
+    public Exception? Error { get; }
+    private ErrorType ErrorType { get; }
+    public bool IsSuccess => Error == null;
+
     public ActionResult ToResponse()
     {
         return IsSuccess ? ToSuccessResponse() : ToErrorResponse();
@@ -31,7 +31,7 @@ public class Result<T>
         return Data != null ? new OkObjectResult(Data) : new NoContentResult();
     }
 
-    public ActionResult ToErrorResponse()
+    private ActionResult ToErrorResponse()
     {
         if (Error == null) return new BadRequestObjectResult("An error occurred.");
 
@@ -49,8 +49,7 @@ public class Result<T>
 
 public class Success<T>(T data) : Result<T>(data);
 
-public class NotFoundFailure<T>(string message = "Item not found.")
-    : Result<T>(new NotFoundException(message), ErrorType.NotFound);
+public class NotFoundFailure<T>(string message = "Item not found.") : Result<T>(new NotFoundException(message), ErrorType.NotFound);
 
 public class ConflictFailure<T>(string message) : Result<T>(new ConflictException(message), ErrorType.Conflict);
 

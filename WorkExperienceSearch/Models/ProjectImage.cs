@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using Work_Experience_Search.Controllers;
 
 namespace Work_Experience_Search.Models;
 

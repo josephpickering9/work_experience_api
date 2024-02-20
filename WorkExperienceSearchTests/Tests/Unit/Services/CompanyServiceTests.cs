@@ -34,7 +34,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
     {
         // Act
         var result = (await _companyService.GetCompaniesAsync(null)).ExpectSuccess();
-        
+
         // Assert
         Assert.NotNull(result);
         Assert.Single(result);
