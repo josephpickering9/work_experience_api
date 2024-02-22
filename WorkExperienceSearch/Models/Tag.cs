@@ -18,7 +18,7 @@ public class Tag
 
     [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
 
-    [Required] [JsonIgnore] public List<Project> Projects { get; set; } = new();
+    [Required] [JsonIgnore] public List<Project> Projects { get; set; } = [];
 }
 
 public enum TagType

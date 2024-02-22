@@ -13,7 +13,7 @@ public class TagService(Database context) : ITagService
         IQueryable<Tag> tags = context.Tag;
 
         if (!string.IsNullOrEmpty(search))
-            tags = tags.Where(p => EF.Functions.ILike(p.Title, search));
+            tags = tags.Where(p => EF.Functions.ILike(p.Title, $"%${search}%"));
 
         return new Success<IEnumerable<Tag>>(await tags.ToListAsync());
     }
@@ -36,7 +36,7 @@ public class TagService(Database context) : ITagService
 
     public async Task<Result<Tag>> CreateTagAsync(CreateTag createTag)
     {
-        var tagExists = await context.Tag.AnyAsync(p => DatabaseExtensions.ILike(p.Title, createTag.Title));
+        var tagExists = await context.Tag.AnyAsync(p => EF.Functions.ILike(p.Title, createTag.Title));
         if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
 
         var tag = new Tag
@@ -47,6 +47,8 @@ public class TagService(Database context) : ITagService
             CustomColour = createTag.CustomColour,
             Slug = createTag.Title.ToSlug()
         };
+
+        var test = context.Tag.ToList();
 
         context.Tag.Add(tag);
         await context.SaveChangesAsync();

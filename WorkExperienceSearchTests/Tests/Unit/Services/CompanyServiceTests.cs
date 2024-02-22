@@ -8,7 +8,7 @@ using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
-public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
+public class CompanyServiceTests : BaseServiceTests
 {
     private readonly CompanyService _companyService;
 
@@ -17,18 +17,7 @@ public class CompanyServiceTests : BaseServiceTests, IAsyncLifetime
         var mockFileService = new Mock<IFileService>();
         _companyService = new CompanyService(Context, mockFileService.Object);
     }
-
-    public async Task InitializeAsync()
-    {
-        await ClearDatabase();
-        await SeedDatabase();
-    }
-
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
-    }
-
+    
     [Fact]
     public async Task GetCompaniesAsync_NoSearch_ReturnsAllCompanies()
     {

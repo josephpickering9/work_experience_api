@@ -7,24 +7,13 @@ using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
-public class TagServiceTests : BaseServiceTests, IAsyncLifetime
+public class TagServiceTests : BaseServiceTests
 {
     private readonly TagService _tagService;
 
     public TagServiceTests()
     {
         _tagService = new TagService(Context);
-    }
-
-    public async Task InitializeAsync()
-    {
-        await ClearDatabase();
-        await SeedDatabase();
-    }
-
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
     }
 
     [Fact]

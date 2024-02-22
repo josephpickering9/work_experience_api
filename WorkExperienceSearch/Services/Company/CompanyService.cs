@@ -13,7 +13,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         IQueryable<Company> companies = context.Company;
 
         if (!string.IsNullOrEmpty(search))
-            companies = companies.Where(c => DatabaseExtensions.ILike(c.Name, search));
+            companies = companies.Where(c => EF.Functions.ILike(c.Name, $"%${search}%"));
 
         return new Success<IEnumerable<Company>>(await companies.ToListAsync());
     }
@@ -36,7 +36,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
 
     public async Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany)
     {
-        var companyExists = await context.Company.AnyAsync(c => DatabaseExtensions.ILike(c.Name, createCompany.Name));
+        var companyExists = await context.Company.AnyAsync(c => EF.Functions.ILike(c.Name, createCompany.Name));
         if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;
@@ -69,7 +69,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         if (company == null) return new NotFoundFailure<Company>("Company not found.");
 
         var companyExists = await context.Company.AnyAsync(p =>
-            p.Id != company.Id && DatabaseExtensions.ILike(p.Name, createCompany.Name));
+            p.Id != company.Id && EF.Functions.ILike(p.Name, createCompany.Name));
         if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;

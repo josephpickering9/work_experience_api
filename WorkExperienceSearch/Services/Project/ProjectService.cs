@@ -74,19 +74,12 @@ public class ProjectService(
             Year = createProject.Year,
             Website = createProject.Website,
             ShowMockup = createProject.ShowMockup,
-            Slug = createProject.Title.ToSlug(),
-            Tags = []
+            Slug = createProject.Title.ToSlug()
         };
         context.Project.Add(project);
 
-        var tagsResult = await SyncProjectTags(project, createProject);
-        if (!tagsResult.IsSuccess) return tagsResult;
-
-        var imagesResult = await SyncProjectImages(project, createProject);
-        if (!imagesResult.IsSuccess) return imagesResult;
-
-        var repositoriesResults = await SyncProjectRepositories(project, createProject);
-        if (!repositoriesResults.IsSuccess) return repositoriesResults;
+        var relationsResult = await SyncProjectRelations(project, createProject);
+        if (!relationsResult.IsSuccess) return relationsResult;
 
         await context.SaveChangesAsync();
 
@@ -111,14 +104,8 @@ public class ProjectService(
         project.ShowMockup = createProject.ShowMockup;
         project.Slug = createProject.Title.ToSlug();
 
-        var tagsResult = await SyncProjectTags(project, createProject);
-        if (!tagsResult.IsSuccess) return tagsResult;
-
-        var imagesResult = await SyncProjectImages(project, createProject);
-        if (!imagesResult.IsSuccess) return imagesResult;
-
-        var repositoriesResults = await SyncProjectRepositories(project, createProject);
-        if (!repositoriesResults.IsSuccess) return repositoriesResults;
+        var relationsResult = await SyncProjectRelations(project, createProject);
+        if (!relationsResult.IsSuccess) return relationsResult;
 
         context.Entry(project).State = EntityState.Modified;
         await context.SaveChangesAsync();
@@ -145,9 +132,23 @@ public class ProjectService(
             .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0));
 
         if (!string.IsNullOrEmpty(search))
-            projects = projects.Where(p => EF.Functions.ILike(p.Title, search) || EF.Functions.ILike(p.ShortDescription, search));
+            projects = projects.Where(p => EF.Functions.ILike(p.Title, $"%{search}%") || EF.Functions.ILike(p.ShortDescription, $"%{search}%"));
 
         return projects.OrderByDescending(p => p.Year);
+    }
+
+    private async Task<Result<Project>> SyncProjectRelations(Project project, CreateProject createProject)
+    {
+        var tagsResult = await SyncProjectTags(project, createProject);
+        if (!tagsResult.IsSuccess) return tagsResult;
+
+        var imagesResult = await SyncProjectImages(project, createProject);
+        if (!imagesResult.IsSuccess) return imagesResult;
+
+        var repositoriesResult = await SyncProjectRepositories(project, createProject);
+        if (!repositoriesResult.IsSuccess) return repositoriesResult;
+
+        return new Success<Project>(project);
     }
 
     private async Task<Result<Project>> SyncProjectTags(Project project, CreateProject createProject)
@@ -172,7 +173,6 @@ public class ProjectService(
         if (!images.IsSuccess || images.Data == null) return new BadRequestFailure<Project>("Images could not be created");
 
         project.Images = images.Data;
-        await context.SaveChangesAsync();
 
         return new Success<Project>(project);
     }
@@ -183,7 +183,6 @@ public class ProjectService(
         if (!repositories.IsSuccess || repositories.Data == null) return new BadRequestFailure<Project>("Repositories could not be created");
 
         project.Repositories = repositories.Data;
-        await context.SaveChangesAsync();
 
         return new Success<Project>(project);
     }
