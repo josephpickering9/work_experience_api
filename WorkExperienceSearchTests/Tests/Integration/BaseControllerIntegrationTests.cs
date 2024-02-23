@@ -19,6 +19,8 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
     protected readonly HttpClient AuthenticatedClient;
     protected readonly HttpClient Client;
     protected readonly CustomWebApplicationFactory Factory;
+    private static string _cachedToken = "";
+    private static DateTime _tokenExpiryTime;
 
     protected BaseControllerIntegrationTests(CustomWebApplicationFactory factory)
     {
@@ -183,6 +185,11 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
 
     private async Task<string> GetAccessToken()
     {
+        if (!string.IsNullOrEmpty(_cachedToken) && DateTime.UtcNow < _tokenExpiryTime)
+        {
+            return _cachedToken;
+        }
+
         var auth0Client = new AuthenticationApiClient(new Uri(_auth0Settings["Domain"] ?? ""));
         var tokenRequest = new ClientCredentialsTokenRequest
         {
@@ -192,8 +199,14 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         };
         var tokenResponse = await auth0Client.GetTokenAsync(tokenRequest);
 
-        return tokenResponse.AccessToken;
+        // Cache the new token and set an expiry time
+        _cachedToken = tokenResponse.AccessToken;
+        // Assuming token expires in 1 hour; adjust based on actual expiry
+        _tokenExpiryTime = DateTime.UtcNow.AddHours(1);
+
+        return _cachedToken;
     }
+
 
     private async Task<HttpClient> GetAuthenticatedClient()
     {
