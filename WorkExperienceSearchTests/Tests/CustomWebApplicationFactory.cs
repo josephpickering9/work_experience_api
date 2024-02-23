@@ -31,12 +31,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             });
 
             var sp = services.BuildServiceProvider();
-            using (var scope = sp.CreateScope())
-            {
-                var scopedServices = scope.ServiceProvider;
-                var db = scopedServices.GetRequiredService<Database>();
-                db.Database.EnsureCreated();
-            }
+            using var scope = sp.CreateScope();
+            var scopedServices = scope.ServiceProvider;
+            var db = scopedServices.GetRequiredService<Database>();
+            db.Database.EnsureCreated();
         });
     }
 }

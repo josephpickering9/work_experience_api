@@ -25,11 +25,13 @@ public class Project
 
     [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
 
-    [Required] public List<ProjectImage> Images { get; set; } = new();
+    [Required] public List<ProjectImage> Images { get; set; } = [];
 
-    [Required] public List<Tag> Tags { get; set; } = new();
+    [Required] public List<ProjectRepository> Repositories { get; set; } = [];
 
-    [NotMapped] public List<Project> RelatedProjects { get; set; } = new();
+    [Required] public List<Tag> Tags { get; set; } = [];
+
+    [NotMapped] public List<Project> RelatedProjects { get; set; } = [];
 
     [JsonIgnore] [NotMapped] public ProjectImage? Logo => Images.SingleOrDefault(i => i.Type == ImageType.Logo);
     [NotMapped] public string? LogoUrl => Logo?.Image;

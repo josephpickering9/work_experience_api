@@ -10,15 +10,13 @@ using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
-public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
+public class ProjectImageServiceTests : BaseServiceTests
 {
-    private readonly Project _project;
+    private const int ProjectId = 1;
     private readonly ProjectImageService _projectImageService;
 
     public ProjectImageServiceTests()
     {
-        _project = CreateProject(1);
-
         var mockFileService = new Mock<IFileService>();
         _projectImageService = new ProjectImageService(Context, mockFileService.Object);
 
@@ -26,22 +24,11 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
             .ReturnsAsync(() => new Success<string>("testPath"));
     }
 
-    public async Task InitializeAsync()
-    {
-        await ClearDatabase();
-        await SeedDatabase();
-    }
-
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
-    }
-
     [Fact]
     public async Task GetProjectImagesAsync_ValidProjectId_ReturnsProjectImages()
     {
         // Act
-        var result = (await _projectImageService.GetProjectImagesAsync(_project.Id)).ExpectSuccess();
+        var result = (await _projectImageService.GetProjectImagesAsync(ProjectId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -52,10 +39,10 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetProjectImagesAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int projectId = 99;
+        const int invalidProjectId = 99;
 
         // Act
-        var result = (await _projectImageService.GetProjectImagesAsync(projectId)).ExpectFailure();
+        var result = (await _projectImageService.GetProjectImagesAsync(invalidProjectId)).ExpectFailure();
 
         // Assert
         Assert.IsType<NotFoundException>(result);
@@ -69,7 +56,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
         const int imageId = 1;
 
         // Act
-        var result = (await _projectImageService.GetProjectImageAsync(_project.Id, imageId)).ExpectSuccess();
+        var result = (await _projectImageService.GetProjectImageAsync(ProjectId, imageId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -80,11 +67,11 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetProjectImageAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int projectId = 99;
+        const int invalidProjectId = 99;
         const int imageId = 1;
 
         // Act
-        var result = (await _projectImageService.GetProjectImageAsync(projectId, imageId)).ExpectFailure();
+        var result = (await _projectImageService.GetProjectImageAsync(invalidProjectId, imageId)).ExpectFailure();
 
         // Assert
         Assert.IsType<NotFoundException>(result);
@@ -95,10 +82,10 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetProjectImageAsync_InvalidImageId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int imageId = 99;
+        const int invalidImageId = 99;
 
         // Act
-        var result = (await _projectImageService.GetProjectImageAsync(_project.Id, imageId)).ExpectFailure();
+        var result = (await _projectImageService.GetProjectImageAsync(ProjectId, invalidImageId)).ExpectFailure();
 
         // Assert
         Assert.IsType<NotFoundException>(result);
@@ -123,7 +110,7 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         // Act
-        var result = (await _projectImageService.SyncProjectImagesAsync(_project, images)).ExpectSuccess();
+        var result = (await _projectImageService.SyncProjectImagesAsync(ProjectId, images)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -148,42 +135,11 @@ public class ProjectImageServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         // Act
-        await _projectImageService.SyncProjectImagesAsync(_project, images);
-        var result = (await _projectImageService.GetProjectImagesAsync(_project.Id)).ExpectSuccess();
+        await _projectImageService.SyncProjectImagesAsync(ProjectId, images);
+        var result = (await _projectImageService.GetProjectImagesAsync(ProjectId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(9, result.Count());
-    }
-
-    private async Task SeedDatabase()
-    {
-        if (!Context.ProjectImage.Any())
-        {
-            Context.ProjectImage.AddRange(GetTestProjectImages());
-            await Context.SaveChangesAsync();
-        }
-    }
-
-    private IEnumerable<ProjectImage> GetTestProjectImages()
-    {
-        var testLogo = CreateProjectImage(1, "testLogo.png", ImageType.Logo, project: _project);
-        var testBanner = CreateProjectImage(2, "testBanner.png", ImageType.Banner, project: _project);
-        var testCard = CreateProjectImage(3, "testCard.png", ImageType.Card, project: _project);
-        var testDesktop1 = CreateProjectImage(4, "testDesktop1.png", ImageType.Desktop, 1, _project);
-        var testDesktop2 = CreateProjectImage(5, "testDesktop2.png", ImageType.Desktop, 2, _project);
-        var testMobile1 = CreateProjectImage(6, "testMobile1.png", ImageType.Mobile, 1, _project);
-        var testMobile2 = CreateProjectImage(7, "testMobile2.png", ImageType.Mobile, 2, _project);
-
-        return
-        [
-            testLogo,
-            testBanner,
-            testCard,
-            testDesktop1,
-            testDesktop2,
-            testMobile1,
-            testMobile2
-        ];
     }
 }

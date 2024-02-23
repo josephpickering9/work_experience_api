@@ -84,6 +84,8 @@ public class CreateProject
     public List<CreateProjectImage> Images { get; init; } = [];
 
     [Required] public List<string> Tags { get; init; } = [];
+
+    public List<CreateProjectRepository> Repositories { get; init; } = [];
 }
 
 public class CreateProjectImage
@@ -93,6 +95,17 @@ public class CreateProjectImage
     public IFormFile? Image { get; init; }
 
     [Required] public ImageType Type { get; init; }
+
+    public int? Order { get; set; }
+}
+
+public class CreateProjectRepository
+{
+    public int? Id { get; init; }
+
+    [Required] public string Title { get; init; } = null!;
+
+    [Required] public string Url { get; init; } = null!;
 
     public int? Order { get; set; }
 }

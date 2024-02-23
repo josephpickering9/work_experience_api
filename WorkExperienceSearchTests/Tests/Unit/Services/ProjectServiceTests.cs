@@ -10,31 +10,25 @@ using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
-public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
+public class ProjectServiceTests : BaseServiceTests
 {
     private readonly Mock<ITagService> _mockTagService;
-    private readonly ProjectService _projectService;
+    private readonly Mock<IProjectImageService> _mockProjectImageService;
+    private readonly Mock<IProjectRepositoryService> _mockProjectRepositoryService;
+    private readonly IProjectService _projectService;
 
     public ProjectServiceTests()
     {
-        var mockFileService = new Mock<IFileService>();
-        var mockProjectImageService = new Mock<IProjectImageService>();
         _mockTagService = new Mock<ITagService>();
-        _projectService = new ProjectService(Context, mockProjectImageService.Object, _mockTagService.Object);
-
-        mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
-            .ReturnsAsync(() => new Success<string>("testPath"));
-    }
-
-    public async Task InitializeAsync()
-    {
-        await ClearDatabase();
-        await SeedDatabase();
-    }
-
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
+        _mockProjectImageService = new Mock<IProjectImageService>();
+        _mockProjectRepositoryService = new Mock<IProjectRepositoryService>();
+        _projectService = new ProjectService(Context, _mockProjectImageService.Object, _mockProjectRepositoryService.Object, _mockTagService.Object);
+        
+        _mockProjectImageService.Setup(service => service.SyncProjectImagesAsync(It.IsAny<Project>(), It.IsAny<List<CreateProjectImage>>()))
+            .ReturnsAsync(() => new Success<List<ProjectImage>>([]));
+        
+        _mockProjectRepositoryService.Setup(service => service.SyncProjectRepositoriesAsync(It.IsAny<Project>(), It.IsAny<List<CreateProjectRepository>>()))
+            .ReturnsAsync(() => new Success<List<ProjectRepository>>([]));
     }
 
     [Fact]
@@ -65,6 +59,21 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetProjectsAsync_OrderedByYearDescending()
+    {
+        // Arrange is done in the constructor
+
+        // Act
+        var result = (await _projectService.GetProjectsAsync(null)).ExpectSuccess().ToList();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("BeatCovidNE", result[0].Title);
+        Assert.Equal("Visit Northumberland", result[1].Title);
+        Assert.Equal("taxigoat", result[2].Title);
+    }
+    
+    [Fact]
     public async Task GetProjectAsync_ValidId_ReturnsProject()
     {
         // Arrange
@@ -82,10 +91,10 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
     public async Task GetProjectBySlugAsync_ValidSlug_ReturnsProject()
     {
         // Arrange
-        const string validSlug = "visit-northumberland";
-        await SaveProject(CreateProject(5, "Visit Northumberland", "Visit Northumberland Description",
-            "Visit Northumberland Short Description", 1, 2021,
-            "https://visitnorthumberland.com", []));
+        const string validSlug = "client-portal";
+        await SaveProject(CreateProject(5, "Client Portal", "Client Portal Description",
+            "Client Portal Short Description", 1, 2021,
+            "https://clientportal.com", []));
 
         // Act
         var result = (await _projectService.GetProjectBySlugAsync(validSlug)).ExpectSuccess();
@@ -142,8 +151,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         var relatedProject2 = await SaveProject(CreateProject(3, "Project 3", tags: [tag1, tag2, tag3]));
         var relatedProject3 = await SaveProject(CreateProject(4, "Project 4", tags: [tag1, tag2, tag3, tag4]));
         var relatedProject4 = await SaveProject(CreateProject(5, "Project 5", tags: [tag1, tag2, tag3, tag4, tag5]));
-        var relatedProject5 =
-            await SaveProject(CreateProject(6, "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
+        var relatedProject5 = await SaveProject(CreateProject(6, "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
 
         // Act
         var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ExpectSuccess()!.ToList();
@@ -174,8 +182,7 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
         };
 
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
-            .ReturnsAsync((List<string> tags) =>
-                new Success<List<Tag>>(tags.Select(t => CreateTag(4, t, TagType.Default)).ToList()));
+            .ReturnsAsync((List<string> tags) => new Success<List<Tag>>(tags.Select(t => CreateTag(4, t, TagType.Default)).ToList()));
 
         // Act
         var result = (await _projectService.CreateProjectAsync(newProject)).ExpectSuccess();
@@ -260,49 +267,5 @@ public class ProjectServiceTests : BaseServiceTests, IAsyncLifetime
 
         var projectInDb = await Context.Project.FindAsync(existingProject.Id);
         Assert.Null(projectInDb);
-    }
-
-    private async Task SeedDatabase()
-    {
-        if (!Context.Project.Any())
-        {
-            Context.Project.AddRange(GetTestProjects());
-            await Context.SaveChangesAsync();
-        }
-    }
-
-    private async Task<Project> SaveProject(Project project)
-    {
-        await Context.Project.AddAsync(project);
-        await Context.SaveChangesAsync();
-        return project;
-    }
-
-    private static IEnumerable<Project> GetTestProjects()
-    {
-        var cSharpTag = CreateTag(1, "C#", TagType.Backend);
-        var aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);
-        var xamarinFormsTag = CreateTag(3, "Xamarin Forms", TagType.Frontend);
-
-        var company = CreateCompany(1, "Drummond Central", "A marketing agency based in Newcastle upon Tyne.",
-            "https://drummondcentral.co.uk/wp-content/uploads/2019/10/DC-Logo-White.png",
-            "https://drummondcentral.co.uk/");
-
-        return
-        [
-            CreateProject(1, "Visit Northumberland",
-                "A website for Visit Northumberland using C# and ASP.NET Core MVC.",
-                "A website for Visit Northumberland", company.Id,
-                2021, "https://visitnorthumberland.com/", [cSharpTag, aspNetCoreTag]),
-
-            CreateProject(2, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
-                "A website for BeatCovidNE", company.Id, 2021,
-                "https://beatcovidne.co.uk/", [cSharpTag, aspNetCoreTag]),
-
-            CreateProject(3, "taxigoat",
-                "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.",
-                "A website for taxigoat", company.Id, 2021,
-                "https://taxigoat.co.uk/", [xamarinFormsTag])
-        ];
     }
 }
