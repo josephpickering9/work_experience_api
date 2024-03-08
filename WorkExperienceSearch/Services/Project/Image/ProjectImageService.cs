@@ -76,6 +76,12 @@ public class ProjectImageService(Database context, IFileService fileService) : I
             imagesToSave.Add(projectImage);
         }
 
+        foreach (var image in imagesToSave)
+        {
+            var newImage = images.Single(i => i.Id == image.Id);
+            image.Order = newImage.Order;
+        }
+
         if (imagesToCreate.Count > 0 || imagesToDelete.Count > 0) await context.SaveChangesAsync();
 
         return new Success<List<ProjectImage>>(imagesToSave);
