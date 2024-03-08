@@ -63,7 +63,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         string title = "Test Project",
         string description = "Test Description",
         string shortDescription = "Test Short Description",
-        int companyId = 1,
+        int? companyId = null,
         int year = 2021,
         string website = "https://example.com",
         List<string>? tags = null
@@ -82,6 +82,11 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         };
 
         using var scope = Factory.Services.CreateScope();
+
+        if (companyId != null)
+        {
+            await CreateCompanyAsync(companyId.Value);
+        }
 
         if (tags?.Count > 0)
         {
@@ -198,11 +203,9 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
             Audience = _auth0Settings["Audience"]
         };
         var tokenResponse = await auth0Client.GetTokenAsync(tokenRequest);
-
-        // Cache the new token and set an expiry time
+        
         _cachedToken = tokenResponse.AccessToken;
-        // Assuming token expires in 1 hour; adjust based on actual expiry
-        _tokenExpiryTime = DateTime.UtcNow.AddHours(1);
+        _tokenExpiryTime = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
         return _cachedToken;
     }

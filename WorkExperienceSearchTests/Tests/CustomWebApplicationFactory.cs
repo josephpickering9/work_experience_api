@@ -16,25 +16,33 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<Database>));
             if (descriptor != null) services.Remove(descriptor);
 
-            // Add a new database context using an in-memory database for testing
-            services.AddDbContext<Database>(options => { options.UseInMemoryDatabase("InMemoryDbForTesting"); });
-
-            // Mock other services that you are using
+            // Create a new service provider that includes Entity Framework services for PostgreSQL
             var serviceProvider = new ServiceCollection()
-                .AddEntityFrameworkInMemoryDatabase()
+                .AddEntityFrameworkNpgsql()
                 .BuildServiceProvider();
 
+            // Create a new unique database name or connection string for testing
+            var dbName = $"TestDatabase-{Guid.NewGuid()}";
+            var connectionString = GetConnectionString(dbName);
+
+            // Add the database context using the PostgreSQL database for testing
             services.AddDbContext<Database>(options =>
             {
-                options.UseInMemoryDatabase("InMemoryDbForTesting")
-                    .UseInternalServiceProvider(serviceProvider);
+                options.UseNpgsql(connectionString).UseInternalServiceProvider(serviceProvider);
             });
 
+            // Ensure the database is created and migrations are applied
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
             var scopedServices = scope.ServiceProvider;
             var db = scopedServices.GetRequiredService<Database>();
+            db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
         });
+    }
+        
+    private static string GetConnectionString(string databaseName)
+    {
+        return $"Host=localhost;Port=5433;Database={databaseName};Username=testuser;Password=testpassword";
     }
 }

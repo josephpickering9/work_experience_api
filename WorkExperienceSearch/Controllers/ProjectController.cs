@@ -96,7 +96,7 @@ public class CreateProjectImage
 
     [Required] public ImageType Type { get; init; }
 
-    public int? Order { get; set; }
+    public int? Order { get; init; }
 }
 
 public class CreateProjectRepository
