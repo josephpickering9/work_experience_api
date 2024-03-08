@@ -141,11 +141,12 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Title = "New Project",
             ShortDescription = "A short description",
             Description = "A long description",
-            CompanyId = 1,
+            CompanyId = null,
             Year = 2021,
             Website = "https://example.com",
             Tags = ["Tag1", "Tag2"],
-            Images = []
+            Images = [],
+            Repositories = [],
         };
 
         var content = GetMultipartFormDataContent(newProject);
@@ -221,7 +222,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Title = "Duplicate Project",
             ShortDescription = "A short description",
             Description = "A long description",
-            CompanyId = 1,
+            CompanyId = null,
             Year = 2021,
             Website = "https://example.com",
             Tags = ["Tag1", "Tag2"]
@@ -260,7 +261,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Title = "Updated Project",
             ShortDescription = "Updated short description",
             Description = "Updated long description",
-            CompanyId = 1,
+            CompanyId = null,
             Year = 2021,
             Website = "https://updated-example.com",
             Tags = ["UpdatedTag1", "UpdatedTag2"]
