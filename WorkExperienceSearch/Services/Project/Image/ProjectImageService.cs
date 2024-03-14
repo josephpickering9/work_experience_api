@@ -66,10 +66,10 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
             var projectImage = new ProjectImage
             {
-                Image = imagePath.Data,
+                Image = imagePath.Data.FileName,
                 Type = image.Type,
                 Project = project,
-                IsOptimised = imagePath.IsSuccess
+                IsOptimised = imagePath.Data.IsOptimsed
             };
 
             context.ProjectImage.Add(projectImage);
@@ -91,7 +91,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
     public async Task<Result<bool>> OptimiseImagesAsync()
     {
-        var images = context.ProjectImage.Where(i => !i.IsOptimised).ToList();
+        var images = context.ProjectImage.Where(i => !i.IsOptimised).Take(5).ToList();
         foreach (var image in images)
         {
             var file = imageService.GetImage(image.Image);
@@ -100,7 +100,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
             var optimisedImage = await SaveImage(file.Data.File, image.Image);
             if (optimisedImage.Data == null || !optimisedImage.IsSuccess) continue;
 
-            image.Image = optimisedImage.Data;
+            image.Image = optimisedImage.Data.FileName;
             image.IsOptimised = true;
 
             context.ProjectImage.Update(image);
@@ -113,27 +113,46 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
         return new Success<bool>(true);
     }
 
-    private async Task<Result<string>> SaveImage(byte[] file, string fileName = "image.png")
+    private async Task<Result<ImageSaveData>> SaveImage(byte[] file, string fileName = "image.png")
     {
-        if (file.Length == 0) return new BadRequestFailure<string>("Image is empty");
-
         var optimisedImage = await imageService.OptimiseImageAsync(file);
         var formFile = optimisedImage is { Data: not null, IsSuccess: true } ? FileExtensions.ByteArrayToFile(optimisedImage.Data, fileName, FileExtensions.GetContentType(fileName)) : null;
         var imageFile = await fileService.SaveFileAsync(formFile);
         var imagePath = Path.GetFileName(imageFile.Data);
-        if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<string>("Image path is null or empty");
+        if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<ImageSaveData>("Image path is null or empty");
 
-        return new Success<string>(imagePath);
+        var imageSaveData = new ImageSaveData
+        {
+            File = file,
+            FileName = imagePath,
+            IsOptimsed = optimisedImage.IsSuccess
+        };
+
+        return new Success<ImageSaveData>(imageSaveData);
     }
 
-    private async Task<Result<string>> SaveImage(IFormFile? file)
+    private async Task<Result<ImageSaveData>> SaveImage(IFormFile? file)
     {
         var optimisedImage = await imageService.OptimiseImageAsync(await FileExtensions.FileToByteArray(file));
         var formFile = optimisedImage is { Data: not null, IsSuccess: true } ? FileExtensions.ByteArrayToFile(optimisedImage.Data, file?.FileName ?? "image.png", file?.ContentType ?? "application/octet-stream") : file;
         var imageFile = await fileService.SaveFileAsync(formFile);
         var imagePath = Path.GetFileName(imageFile.Data);
-        if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<string>("Image path is null or empty");
+        if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<ImageSaveData>("Image path is null or empty");
 
-        return new Success<string>(imagePath);
+        var imageSaveData = new ImageSaveData
+        {
+            File = await FileExtensions.FileToByteArray(formFile),
+            FileName = imagePath,
+            IsOptimsed = optimisedImage.IsSuccess
+        };
+
+        return new Success<ImageSaveData>(imageSaveData);
     }
+}
+
+public class ImageSaveData
+{
+    public byte[] File { get; set; }
+    public string FileName { get; set; }
+    public bool IsOptimsed { get; set; }
 }
