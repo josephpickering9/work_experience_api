@@ -1,10 +1,12 @@
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
-public class ProjectImageService(Database context, IFileService fileService) : IProjectImageService
+public class ProjectImageService(Database context, IFileService fileService, IImageService imageService) : IProjectImageService
 {
     public async Task<Result<IEnumerable<ProjectImage>>> GetProjectImagesAsync(int projectId)
     {
@@ -59,15 +61,15 @@ public class ProjectImageService(Database context, IFileService fileService) : I
                 }
             }
 
-            var imageFile = await fileService.SaveFileAsync(image.Image);
-            var imagePath = Path.GetFileName(imageFile.Data);
-            if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<List<ProjectImage>>("Image path is null or empty");
+            var imagePath = await SaveImage(image.Image);
+            if (imagePath.Data == null || !imagePath.IsSuccess) return new BadRequestFailure<List<ProjectImage>>(imagePath.Error?.Message ?? "Failed to save image");
 
             var projectImage = new ProjectImage
             {
-                Image = imagePath,
+                Image = imagePath.Data,
                 Type = image.Type,
-                Project = project
+                Project = project,
+                IsOptimised = imagePath.IsSuccess
             };
 
             context.ProjectImage.Add(projectImage);
@@ -85,5 +87,51 @@ public class ProjectImageService(Database context, IFileService fileService) : I
         if (imagesToCreate.Count > 0 || imagesToDelete.Count > 0) await context.SaveChangesAsync();
 
         return new Success<List<ProjectImage>>(imagesToSave);
+    }
+
+    public async Task<Result<bool>> OptimiseImagesAsync()
+    {
+        var images = context.ProjectImage.Where(i => !i.IsOptimised).ToList();
+        foreach (var image in images)
+        {
+            var file = imageService.GetImage(image.Image);
+            if (file.Data == null || !file.IsSuccess) continue;
+
+            var optimisedImage = await SaveImage(file.Data.File, image.Image);
+            if (optimisedImage.Data == null || !optimisedImage.IsSuccess) continue;
+
+            image.Image = optimisedImage.Data;
+            image.IsOptimised = true;
+
+            context.ProjectImage.Update(image);
+            await context.SaveChangesAsync();
+
+            fileService.DeleteFile(file.Data.FileName);
+        }
+
+        await context.SaveChangesAsync();
+        return new Success<bool>(true);
+    }
+
+    private async Task<Result<string>> SaveImage(byte[] file, string fileName = "image.png")
+    {
+        var optimisedImage = await imageService.OptimiseImageAsync(file);
+        var formFile = optimisedImage is { Data: not null, IsSuccess: true } ? FileExtensions.ByteArrayToFile(optimisedImage.Data, fileName, FileExtensions.GetContentType(fileName)) : null;
+        var imageFile = await fileService.SaveFileAsync(formFile);
+        var imagePath = Path.GetFileName(imageFile.Data);
+        if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<string>("Image path is null or empty");
+
+        return new Success<string>(imagePath);
+    }
+
+    private async Task<Result<string>> SaveImage(IFormFile file)
+    {
+        var optimisedImage = await imageService.OptimiseImageAsync(await FileExtensions.FileToByteArray(file));
+        var formFile = optimisedImage is { Data: not null, IsSuccess: true } ? FileExtensions.ByteArrayToFile(optimisedImage.Data, file.FileName, file.ContentType) : file;
+        var imageFile = await fileService.SaveFileAsync(formFile);
+        var imagePath = Path.GetFileName(imageFile.Data);
+        if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<string>("Image path is null or empty");
+
+        return new Success<string>(imagePath);
     }
 }

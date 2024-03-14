@@ -129,6 +129,9 @@ namespace Work_Experience_Search.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsOptimised")
+                        .HasColumnType("boolean");
+
                     b.Property<int?>("Order")
                         .HasColumnType("integer");
 
@@ -249,7 +252,7 @@ namespace Work_Experience_Search.Migrations
             modelBuilder.Entity("Work_Experience_Search.Models.ProjectRepository", b =>
                 {
                     b.HasOne("Work_Experience_Search.Models.Project", "Project")
-                        .WithMany()
+                        .WithMany("Repositories")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -260,6 +263,8 @@ namespace Work_Experience_Search.Migrations
             modelBuilder.Entity("Work_Experience_Search.Models.Project", b =>
                 {
                     b.Navigation("Images");
+
+                    b.Navigation("Repositories");
                 });
 #pragma warning restore 612, 618
         }

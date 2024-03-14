@@ -14,6 +14,8 @@ public class ProjectImage
 
     public int? Order { get; set; }
 
+    public bool IsOptimised { get; set; } = false;
+
     public int? ProjectId { get; set; }
     [Required] [JsonIgnore] public Project? Project { get; set; }
 }

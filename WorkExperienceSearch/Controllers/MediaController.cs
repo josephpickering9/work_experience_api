@@ -1,23 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.StaticFiles;
+using Work_Experience_Search.Services.Image;
 
 namespace Work_Experience_Search.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class MediaController(IWebHostEnvironment env) : ControllerBase
+public class MediaController(IImageService imageService) : ControllerBase
 {
     [HttpGet("uploads/{fileName}")]
     public IActionResult GetFile(string fileName)
     {
-        var filePath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads", fileName);
+        var imageData = imageService.GetImage(fileName);
+        if (imageData.Data == null || !imageData.IsSuccess) return imageData.ToResponse();
 
-        if (!System.IO.File.Exists(filePath))
-            return NotFound();
-
-        new FileExtensionContentTypeProvider().TryGetContentType(filePath, out var contentType);
-
-        var fileBytes = System.IO.File.ReadAllBytes(filePath);
-        return File(fileBytes, contentType ?? "application/octet-stream");
+        return File(imageData.Data.File, imageData.Data?.ContentType ?? "application/octet-stream");
     }
 }
