@@ -91,7 +91,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
     public async Task<Result<bool>> OptimiseImagesAsync()
     {
-        var images = context.ProjectImage.Where(i => !i.IsOptimised).Take(5).ToList();
+        var images = context.ProjectImage.Where(i => !i.IsOptimised).ToList();
         foreach (var image in images)
         {
             var file = imageService.GetImage(image.Image);
