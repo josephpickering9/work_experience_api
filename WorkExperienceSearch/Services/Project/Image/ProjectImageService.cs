@@ -115,6 +115,8 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
     private async Task<Result<string>> SaveImage(byte[] file, string fileName = "image.png")
     {
+        if (file.Length == 0) return new BadRequestFailure<string>("Image is empty");
+
         var optimisedImage = await imageService.OptimiseImageAsync(file);
         var formFile = optimisedImage is { Data: not null, IsSuccess: true } ? FileExtensions.ByteArrayToFile(optimisedImage.Data, fileName, FileExtensions.GetContentType(fileName)) : null;
         var imageFile = await fileService.SaveFileAsync(formFile);
@@ -124,10 +126,10 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
         return new Success<string>(imagePath);
     }
 
-    private async Task<Result<string>> SaveImage(IFormFile file)
+    private async Task<Result<string>> SaveImage(IFormFile? file)
     {
         var optimisedImage = await imageService.OptimiseImageAsync(await FileExtensions.FileToByteArray(file));
-        var formFile = optimisedImage is { Data: not null, IsSuccess: true } ? FileExtensions.ByteArrayToFile(optimisedImage.Data, file.FileName, file.ContentType) : file;
+        var formFile = optimisedImage is { Data: not null, IsSuccess: true } ? FileExtensions.ByteArrayToFile(optimisedImage.Data, file?.FileName ?? "image.png", file?.ContentType ?? "application/octet-stream") : file;
         var imageFile = await fileService.SaveFileAsync(formFile);
         var imagePath = Path.GetFileName(imageFile.Data);
         if (!imageFile.IsSuccess || imagePath == null) return new BadRequestFailure<string>("Image path is null or empty");

@@ -1,14 +1,13 @@
-using System.Globalization;
-using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace Work_Experience_Search.Utils;
 
 public static class FileExtensions
 {
-    public static async Task<byte[]> FileToByteArray(IFormFile image)
+    public static async Task<byte[]> FileToByteArray(IFormFile? image)
     {
+        if (image is null) return Array.Empty<byte>();
+
         await using var imageStream = image.OpenReadStream();
         var buffer = new byte[image.Length];
         await imageStream.ReadAsync(buffer.AsMemory(0, (int)imageStream.Length));
@@ -34,5 +33,10 @@ public static class FileExtensions
             contentType = "application/octet-stream";
         }
         return contentType;
+    }
+
+    public static string GetFileExtension(string fileName)
+    {
+        return Path.GetExtension(fileName);
     }
 }
