@@ -4,6 +4,7 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 using Xunit;
@@ -18,10 +19,13 @@ public class ProjectImageServiceTests : BaseServiceTests
     public ProjectImageServiceTests()
     {
         var mockFileService = new Mock<IFileService>();
-        _projectImageService = new ProjectImageService(Context, mockFileService.Object);
+        var mockImageService = new Mock<IImageService>();
+        _projectImageService = new ProjectImageService(Context, mockFileService.Object, mockImageService.Object);
 
         mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync(() => new Success<string>("testPath"));
+        mockImageService.Setup(s => s.OptimiseImageAsync(It.IsAny<byte[]>()))
+            .ReturnsAsync(() => new Success<byte[]>(new byte[12]));
     }
 
     [Fact]

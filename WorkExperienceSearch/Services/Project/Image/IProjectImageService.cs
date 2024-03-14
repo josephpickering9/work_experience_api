@@ -10,4 +10,5 @@ public interface IProjectImageService
     Task<Result<ProjectImage>> GetProjectImageAsync(int projectId, int id);
     Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(int projectId, List<CreateProjectImage> images);
     Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(Project project, List<CreateProjectImage> images);
+    Task<Result<bool>> OptimiseImagesAsync();
 }

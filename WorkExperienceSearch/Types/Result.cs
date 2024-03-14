@@ -49,6 +49,8 @@ public class Result<T>
 
 public class Success<T>(T data) : Result<T>(data);
 
+public class Failure<T>(string message) : Result<T>(new Exception(message), ErrorType.None);
+
 public class NotFoundFailure<T>(string message = "Item not found.") : Result<T>(new NotFoundException(message), ErrorType.NotFound);
 
 public class ConflictFailure<T>(string message) : Result<T>(new ConflictException(message), ErrorType.Conflict);
