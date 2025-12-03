@@ -9,6 +9,7 @@ using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Services.Image;
+using Work_Experience_Search.Services.VertexAi;
 
 DotEnv.Load();
 
@@ -25,6 +26,8 @@ builder.Services.AddScoped<IProjectRepositoryService, ProjectRepositoryService>(
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.Configure<VertexAiOptions>(builder.Configuration.GetSection("VertexAi"));
+builder.Services.AddSingleton<IVertexChatbotClient, VertexChatbotClient>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
