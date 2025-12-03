@@ -12,8 +12,13 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
     {
         IQueryable<Company> companies = context.Company;
 
-        if (!string.IsNullOrEmpty(search))
-            companies = companies.Where(c => EF.Functions.ILike(c.Name, $"%${search}%"));
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.ToLowerInvariant();
+            companies = SupportsILike()
+                ? companies.Where(c => EF.Functions.ILike(c.Name, $"%{search}%"))
+                : companies.Where(c => c.Name != null && c.Name.ToLower().Contains(normalizedSearch));
+        }
 
         return new Success<IEnumerable<Company>>(await companies.ToListAsync());
     }
@@ -36,7 +41,9 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
 
     public async Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany)
     {
-        var companyExists = await context.Company.AnyAsync(c => EF.Functions.ILike(c.Name, createCompany.Name));
+        var companyExists = SupportsILike()
+            ? await context.Company.AnyAsync(c => EF.Functions.ILike(c.Name, createCompany.Name))
+            : await context.Company.AnyAsync(c => c.Name != null && c.Name.Equals(createCompany.Name, StringComparison.OrdinalIgnoreCase));
         if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;
@@ -68,8 +75,9 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         var company = await context.Company.FindAsync(id);
         if (company == null) return new NotFoundFailure<Company>("Company not found.");
 
-        var companyExists = await context.Company.AnyAsync(p =>
-            p.Id != company.Id && EF.Functions.ILike(p.Name, createCompany.Name));
+        var companyExists = SupportsILike()
+            ? await context.Company.AnyAsync(p => p.Id != company.Id && EF.Functions.ILike(p.Name, createCompany.Name))
+            : await context.Company.AnyAsync(p => p.Id != company.Id && p.Name != null && p.Name.Equals(createCompany.Name, StringComparison.OrdinalIgnoreCase));
         if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;
@@ -103,4 +111,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
 
         return new Success<Company>(company);
     }
+
+    private bool SupportsILike() =>
+        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }

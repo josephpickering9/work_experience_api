@@ -62,7 +62,9 @@ public class ProjectService(
 
     public async Task<Result<Project>> CreateProjectAsync(CreateProject createProject)
     {
-        var projectExists = await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, createProject.Title));
+        var projectExists = SupportsILike()
+            ? await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, createProject.Title))
+            : await context.Project.AnyAsync(p => p.Title != null && p.Title.Equals(createProject.Title, StringComparison.OrdinalIgnoreCase));
         if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         var project = new Project
@@ -92,7 +94,9 @@ public class ProjectService(
         if (!projectResult.IsSuccess || projectResult.Data == null) return projectResult;
 
         var project = projectResult.Data;
-        var projectExists = await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title));
+        var projectExists = SupportsILike()
+            ? await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title))
+            : await context.Project.AnyAsync(p => p.Id != project.Id && p.Title != null && p.Title.Equals(createProject.Title, StringComparison.OrdinalIgnoreCase));
         if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         project.Title = createProject.Title;
@@ -131,8 +135,15 @@ public class ProjectService(
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
             .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0));
 
-        if (!string.IsNullOrEmpty(search))
-            projects = projects.Where(p => EF.Functions.ILike(p.Title, $"%{search}%") || EF.Functions.ILike(p.ShortDescription, $"%{search}%"));
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.ToLowerInvariant();
+            projects = SupportsILike()
+                ? projects.Where(p => EF.Functions.ILike(p.Title, $"%{search}%") || EF.Functions.ILike(p.ShortDescription, $"%{search}%"))
+                : projects.Where(p =>
+                    (p.Title != null && p.Title.ToLower().Contains(normalizedSearch)) ||
+                    (p.ShortDescription != null && p.ShortDescription.ToLower().Contains(normalizedSearch)));
+        }
 
         return projects.OrderByDescending(p => p.Year);
     }
@@ -186,4 +197,7 @@ public class ProjectService(
 
         return new Success<Project>(project);
     }
+
+    private bool SupportsILike() =>
+        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }
