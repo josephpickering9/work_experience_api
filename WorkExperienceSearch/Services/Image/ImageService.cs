@@ -57,7 +57,7 @@ public class ImageService : IImageService
 
 public class ImageData
 {
-    public string FileName { get; set; }
-    public byte[] File { get; set; }
-    public string ContentType { get; set; }
+    public required string FileName { get; init; }
+    public required byte[] File { get; init; }
+    public required string ContentType { get; init; }
 }

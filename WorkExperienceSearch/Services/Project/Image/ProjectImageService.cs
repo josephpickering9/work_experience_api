@@ -152,7 +152,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
 public class ImageSaveData
 {
-    public byte[] File { get; set; }
-    public string FileName { get; set; }
-    public bool IsOptimsed { get; set; }
+    public required byte[] File { get; init; }
+    public required string FileName { get; init; }
+    public bool IsOptimsed { get; init; }
 }

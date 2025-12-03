@@ -198,13 +198,13 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         var auth0Client = new AuthenticationApiClient(new Uri(_auth0Settings["Domain"] ?? ""));
         var tokenRequest = new ClientCredentialsTokenRequest
         {
-            ClientId = _auth0Settings["ApiClientId"],
-            ClientSecret = _auth0Settings["ApiClientSecret"],
-            Audience = _auth0Settings["Audience"]
+            ClientId = _auth0Settings["ApiClientId"] ?? string.Empty,
+            ClientSecret = _auth0Settings["ApiClientSecret"] ?? string.Empty,
+            Audience = _auth0Settings["Audience"] ?? string.Empty
         };
         var tokenResponse = await auth0Client.GetTokenAsync(tokenRequest);
         
-        _cachedToken = tokenResponse.AccessToken;
+        _cachedToken = tokenResponse.AccessToken ?? string.Empty;
         _tokenExpiryTime = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
         return _cachedToken;

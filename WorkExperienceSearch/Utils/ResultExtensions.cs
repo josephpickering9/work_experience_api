@@ -20,12 +20,14 @@ public static class ResultExtensions
         return result;
     }
 
-    public static T? ExpectSuccess<T>(this Result<T> result)
+    public static T ExpectSuccess<T>(this Result<T> result)
     {
-        if (result.IsSuccess)
+        if (result.IsSuccess && result.Data is not null)
             return result.Data;
 
-        throw new InvalidOperationException("Expected success but was failure");
+        throw new InvalidOperationException(result.IsSuccess
+            ? "Expected success with data but was null."
+            : "Expected success but was failure");
     }
 
     public static Exception ExpectFailure<T>(this Result<T> result)
