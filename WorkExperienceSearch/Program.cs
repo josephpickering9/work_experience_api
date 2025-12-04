@@ -42,6 +42,13 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<SwaggerFileOperationFilter>();
     c.SchemaFilter<EnumDescriptionSchemaFilter>();
     c.SupportNonNullableReferenceTypes();
+
+    // Expose strongly-typed IDs as simple uuid strings in OpenAPI
+    c.MapType<ProjectId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<CompanyId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<TagId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<ProjectImageId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<ProjectRepositoryId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
 });
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
