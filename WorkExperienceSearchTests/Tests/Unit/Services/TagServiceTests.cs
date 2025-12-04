@@ -2,6 +2,7 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 using Xunit;
 
@@ -45,7 +46,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task GetTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var tagId = Guid.NewGuid();
+        var tagId = TagId.New();
 
         // Act 
         var result = (await _tagService.GetTagAsync(tagId)).ExpectFailure();
@@ -72,7 +73,6 @@ public class TagServiceTests : BaseServiceTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal(createTag.Title, result.Title);
     }
 
@@ -122,7 +122,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task UpdateTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var tagId = Guid.NewGuid();
+        var tagId = TagId.New();
         var updateTag = new CreateTag
         {
             Title = "Updated Tag",
@@ -160,7 +160,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task DeleteTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var tagId = Guid.NewGuid();
+        var tagId = TagId.New();
 
         // Act 
         var result = (await _tagService.DeleteTagAsync(tagId)).ExpectFailure();

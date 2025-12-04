@@ -5,6 +5,7 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Tests;
+using Work_Experience_Search.Types;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;
@@ -19,9 +20,9 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Arrange
         var projects = new List<Project>
         {
-            await CreateProjectAsync(Guid.NewGuid()),
-            await CreateProjectAsync(Guid.NewGuid()),
-            await CreateProjectAsync(Guid.NewGuid())
+            await CreateProjectAsync(ProjectId.New()),
+            await CreateProjectAsync(ProjectId.New()),
+            await CreateProjectAsync(ProjectId.New())
         };
 
         // Act
@@ -40,7 +41,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetProject_ExistingId_ReturnsProject()
     {
         // Arrange
-        var testProjectId = Guid.NewGuid();
+        var testProjectId = ProjectId.New();
         var tags = new List<string> { "Tag1", "Tag2" };
         var expectedProject = await CreateProjectAsync(testProjectId, tags: tags);
 
@@ -65,7 +66,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetProject_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        var nonExistingProjectId = Guid.NewGuid();
+        var nonExistingProjectId = ProjectId.New();
 
         // Act
         var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectId}");
@@ -78,7 +79,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetProject_ExistingSlug_ReturnsProject()
     {
         // Arrange
-        var testProjectId = Guid.NewGuid();
+        var testProjectId = ProjectId.New();
         var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -116,8 +117,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     {
         // Arrange
         var tags = new List<string> { "Tag1", "Tag2" };
-        var expectedProject = await CreateProjectAsync(Guid.NewGuid(), tags: tags);
-        var relatedProject = await CreateProjectAsync(Guid.NewGuid(), tags: tags);
+        var expectedProject = await CreateProjectAsync(ProjectId.New(), tags: tags);
+        var relatedProject = await CreateProjectAsync(ProjectId.New(), tags: tags);
 
         // Act
         var httpResponse = await Client.GetAsync($"/project/{expectedProject.Id}/related");
@@ -198,7 +199,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Title = "New Project",
             ShortDescription = "A short description",
             Description = "A long description",
-            CompanyId = Guid.NewGuid(),
+            CompanyId = CompanyId.New(),
             Year = 2021,
             Website = "https://example.com",
             Tags = ["Tag1", "Tag2"]
@@ -253,7 +254,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PutProject_ExistingId_UpdatesProject()
     {
         // Arrange
-        var testProjectId = Guid.NewGuid();
+        var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         var updateProject = new CreateProject
@@ -311,7 +312,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PutProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
-        var testProjectId = Guid.NewGuid();
+        var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -320,7 +321,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Title = "Updated Project",
             ShortDescription = "Updated short description",
             Description = "Updated long description",
-            CompanyId = Guid.NewGuid(),
+            CompanyId = CompanyId.New(),
             Year = 2021,
             Website = "https://updated-example.com",
             Tags = ["UpdatedTag1", "UpdatedTag2"]
@@ -339,7 +340,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task DeleteProject_ExistingId_DeletesProject()
     {
         // Arrange
-        var testProjectId = Guid.NewGuid();
+        var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -358,7 +359,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task DeleteProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
-        var testProjectId = Guid.NewGuid();
+        var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act

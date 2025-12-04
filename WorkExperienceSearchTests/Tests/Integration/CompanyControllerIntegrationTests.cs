@@ -2,6 +2,7 @@ using System.Net;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Tests;
+using Work_Experience_Search.Types;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;
@@ -16,9 +17,9 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         // Arrange
         var companies = new List<Company>
         {
-            await CreateCompanyAsync(Guid.NewGuid(), "Company 1"),
-            await CreateCompanyAsync(Guid.NewGuid(), "Company 2"),
-            await CreateCompanyAsync(Guid.NewGuid(), "Company 3")
+            await CreateCompanyAsync(CompanyId.New(), "Company 1"),
+            await CreateCompanyAsync(CompanyId.New(), "Company 2"),
+            await CreateCompanyAsync(CompanyId.New(), "Company 3")
         };
 
         // Act
@@ -37,7 +38,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetCompany_ExistingId_ReturnsCompany()
     {
         // Arrange
-        var testCompanyId = Guid.NewGuid();
+        var testCompanyId = CompanyId.New();
         await CreateCompanyAsync(testCompanyId);
 
         // Act
@@ -55,7 +56,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetCompany_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        var nonExistingCompanyId = Guid.NewGuid();
+        var nonExistingCompanyId = CompanyId.New();
 
         // Act
         var httpResponse = await Client.GetAsync($"/company/{nonExistingCompanyId}");
@@ -113,7 +114,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PostCompany_ExistingCompany_ReturnsConflict()
     {
         // Arrange
-        await CreateCompanyAsync(Guid.NewGuid(), "Conflict Company");
+        await CreateCompanyAsync(CompanyId.New(), "Conflict Company");
         var newCompany = new CreateCompany
         {
             Name = "Conflict Company",
@@ -133,7 +134,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PutCompany_ExistingId_UpdatesCompany()
     {
         // Arrange
-        var companyId = Guid.NewGuid();
+        var companyId = CompanyId.New();
         await CreateCompanyAsync(companyId);
         var updateCompany = new CreateCompany
         {
@@ -162,7 +163,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PutCompany_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        var nonExistingCompanyId = Guid.NewGuid();
+        var nonExistingCompanyId = CompanyId.New();
         var updateCompany = new CreateCompany
         {
             Name = "Updated Company",
@@ -182,7 +183,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task DeleteCompany_ExistingId_DeletesCompany()
     {
         // Arrange
-        var companyId = Guid.NewGuid();
+        var companyId = CompanyId.New();
         await CreateCompanyAsync(companyId);
 
         // Act
@@ -196,7 +197,7 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task DeleteCompany_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        var nonExistingCompanyId = Guid.NewGuid();
+        var nonExistingCompanyId = CompanyId.New();
 
         // Act
         var httpResponse = await AuthenticatedClient.DeleteAsync($"/company/{nonExistingCompanyId}");

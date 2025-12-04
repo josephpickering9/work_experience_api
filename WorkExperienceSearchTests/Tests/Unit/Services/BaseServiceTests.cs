@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 using Xunit;
 
@@ -9,20 +10,20 @@ namespace WorkExperienceSearchTests.Tests.Unit.Services;
 public class BaseServiceTests : IAsyncLifetime
 {
     protected readonly Database Context;
-    protected static readonly Guid CompanyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    protected static readonly Guid Project1Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-    protected static readonly Guid Project2Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    protected static readonly Guid Project3Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
-    protected static readonly Guid Tag1Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    protected static readonly Guid Tag2Id = Guid.Parse("22222222-2222-2222-2222-222222222222");
-    protected static readonly Guid Tag3Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
-    protected static readonly Guid Image1Id = Guid.Parse("44444444-4444-4444-4444-444444444441");
-    protected static readonly Guid Image2Id = Guid.Parse("44444444-4444-4444-4444-444444444442");
-    protected static readonly Guid Image3Id = Guid.Parse("44444444-4444-4444-4444-444444444443");
-    protected static readonly Guid Image4Id = Guid.Parse("44444444-4444-4444-4444-444444444444");
-    protected static readonly Guid Image5Id = Guid.Parse("44444444-4444-4444-4444-444444444445");
-    protected static readonly Guid Image6Id = Guid.Parse("44444444-4444-4444-4444-444444444446");
-    protected static readonly Guid Image7Id = Guid.Parse("44444444-4444-4444-4444-444444444447");
+    protected static readonly CompanyId Company1Id = new(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    protected static readonly ProjectId Project1Id = new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    protected static readonly ProjectId Project2Id = new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"));
+    protected static readonly ProjectId Project3Id = new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"));
+    protected static readonly TagId Tag1Id = new(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+    protected static readonly TagId Tag2Id = new(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+    protected static readonly TagId Tag3Id = new(Guid.Parse("33333333-3333-3333-3333-333333333333"));
+    protected static readonly ProjectImageId Image1Id = new(Guid.Parse("44444444-4444-4444-4444-444444444441"));
+    protected static readonly ProjectImageId Image2Id = new(Guid.Parse("44444444-4444-4444-4444-444444444442"));
+    protected static readonly ProjectImageId Image3Id = new(Guid.Parse("44444444-4444-4444-4444-444444444443"));
+    protected static readonly ProjectImageId Image4Id = new(Guid.Parse("44444444-4444-4444-4444-444444444444"));
+    protected static readonly ProjectImageId Image5Id = new(Guid.Parse("44444444-4444-4444-4444-444444444445"));
+    protected static readonly ProjectImageId Image6Id = new(Guid.Parse("44444444-4444-4444-4444-444444444446"));
+    protected static readonly ProjectImageId Image7Id = new(Guid.Parse("44444444-4444-4444-4444-444444444447"));
 
     protected BaseServiceTests()
     {
@@ -65,7 +66,7 @@ public class BaseServiceTests : IAsyncLifetime
         await Context.SaveChangesAsync();
     }
 
-    protected static Tag CreateTag(Guid id, string title, TagType type, List<Project>? projects = null)
+    protected static Tag CreateTag(TagId id, string title, TagType type, List<Project>? projects = null)
     {
         return new Tag
         {
@@ -78,7 +79,7 @@ public class BaseServiceTests : IAsyncLifetime
         };
     }
 
-    protected static Company CreateCompany(Guid id, string name, string description, string logo, string website)
+    protected static Company CreateCompany(CompanyId id, string name, string description, string logo, string website)
     {
         return new Company
         {
@@ -91,11 +92,11 @@ public class BaseServiceTests : IAsyncLifetime
     }
 
     protected static Project CreateProject(
-        Guid id,
+        ProjectId id,
         string title = "Title",
         string description = "Description",
         string shortDescription = "Short Description",
-        Guid? companyId = null!,
+        CompanyId? companyId = null!,
         int year = 2020,
         string website = null!,
         List<Tag> tags = null!
@@ -121,15 +122,26 @@ public class BaseServiceTests : IAsyncLifetime
         ImageType type,
         int? order = null,
         Guid? projectId = null!
+    ) =>
+        CreateProjectImage(new ProjectImageId(id), image, type, order,
+            projectId.HasValue ? new ProjectId(projectId.Value) : null);
+
+    private static ProjectImage CreateProjectImage(
+        ProjectImageId id,
+        string image,
+        ImageType type,
+        int? order = null,
+        ProjectId? projectId = null!
     )
     {
+        var resolvedProjectId = projectId ?? Project1Id;
         return new ProjectImage
         {
             Id = id,
             Image = image,
             Type = type,
             Order = order,
-            ProjectId = projectId
+            ProjectId = resolvedProjectId
         };
     }
 
@@ -150,14 +162,8 @@ public class BaseServiceTests : IAsyncLifetime
         return returnTags;
     }
     
-    private static IEnumerable<Company> GetTestCompanies()
-    {
-        var company = CreateCompany(CompanyId, "Drummond Central", "A marketing agency based in Newcastle upon Tyne.",
-            "https://drummondcentral.co.uk/wp-content/uploads/2019/10/DC-Logo-White.png",
-            "https://drummondcentral.co.uk/");
-
-        return [company];
-    }
+    private static IEnumerable<Company> GetTestCompanies() =>
+        [CreateCompany(Company1Id, "Test Company", "Test Description", "testLogo", "https://example.com")];
     
     private async Task<IEnumerable<Project>> GetTestProjects()
     {
@@ -180,7 +186,7 @@ public class BaseServiceTests : IAsyncLifetime
         ];
     }
     
-    private IEnumerable<ProjectImage> GetTestProjectImages(Guid projectId = default)
+    private IEnumerable<ProjectImage> GetTestProjectImages(ProjectId projectId = default)
     {
         projectId = projectId == default ? Project1Id : projectId;
         var testLogo = CreateProjectImage(Image1Id, "testLogo.png", ImageType.Logo, projectId: projectId);

@@ -92,8 +92,8 @@ public class ProjectServiceTests : BaseServiceTests
     {
         // Arrange
         const string validSlug = "client-portal";
-        await SaveProject(CreateProject(Guid.NewGuid(), "Client Portal", "Client Portal Description",
-            "Client Portal Short Description", CompanyId, 2021,
+        await SaveProject(CreateProject(ProjectId.New(), "Client Portal", "Client Portal Description",
+            "Client Portal Short Description", Company1Id, 2021,
             "https://clientportal.com", []));
 
         // Act
@@ -138,21 +138,20 @@ public class ProjectServiceTests : BaseServiceTests
         // Arrange
         await ClearDatabase();
 
-        var tag1 = CreateTag(Guid.NewGuid(), "Tag 1", TagType.Default);
-        var tag2 = CreateTag(Guid.NewGuid(), "Tag 2", TagType.Backend);
-        var tag3 = CreateTag(Guid.NewGuid(), "Tag 3", TagType.Frontend);
-        var tag4 = CreateTag(Guid.NewGuid(), "Tag 4", TagType.DevOps);
-        var tag5 = CreateTag(Guid.NewGuid(), "Tag 5", TagType.Data);
-        var tag6 = CreateTag(Guid.NewGuid(), "Tag 6", TagType.Mobile);
+        var tag1 = CreateTag(TagId.New(), "Tag 1", TagType.Default);
+        var tag2 = CreateTag(TagId.New(), "Tag 2", TagType.Backend);
+        var tag3 = CreateTag(TagId.New(), "Tag 3", TagType.Frontend);
+        var tag4 = CreateTag(TagId.New(), "Tag 4", TagType.DevOps);
+        var tag5 = CreateTag(TagId.New(), "Tag 5", TagType.Data);
+        var tag6 = CreateTag(TagId.New(), "Tag 6", TagType.Mobile);
 
-        var mainProject = await SaveProject(CreateProject(Guid.NewGuid(), "Project 1", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
+        var mainProject = await SaveProject(CreateProject(ProjectId.New(), "Project 1", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
 
-        var relatedProject1 = await SaveProject(CreateProject(Guid.NewGuid(), "Project 2", tags: [tag1, tag2]));
-        var relatedProject2 = await SaveProject(CreateProject(Guid.NewGuid(), "Project 3", tags: [tag1, tag2, tag3]));
-        var relatedProject3 = await SaveProject(CreateProject(Guid.NewGuid(), "Project 4", tags: [tag1, tag2, tag3, tag4]));
-        var relatedProject4 = await SaveProject(CreateProject(Guid.NewGuid(), "Project 5", tags: [tag1, tag2, tag3, tag4, tag5]));
-        var relatedProject5 = await SaveProject(CreateProject(Guid.NewGuid(), "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
-
+        var relatedProject1 = await SaveProject(CreateProject(ProjectId.New(), "Project 2", tags: [tag1, tag2]));
+        var relatedProject2 = await SaveProject(CreateProject(ProjectId.New(), "Project 3", tags: [tag1, tag2, tag3]));
+        var relatedProject3 = await SaveProject(CreateProject(ProjectId.New(), "Project 4", tags: [tag1, tag2, tag3, tag4]));
+        var relatedProject4 = await SaveProject(CreateProject(ProjectId.New(), "Project 5", tags: [tag1, tag2, tag3, tag4, tag5]));
+        var relatedProject5 = await SaveProject(CreateProject(ProjectId.New(), "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
         // Act
         var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ExpectSuccess()!.ToList();
 
@@ -175,14 +174,14 @@ public class ProjectServiceTests : BaseServiceTests
             Title = "Test Project",
             Description = "Test Description",
             ShortDescription = "Test Short Description",
-            CompanyId = CompanyId,
+            CompanyId = Company1Id,
             Year = 2021,
             Website = "https://example.com",
             Tags = ["Test Tag"]
         };
 
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
-            .ReturnsAsync((List<string> tags) => new Success<List<Tag>>(tags.Select(t => CreateTag(Guid.NewGuid(), t, TagType.Default)).ToList()));
+            .ReturnsAsync((List<string> tags) => new Success<List<Tag>>(tags.Select(t => CreateTag(TagId.New(), t, TagType.Default)).ToList()));
 
         // Act
         var result = (await _projectService.CreateProjectAsync(newProject)).ExpectSuccess();
@@ -208,9 +207,9 @@ public class ProjectServiceTests : BaseServiceTests
     public async Task UpdateProjectAsync_ExistingProject_UpdatesProject()
     {
         // Arrange
-        var tag = CreateTag(Guid.NewGuid(), "Updated Tag", TagType.Backend);
-        var existingProject = await SaveProject(CreateProject(Guid.NewGuid(), "Test Update Project", "Test Description",
-            "Test Short Description", CompanyId, 2021,
+        var tag = CreateTag(TagId.New(), "Updated Tag", TagType.Backend);
+        var existingProject = await SaveProject(CreateProject(ProjectId.New(), "Test Update Project", "Test Description",
+            "Test Short Description", Company1Id, 2021,
             "https://example.com", [tag]));
 
         var updateData = new CreateProject
@@ -218,7 +217,7 @@ public class ProjectServiceTests : BaseServiceTests
             Title = "Updated Project",
             Description = "Updated Description",
             ShortDescription = "Updated Short Description",
-            CompanyId = CompanyId,
+            CompanyId = Company1Id,
             Year = 2021,
             Website = "https://updated.com",
             Tags = ["Updated Tag"]
@@ -256,7 +255,7 @@ public class ProjectServiceTests : BaseServiceTests
     public async Task DeleteProjectAsync_ExistingProject_DeletesProject()
     {
         // Arrange
-        var existingProject = await SaveProject(CreateProject(Guid.NewGuid(), "Test Delete Project"));
+        var existingProject = await SaveProject(CreateProject(ProjectId.New(), "Test Delete Project"));
 
         // Act
         var result = (await _projectService.DeleteProjectAsync(existingProject.Id)).ExpectSuccess();

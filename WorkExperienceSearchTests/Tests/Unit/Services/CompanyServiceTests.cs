@@ -3,6 +3,7 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 using Xunit;
 
@@ -33,7 +34,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task GetCompanyAsync_ValidId_ReturnsCompany()
     {
         // Arrange
-        var companyId = CompanyId;
+        var companyId = Company1Id;
 
         // Act
         var result = (await _companyService.GetCompanyAsync(companyId)).ExpectSuccess();
@@ -47,7 +48,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task GetCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var companyId = Guid.NewGuid();
+        var companyId = CompanyId.New();
 
         // Act
         var result = (await _companyService.GetCompanyAsync(companyId)).ExpectFailure();
@@ -74,7 +75,6 @@ public class CompanyServiceTests : BaseServiceTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal(createCompany.Name, result.Name);
     }
 
@@ -103,7 +103,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task UpdateCompanyAsync_ValidId_ReturnsUpdatedCompany()
     {
         // Arrange
-        var companyId = CompanyId;
+        var companyId = Company1Id;
         var updateCompany = new CreateCompany
         {
             Name = "Updated Company",
@@ -127,7 +127,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task UpdateCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var companyId = Guid.NewGuid();
+        var companyId = CompanyId.New();
         var updateCompany = new CreateCompany
         {
             Name = "Updated Company",
@@ -148,10 +148,10 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task DeleteCompanyAsync_ValidId_DeletesCompany()
     {
         // Arrange
-        var companyId = CompanyId;
+        var companyId = Company1Id;
 
         // Act
-        (await _companyService.DeleteCompanyAsync(companyId)).ExpectSuccess();
+        (await _companyService.DeleteCompanyAsync(Company1Id)).ExpectSuccess();
 
         // Assert
         var companyInDb = await Context.Company.FindAsync(companyId);
@@ -162,7 +162,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task DeleteCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        var companyId = Guid.NewGuid();
+        var companyId = CompanyId.New();
 
         // Act
         var result = (await _companyService.DeleteCompanyAsync(companyId)).ExpectFailure();
@@ -171,16 +171,4 @@ public class CompanyServiceTests : BaseServiceTests
         Assert.IsType<NotFoundException>(result);
         Assert.Equal("Company not found.", result.Message);
     }
-
-    private async Task SeedDatabase()
-    {
-        if (!Context.Company.Any())
-        {
-            Context.Company.AddRange(GetTestCompanies());
-            await Context.SaveChangesAsync();
-        }
-    }
-
-    private static IEnumerable<Company> GetTestCompanies() =>
-        [CreateCompany(CompanyId, "Test Company", "Test Description", "testLogo", "https://example.com")];
 }

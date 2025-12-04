@@ -9,6 +9,8 @@ using Newtonsoft.Json;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Tests;
+using Work_Experience_Search.Utils;
+using Work_Experience_Search.Types;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;
@@ -59,11 +61,11 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
     }
 
     protected async Task<Project> CreateProjectAsync(
-        Guid projectId,
+        ProjectId projectId,
         string title = "Test Project",
         string description = "Test Description",
         string shortDescription = "Test Short Description",
-        Guid? companyId = null,
+        CompanyId? companyId = null,
         int year = 2021,
         string website = "https://example.com",
         List<string>? tags = null
@@ -78,6 +80,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
             CompanyId = companyId,
             Year = year,
             Website = website,
+            Slug = title.ToSlug(),
             Tags = []
         };
 
@@ -104,7 +107,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
     }
 
     protected async Task<Tag> CreateTagAsync(
-        Guid tagId,
+        TagId tagId,
         string title = "Test Tag",
         TagType type = TagType.Frontend,
         string? icon = null,
@@ -130,7 +133,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
     }
 
     protected async Task<Company> CreateCompanyAsync(
-        Guid companyId,
+        CompanyId companyId,
         string name = "Test Company",
         string description = "Test Description",
         string website = "https://example.com"
@@ -181,6 +184,8 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
                 content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
             else if (value is int intValue)
                 content.Add(new StringContent(intValue.ToString()), property.Name);
+            else if (value is IId idValue)
+                content.Add(new StringContent(idValue.Value.ToString()), property.Name);
             else if (value is Guid guidValue)
                 content.Add(new StringContent(guidValue.ToString()), property.Name);
             else
