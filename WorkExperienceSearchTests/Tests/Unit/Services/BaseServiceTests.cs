@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Utils;
@@ -10,20 +9,15 @@ namespace WorkExperienceSearchTests.Tests.Unit.Services;
 public class BaseServiceTests : IAsyncLifetime
 {
     protected readonly Database Context;
-    private string TestDatabaseName { get; set; }
-    private string? ConnectionString { get; set; }
 
     protected BaseServiceTests()
     {
-        TestDatabaseName = $"TestDatabase-{Guid.NewGuid()}";
-        CreateTestDatabase();
-        
         var options = new DbContextOptionsBuilder<Database>()
-            .UseNpgsql(ConnectionString)
+            .UseInMemoryDatabase($"UnitTests-{Guid.NewGuid()}")
             .Options;
 
         Context = new Database(options);
-        Context.Database.Migrate();
+        Context.Database.EnsureCreated();
     }
     
     public async Task InitializeAsync()
@@ -34,50 +28,8 @@ public class BaseServiceTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
+        await Context.Database.EnsureDeletedAsync();
         await Context.DisposeAsync();
-        DeleteTestDatabase();
-    }
-
-    private void CreateTestDatabase()
-    {
-        var masterConnectionString = GetConnectionString("postgres");
-
-        using (var conn = new NpgsqlConnection(masterConnectionString))
-        {
-            conn.Open();
-            using (var cmd = new NpgsqlCommand($"CREATE DATABASE \"{TestDatabaseName}\"", conn))
-            {
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        ConnectionString = GetConnectionString(TestDatabaseName);
-    }
-
-    private void DeleteTestDatabase()
-    {
-        var masterConnectionString = GetConnectionString("postgres");
-
-        using (var conn = new NpgsqlConnection(masterConnectionString))
-        {
-            conn.Open();
-
-            using (var cmd = new NpgsqlCommand($"SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '{TestDatabaseName}'", conn))
-            {
-                cmd.ExecuteNonQuery();
-            }
-            using (var cmd = new NpgsqlCommand($"DROP DATABASE \"{TestDatabaseName}\"", conn))
-            {
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        NpgsqlConnection.ClearAllPools();
-    }
-    
-    private static string GetConnectionString(string databaseName)
-    {
-        return $"Host=localhost;Port=5433;Database={databaseName};Username=testuser;Password=testpassword";
     }
     
     private async Task SeedDatabase()
@@ -87,12 +39,6 @@ public class BaseServiceTests : IAsyncLifetime
         Context.Project.AddRange(await GetTestProjects());
         Context.ProjectImage.AddRange(GetTestProjectImages());
         await Context.SaveChangesAsync();
-        
-        await Context.Database.ExecuteSqlRawAsync("SELECT setval('\"Tag_Id_seq\"', (SELECT max(\"Id\") FROM \"Tag\"));");
-        await Context.Database.ExecuteSqlRawAsync("SELECT setval('\"Project_Id_seq\"', (SELECT max(\"Id\") FROM \"Project\"));");
-        await Context.Database.ExecuteSqlRawAsync("SELECT setval('\"Company_Id_seq\"', (SELECT max(\"Id\") FROM \"Company\"));");
-        await Context.Database.ExecuteSqlRawAsync("SELECT setval('\"ProjectImage_Id_seq\"', (SELECT max(\"Id\") FROM \"ProjectImage\"));");
-        await Context.Database.ExecuteSqlRawAsync("SELECT setval('\"ProjectRepository_Id_seq\"', (SELECT max(\"Id\") FROM \"ProjectRepository\"));");
     }
 
     protected async Task ClearDatabase()

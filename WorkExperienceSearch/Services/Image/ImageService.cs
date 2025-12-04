@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Configuration;
 using TinifyAPI;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
@@ -8,12 +9,15 @@ namespace Work_Experience_Search.Services.Image;
 public class ImageService : IImageService
 {
     private readonly IWebHostEnvironment _env;
-    private const string TinifyApiKey = "6JrxCXTQVD04RBKj9GVXTQT67xnVSKky";
+    private readonly string? _tinifyApiKey;
 
-    public ImageService(IWebHostEnvironment hostEnvironment)
+    public ImageService(IWebHostEnvironment hostEnvironment, IConfiguration configuration)
     {
         _env = hostEnvironment;
-        Tinify.Key = TinifyApiKey;
+        _tinifyApiKey = configuration["Tinify:ApiKey"];
+
+        if (!string.IsNullOrWhiteSpace(_tinifyApiKey))
+            Tinify.Key = _tinifyApiKey;
     }
 
     public Result<ImageData> GetImage(string fileName)
@@ -44,6 +48,9 @@ public class ImageService : IImageService
 
     public async Task<Result<byte[]>> OptimiseImageAsync(byte[] image)
     {
+        if (string.IsNullOrWhiteSpace(_tinifyApiKey))
+            return new Failure<byte[]>("Tinify API key is not configured.");
+
         try
         {
             return new Success<byte[]>(await Tinify.FromBuffer(image).ToBuffer());
@@ -57,7 +64,7 @@ public class ImageService : IImageService
 
 public class ImageData
 {
-    public string FileName { get; set; }
-    public byte[] File { get; set; }
-    public string ContentType { get; set; }
+    public required string FileName { get; init; }
+    public required byte[] File { get; init; }
+    public required string ContentType { get; init; }
 }

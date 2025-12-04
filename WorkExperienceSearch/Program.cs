@@ -53,6 +53,7 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
+builder.Services.AddAuthorization();
 builder.Services.AddAuth0WebAppAuthentication(options =>
 {
     options.Domain = builder.Configuration["Auth0:Domain"] ?? "";
@@ -70,30 +71,37 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+        var (statusCode, message) = exceptionHandlerPathFeature?.Error switch
+        {
+            NotFoundException notFoundException => (StatusCodes.Status404NotFound, notFoundException.Message),
+            ConflictException conflictException => (StatusCodes.Status409Conflict, conflictException.Message),
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
+        };
+
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/json";
+
+        await context.Response.WriteAsync(message);
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
-app.UseDeveloperExceptionPage();
-app.UseExceptionHandler(errorApp =>
-{
-    errorApp.Run(async context =>
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        context.Response.ContentType = "application/json";
-
-        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
-        if (exceptionHandlerPathFeature?.Error is NotFoundException notFoundException)
-            await context.Response.WriteAsync(notFoundException.Message);
-        if (exceptionHandlerPathFeature?.Error is ConflictException conflictException)
-            await context.Response.WriteAsync(conflictException.Message);
-    });
-});
 app.Run();
 
 public partial class Program
