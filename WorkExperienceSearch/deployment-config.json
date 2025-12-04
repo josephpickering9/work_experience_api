@@ -4,7 +4,7 @@
     "ip": "134.209.176.250",
     "username": "root",
     "password": "",
-    "beforeHooks": "export NVM_DIR=\"$HOME/.nvm\" && [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\" && nvm install 22 && nvm use 22 && corepack enable && cd /var/www/experience/web/releases/${GITHUB_SHA} && yarn install --frozen-lockfile && yarn run nuxt build",
+    "beforeHooks": "",
     "afterHooks": "",
     "path": "/var/www/experience/api"
   }
