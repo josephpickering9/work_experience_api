@@ -8,7 +8,7 @@ namespace Work_Experience_Search.Services;
 
 public class ProjectImageService(Database context, IFileService fileService, IImageService imageService) : IProjectImageService
 {
-    public async Task<Result<IEnumerable<ProjectImage>>> GetProjectImagesAsync(int projectId)
+    public async Task<Result<IEnumerable<ProjectImage>>> GetProjectImagesAsync(ProjectId projectId)
     {
         var project = await context.Project.FindAsync(projectId);
         if (project == null) return new NotFoundFailure<IEnumerable<ProjectImage>>("Project not found.");
@@ -16,7 +16,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
         return new Success<IEnumerable<ProjectImage>>(project.Images);
     }
 
-    public async Task<Result<ProjectImage>> GetProjectImageAsync(int projectId, int id)
+    public async Task<Result<ProjectImage>> GetProjectImageAsync(ProjectId projectId, ProjectImageId id)
     {
         var project = await context.Project.FindAsync(projectId);
         if (project == null) return new NotFoundFailure<ProjectImage>("Project not found.");
@@ -27,7 +27,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
         return new Success<ProjectImage>(image);
     }
 
-    public async Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(int projectId, List<CreateProjectImage> images)
+    public async Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(ProjectId projectId, List<CreateProjectImage> images)
     {
         var project = await context.Project.FindAsync(projectId);
         if (project == null) return new NotFoundFailure<List<ProjectImage>>("Project not found.");

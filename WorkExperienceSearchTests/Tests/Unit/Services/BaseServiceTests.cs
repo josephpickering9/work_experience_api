@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 using Xunit;
 
@@ -9,6 +10,20 @@ namespace WorkExperienceSearchTests.Tests.Unit.Services;
 public class BaseServiceTests : IAsyncLifetime
 {
     protected readonly Database Context;
+    protected static readonly CompanyId Company1Id = new(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    protected static readonly ProjectId Project1Id = new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    protected static readonly ProjectId Project2Id = new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"));
+    protected static readonly ProjectId Project3Id = new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"));
+    protected static readonly TagId Tag1Id = new(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+    protected static readonly TagId Tag2Id = new(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+    protected static readonly TagId Tag3Id = new(Guid.Parse("33333333-3333-3333-3333-333333333333"));
+    protected static readonly ProjectImageId Image1Id = new(Guid.Parse("44444444-4444-4444-4444-444444444441"));
+    protected static readonly ProjectImageId Image2Id = new(Guid.Parse("44444444-4444-4444-4444-444444444442"));
+    protected static readonly ProjectImageId Image3Id = new(Guid.Parse("44444444-4444-4444-4444-444444444443"));
+    protected static readonly ProjectImageId Image4Id = new(Guid.Parse("44444444-4444-4444-4444-444444444444"));
+    protected static readonly ProjectImageId Image5Id = new(Guid.Parse("44444444-4444-4444-4444-444444444445"));
+    protected static readonly ProjectImageId Image6Id = new(Guid.Parse("44444444-4444-4444-4444-444444444446"));
+    protected static readonly ProjectImageId Image7Id = new(Guid.Parse("44444444-4444-4444-4444-444444444447"));
 
     protected BaseServiceTests()
     {
@@ -51,7 +66,7 @@ public class BaseServiceTests : IAsyncLifetime
         await Context.SaveChangesAsync();
     }
 
-    protected static Tag CreateTag(int id, string title, TagType type, List<Project>? projects = null)
+    protected static Tag CreateTag(TagId id, string title, TagType type, List<Project>? projects = null)
     {
         return new Tag
         {
@@ -64,7 +79,7 @@ public class BaseServiceTests : IAsyncLifetime
         };
     }
 
-    protected static Company CreateCompany(int id, string name, string description, string logo, string website)
+    protected static Company CreateCompany(CompanyId id, string name, string description, string logo, string website)
     {
         return new Company
         {
@@ -77,11 +92,11 @@ public class BaseServiceTests : IAsyncLifetime
     }
 
     protected static Project CreateProject(
-        int id,
+        ProjectId id,
         string title = "Title",
         string description = "Description",
         string shortDescription = "Short Description",
-        int? companyId = null!,
+        CompanyId? companyId = null!,
         int year = 2020,
         string website = null!,
         List<Tag> tags = null!
@@ -102,28 +117,39 @@ public class BaseServiceTests : IAsyncLifetime
     }
 
     private static ProjectImage CreateProjectImage(
-        int id,
+        Guid id,
         string image,
         ImageType type,
         int? order = null,
-        int? projectId = null!
+        Guid? projectId = null!
+    ) =>
+        CreateProjectImage(new ProjectImageId(id), image, type, order,
+            projectId.HasValue ? new ProjectId(projectId.Value) : null);
+
+    private static ProjectImage CreateProjectImage(
+        ProjectImageId id,
+        string image,
+        ImageType type,
+        int? order = null,
+        ProjectId? projectId = null!
     )
     {
+        var resolvedProjectId = projectId ?? Project1Id;
         return new ProjectImage
         {
             Id = id,
             Image = image,
             Type = type,
             Order = order,
-            ProjectId = projectId
+            ProjectId = resolvedProjectId
         };
     }
 
     private async Task<IEnumerable<Tag>> GetTestTags()
     {
-        var cSharpTag = CreateTag(1, "C#", TagType.Backend);
-        var aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);
-        var xamarinFormsTag = CreateTag(3, "Xamarin Forms", TagType.Frontend);
+        var cSharpTag = CreateTag(Tag1Id, "C#", TagType.Backend);
+        var aspNetCoreTag = CreateTag(Tag2Id, "ASP.NET Core", TagType.Backend);
+        var xamarinFormsTag = CreateTag(Tag3Id, "Xamarin Forms", TagType.Frontend);
 
         List<Tag> tags = [cSharpTag, aspNetCoreTag, xamarinFormsTag];
         var returnTags = new List<Tag>();
@@ -136,14 +162,8 @@ public class BaseServiceTests : IAsyncLifetime
         return returnTags;
     }
     
-    private static IEnumerable<Company> GetTestCompanies()
-    {
-        var company = CreateCompany(1, "Drummond Central", "A marketing agency based in Newcastle upon Tyne.",
-            "https://drummondcentral.co.uk/wp-content/uploads/2019/10/DC-Logo-White.png",
-            "https://drummondcentral.co.uk/");
-
-        return [company];
-    }
+    private static IEnumerable<Company> GetTestCompanies() =>
+        [CreateCompany(Company1Id, "Test Company", "Test Description", "testLogo", "https://example.com")];
     
     private async Task<IEnumerable<Project>> GetTestProjects()
     {
@@ -152,29 +172,30 @@ public class BaseServiceTests : IAsyncLifetime
 
         return
         [
-            CreateProject(1, "Visit Northumberland",
+            CreateProject(Project1Id, "Visit Northumberland",
                 "A website for Visit Northumberland using C# and ASP.NET Core MVC.",
                 "A website for Visit Northumberland", companies.First().Id,
                 2020, "https://visitnorthumberland.com/", [tags[0], tags[1]]),
-            CreateProject(2, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
+            CreateProject(Project2Id, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
                 "A website for BeatCovidNE", companies.First().Id, 2021,
                 "https://beatcovidne.co.uk/", [tags[1], tags[2]]),
-            CreateProject(3, "taxigoat",
+            CreateProject(Project3Id, "taxigoat",
                 "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.",
                 "A website for taxigoat", companies.First().Id, 2019,
                 "https://taxigoat.co.uk/", [tags[2]])
         ];
     }
     
-    private IEnumerable<ProjectImage> GetTestProjectImages(int projectId = 1)
+    private IEnumerable<ProjectImage> GetTestProjectImages(ProjectId projectId = default)
     {
-        var testLogo = CreateProjectImage(1, "testLogo.png", ImageType.Logo, projectId: projectId);
-        var testBanner = CreateProjectImage(2, "testBanner.png", ImageType.Banner, projectId: projectId);
-        var testCard = CreateProjectImage(3, "testCard.png", ImageType.Card, projectId: projectId);
-        var testDesktop1 = CreateProjectImage(4, "testDesktop1.png", ImageType.Desktop, 1, projectId);
-        var testDesktop2 = CreateProjectImage(5, "testDesktop2.png", ImageType.Desktop, 2, projectId);
-        var testMobile1 = CreateProjectImage(6, "testMobile1.png", ImageType.Mobile, 1, projectId);
-        var testMobile2 = CreateProjectImage(7, "testMobile2.png", ImageType.Mobile, 2, projectId);
+        projectId = projectId == default ? Project1Id : projectId;
+        var testLogo = CreateProjectImage(Image1Id, "testLogo.png", ImageType.Logo, projectId: projectId);
+        var testBanner = CreateProjectImage(Image2Id, "testBanner.png", ImageType.Banner, projectId: projectId);
+        var testCard = CreateProjectImage(Image3Id, "testCard.png", ImageType.Card, projectId: projectId);
+        var testDesktop1 = CreateProjectImage(Image4Id, "testDesktop1.png", ImageType.Desktop, 1, projectId);
+        var testDesktop2 = CreateProjectImage(Image5Id, "testDesktop2.png", ImageType.Desktop, 2, projectId);
+        var testMobile1 = CreateProjectImage(Image6Id, "testMobile1.png", ImageType.Mobile, 1, projectId);
+        var testMobile2 = CreateProjectImage(Image7Id, "testMobile2.png", ImageType.Mobile, 2, projectId);
 
         return
         [

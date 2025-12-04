@@ -10,6 +10,7 @@ using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Services.VertexAi;
+using Work_Experience_Search.Types;
 
 DotEnv.Load();
 
@@ -41,11 +42,19 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<SwaggerFileOperationFilter>();
     c.SchemaFilter<EnumDescriptionSchemaFilter>();
     c.SupportNonNullableReferenceTypes();
+
+    // Expose strongly-typed IDs as simple uuid strings in OpenAPI
+    c.MapType<ProjectId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<CompanyId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<TagId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<ProjectImageId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
+    c.MapType<ProjectRepositoryId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
 });
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new IdJsonConverterFactory());
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;

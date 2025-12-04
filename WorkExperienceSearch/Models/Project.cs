@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Models;
 
 public class Project
 {
-    [Required] public int Id { get; set; }
+    [Required] public ProjectId Id { get; set; } = ProjectId.New();
 
     [Required] public string Title { get; set; } = null!;
 
@@ -14,7 +15,7 @@ public class Project
 
     [Required] public string Description { get; set; } = null!;
 
-    public int? CompanyId { get; set; } = null!;
+    public CompanyId? CompanyId { get; set; } = null!;
     public Company? Company { get; set; } = null!;
 
     [Required] public int Year { get; set; }

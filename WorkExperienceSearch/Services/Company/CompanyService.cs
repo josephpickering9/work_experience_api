@@ -23,7 +23,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         return new Success<IEnumerable<Company>>(await companies.ToListAsync());
     }
 
-    public async Task<Result<Company>> GetCompanyAsync(int id)
+    public async Task<Result<Company>> GetCompanyAsync(CompanyId id)
     {
         var company = await context.Company.FindAsync(id);
         if (company == null) return new NotFoundFailure<Company>("Company not found.");
@@ -70,7 +70,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         return new Success<Company>(company);
     }
 
-    public async Task<Result<Company>> UpdateCompanyAsync(int id, CreateCompany createCompany)
+    public async Task<Result<Company>> UpdateCompanyAsync(CompanyId id, CreateCompany createCompany)
     {
         var company = await context.Company.FindAsync(id);
         if (company == null) return new NotFoundFailure<Company>("Company not found.");
@@ -101,7 +101,7 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         return new Success<Company>(company);
     }
 
-    public async Task<Result<Company>> DeleteCompanyAsync(int id)
+    public async Task<Result<Company>> DeleteCompanyAsync(CompanyId id)
     {
         var company = await context.Company.FindAsync(id);
         if (company == null) return new NotFoundFailure<Company>("Company not found.");

@@ -170,13 +170,33 @@ jobs:
                   "ClientSecret": "${{ secrets.AUTH0_CLIENT_SECRET }}",
                   "Audience": "${{ secrets.AUTH0_AUDIENCE }}"
               },
+              "VertexAi": {
+                  "ProjectId": "${{ secrets.VERTEX_AI_PROJECT_ID }}",
+                  "Location": "${{ secrets.VERTEX_AI_LOCATION }}",
+                  "Collection": "${{ secrets.VERTEX_AI_COLLECTION }}",
+                  "Branch": "${{ secrets.VERTEX_AI_BRANCH }}",
+                  "Environment": "${{ secrets.VERTEX_AI_ENVIRONMENT }}",
+                  "Model": "${{ secrets.VERTEX_AI_MODEL }}",
+                  "ModelLocation": "${{ secrets.VERTEX_AI_MODEL_LOCATION }}",
+                  "QueryDataStoreSuffix": "${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}",
+                  "CredentialsJson": "${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}"
+              }
             }' > appsettings.json
             echo '
             DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}
             Auth0:Domain=${{ secrets.AUTH0_DOMAIN }}
             Auth0:ClientId=${{ secrets.AUTH0_CLIENT_ID }}
             Auth0:ClientSecret=${{ secrets.AUTH0_CLIENT_SECRET }}
-            Auth0:Audience=${{ secrets.AUTH0_AUDIENCE }}' > .env  
+            Auth0:Audience=${{ secrets.AUTH0_AUDIENCE }}
+            VertexAi:ProjectId=${{ secrets.VERTEX_AI_PROJECT_ID }}
+            VertexAi:Location=${{ secrets.VERTEX_AI_LOCATION }}
+            VertexAi:Collection=${{ secrets.VERTEX_AI_COLLECTION }}
+            VertexAi:Branch=${{ secrets.VERTEX_AI_BRANCH }}
+            VertexAi:Environment=${{ secrets.VERTEX_AI_ENVIRONMENT }}
+            VertexAi:Model=${{ secrets.VERTEX_AI_MODEL }}
+            VertexAi:ModelLocation=${{ secrets.VERTEX_AI_MODEL_LOCATION }}
+            VertexAi:QueryDataStoreSuffix=${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}
+            VertexAi:CredentialsJson=${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}' > .env  
             dotnet publish -c Release
             dotnet ef database update
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"

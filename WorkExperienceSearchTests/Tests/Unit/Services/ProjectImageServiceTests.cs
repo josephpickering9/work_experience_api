@@ -13,7 +13,6 @@ namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
 public class ProjectImageServiceTests : BaseServiceTests
 {
-    private const int ProjectId = 1;
     private readonly ProjectImageService _projectImageService;
 
     public ProjectImageServiceTests()
@@ -32,7 +31,7 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImagesAsync_ValidProjectId_ReturnsProjectImages()
     {
         // Act
-        var result = (await _projectImageService.GetProjectImagesAsync(ProjectId)).ExpectSuccess();
+        var result = (await _projectImageService.GetProjectImagesAsync(Project1Id)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -43,7 +42,7 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImagesAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int invalidProjectId = 99;
+        var invalidProjectId = ProjectId.New();
 
         // Act
         var result = (await _projectImageService.GetProjectImagesAsync(invalidProjectId)).ExpectFailure();
@@ -57,10 +56,10 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImageAsync_ValidProjectIdAndImageId_ReturnsProjectImage()
     {
         // Arrange
-        const int imageId = 1;
+        var imageId = Image1Id;
 
         // Act
-        var result = (await _projectImageService.GetProjectImageAsync(ProjectId, imageId)).ExpectSuccess();
+        var result = (await _projectImageService.GetProjectImageAsync(Project1Id, imageId)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -71,8 +70,8 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImageAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int invalidProjectId = 99;
-        const int imageId = 1;
+        var invalidProjectId = ProjectId.New();
+        var imageId = Image1Id;
 
         // Act
         var result = (await _projectImageService.GetProjectImageAsync(invalidProjectId, imageId)).ExpectFailure();
@@ -86,10 +85,10 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImageAsync_InvalidImageId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int invalidImageId = 99;
+        var invalidImageId = ProjectImageId.New();
 
         // Act
-        var result = (await _projectImageService.GetProjectImageAsync(ProjectId, invalidImageId)).ExpectFailure();
+        var result = (await _projectImageService.GetProjectImageAsync(Project1Id, invalidImageId)).ExpectFailure();
 
         // Assert
         Assert.IsType<NotFoundException>(result);
@@ -102,11 +101,11 @@ public class ProjectImageServiceTests : BaseServiceTests
         // Arrange
         var images = new List<CreateProjectImage>
         {
-            new() { Id = 1, Type = ImageType.Logo },
-            new() { Id = 2, Type = ImageType.Banner },
-            new() { Id = 3, Type = ImageType.Card },
-            new() { Id = 4, Type = ImageType.Desktop, Order = 1 },
-            new() { Id = 6, Type = ImageType.Mobile, Order = 1 },
+            new() { Id = Image1Id, Type = ImageType.Logo },
+            new() { Id = Image2Id, Type = ImageType.Banner },
+            new() { Id = Image3Id, Type = ImageType.Card },
+            new() { Id = Image4Id, Type = ImageType.Desktop, Order = 1 },
+            new() { Id = Image6Id, Type = ImageType.Mobile, Order = 1 },
             new() { Image = null, Type = ImageType.Desktop, Order = 2 },
             new() { Image = null, Type = ImageType.Desktop, Order = 3 },
             new() { Image = null, Type = ImageType.Mobile, Order = 2 },
@@ -114,7 +113,7 @@ public class ProjectImageServiceTests : BaseServiceTests
         };
 
         // Act
-        var result = (await _projectImageService.SyncProjectImagesAsync(ProjectId, images)).ExpectSuccess();
+        var result = (await _projectImageService.SyncProjectImagesAsync(Project1Id, images)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);
@@ -127,11 +126,11 @@ public class ProjectImageServiceTests : BaseServiceTests
         // Arrange
         var images = new List<CreateProjectImage>
         {
-            new() { Id = 1, Type = ImageType.Logo },
-            new() { Id = 2, Type = ImageType.Banner },
-            new() { Id = 3, Type = ImageType.Card },
-            new() { Id = 4, Type = ImageType.Desktop, Order = 1 },
-            new() { Id = 6, Type = ImageType.Mobile, Order = 1 },
+            new() { Id = Image1Id, Type = ImageType.Logo },
+            new() { Id = Image2Id, Type = ImageType.Banner },
+            new() { Id = Image3Id, Type = ImageType.Card },
+            new() { Id = Image4Id, Type = ImageType.Desktop, Order = 1 },
+            new() { Id = Image6Id, Type = ImageType.Mobile, Order = 1 },
             new() { Image = null, Type = ImageType.Desktop, Order = 2 },
             new() { Image = null, Type = ImageType.Desktop, Order = 3 },
             new() { Image = null, Type = ImageType.Mobile, Order = 2 },
@@ -139,8 +138,8 @@ public class ProjectImageServiceTests : BaseServiceTests
         };
 
         // Act
-        await _projectImageService.SyncProjectImagesAsync(ProjectId, images);
-        var result = (await _projectImageService.GetProjectImagesAsync(ProjectId)).ExpectSuccess();
+        await _projectImageService.SyncProjectImagesAsync(Project1Id, images);
+        var result = (await _projectImageService.GetProjectImagesAsync(Project1Id)).ExpectSuccess();
 
         // Assert
         Assert.NotNull(result);

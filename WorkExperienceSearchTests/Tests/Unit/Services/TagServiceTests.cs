@@ -2,6 +2,7 @@ using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 using Xunit;
 
@@ -31,7 +32,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task GetTagAsync_ValidId_ReturnsTag()
     {
         // Arrange
-        const int tagId = 1;
+        var tagId = Tag1Id;
 
         // Act
         var result = (await _tagService.GetTagAsync(tagId)).ExpectSuccess();
@@ -45,7 +46,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task GetTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int tagId = 99;
+        var tagId = TagId.New();
 
         // Act 
         var result = (await _tagService.GetTagAsync(tagId)).ExpectFailure();
@@ -72,7 +73,6 @@ public class TagServiceTests : BaseServiceTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(4, result.Id);
         Assert.Equal(createTag.Title, result.Title);
     }
 
@@ -100,7 +100,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task UpdateTagAsync_ValidId_ReturnsUpdatedTag()
     {
         // Arrange
-        const int tagId = 1;
+        var tagId = Tag1Id;
         var updateTag = new CreateTag
         {
             Title = "Updated Tag",
@@ -122,7 +122,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task UpdateTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int tagId = 99;
+        var tagId = TagId.New();
         var updateTag = new CreateTag
         {
             Title = "Updated Tag",
@@ -143,7 +143,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task DeleteTagAsync_ValidId_DeletesTag()
     {
         // Arrange
-        const int tagId = 1;
+        var tagId = Tag1Id;
 
         // Act
         var result = (await _tagService.DeleteTagAsync(tagId)).ExpectSuccess();
@@ -160,7 +160,7 @@ public class TagServiceTests : BaseServiceTests
     public async Task DeleteTagAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int tagId = 99;
+        var tagId = TagId.New();
 
         // Act 
         var result = (await _tagService.DeleteTagAsync(tagId)).ExpectFailure();
@@ -179,12 +179,10 @@ public class TagServiceTests : BaseServiceTests
         }
     }
 
-    private static IEnumerable<Tag> GetTestTags()
+    private static IEnumerable<Tag> GetTestTags() => new[]
     {
-        var cSharpTag = CreateTag(1, "C#", TagType.Backend);
-        var aspNetCoreTag = CreateTag(2, "ASP.NET Core", TagType.Backend);
-        var xamarinFormsTag = CreateTag(3, "Xamarin Forms", TagType.Frontend);
-
-        return [cSharpTag, aspNetCoreTag, xamarinFormsTag];
-    }
+        CreateTag(Tag1Id, "C#", TagType.Backend),
+        CreateTag(Tag2Id, "ASP.NET Core", TagType.Backend),
+        CreateTag(Tag3Id, "Xamarin Forms", TagType.Frontend)
+    };
 }

@@ -29,12 +29,42 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore
+        env:
+          VertexAi__ProjectId: ${{ secrets.VERTEX_AI_PROJECT_ID }}
+          VertexAi__Location: ${{ secrets.VERTEX_AI_LOCATION }}
+          VertexAi__Collection: ${{ secrets.VERTEX_AI_COLLECTION }}
+          VertexAi__Branch: ${{ secrets.VERTEX_AI_BRANCH }}
+          VertexAi__Environment: ${{ secrets.VERTEX_AI_ENVIRONMENT }}
+          VertexAi__Model: ${{ secrets.VERTEX_AI_MODEL }}
+          VertexAi__ModelLocation: ${{ secrets.VERTEX_AI_MODEL_LOCATION }}
+          VertexAi__QueryDataStoreSuffix: ${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}
+          VertexAi__CredentialsJson: ${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}
 
       - name: Build
         run: dotnet build --no-restore
+        env:
+          VertexAi__ProjectId: ${{ secrets.VERTEX_AI_PROJECT_ID }}
+          VertexAi__Location: ${{ secrets.VERTEX_AI_LOCATION }}
+          VertexAi__Collection: ${{ secrets.VERTEX_AI_COLLECTION }}
+          VertexAi__Branch: ${{ secrets.VERTEX_AI_BRANCH }}
+          VertexAi__Environment: ${{ secrets.VERTEX_AI_ENVIRONMENT }}
+          VertexAi__Model: ${{ secrets.VERTEX_AI_MODEL }}
+          VertexAi__ModelLocation: ${{ secrets.VERTEX_AI_MODEL_LOCATION }}
+          VertexAi__QueryDataStoreSuffix: ${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}
+          VertexAi__CredentialsJson: ${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}
 
       - name: Run Unit Tests
         run: dotnet test --no-restore --verbosity normal
+        env:
+          VertexAi__ProjectId: ${{ secrets.VERTEX_AI_PROJECT_ID }}
+          VertexAi__Location: ${{ secrets.VERTEX_AI_LOCATION }}
+          VertexAi__Collection: ${{ secrets.VERTEX_AI_COLLECTION }}
+          VertexAi__Branch: ${{ secrets.VERTEX_AI_BRANCH }}
+          VertexAi__Environment: ${{ secrets.VERTEX_AI_ENVIRONMENT }}
+          VertexAi__Model: ${{ secrets.VERTEX_AI_MODEL }}
+          VertexAi__ModelLocation: ${{ secrets.VERTEX_AI_MODEL_LOCATION }}
+          VertexAi__QueryDataStoreSuffix: ${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}
+          VertexAi__CredentialsJson: ${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}
         
       - name: Shutdown Docker Compose
         run: docker-compose -f WorkExperienceSearch/docker-compose.yml down
