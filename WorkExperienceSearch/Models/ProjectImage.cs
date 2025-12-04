@@ -1,12 +1,13 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Models;
 
 public class ProjectImage
 {
-    [Required] public Guid Id { get; set; } = Guid.NewGuid();
+    [Required] public ProjectImageId Id { get; set; } = ProjectImageId.New();
 
     [Required] public string Image { get; set; } = null!;
 
@@ -16,7 +17,7 @@ public class ProjectImage
 
     public bool IsOptimised { get; set; } = false;
 
-    public Guid ProjectId { get; set; }
+    public ProjectId ProjectId { get; set; }
     [Required] [JsonIgnore] public Project? Project { get; set; }
 }
 

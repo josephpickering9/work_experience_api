@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
@@ -21,6 +22,43 @@ public class Database(DbContextOptions<Database> options) : DbContext(options)
             .HasConversion(
                 v => v.ToDescriptionString(),
                 v => EnumExtensions.FromDescriptionString<TagType>(v));
+
+        modelBuilder.Entity<Project>()
+            .Property(e => e.Id)
+            .HasGuidIdConversion()
+            .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<Project>()
+            .Property(e => e.CompanyId)
+            .HasNullableGuidIdConversion();
+
+        modelBuilder.Entity<ProjectImage>()
+            .Property(e => e.Id)
+            .HasGuidIdConversion()
+            .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<ProjectImage>()
+            .Property(e => e.ProjectId)
+            .HasGuidIdConversion();
+
+        modelBuilder.Entity<ProjectRepository>()
+            .Property(e => e.Id)
+            .HasGuidIdConversion()
+            .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<ProjectRepository>()
+            .Property(e => e.ProjectId)
+            .HasGuidIdConversion();
+
+        modelBuilder.Entity<Tag>()
+            .Property(e => e.Id)
+            .HasGuidIdConversion()
+            .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<Company>()
+            .Property(e => e.Id)
+            .HasGuidIdConversion()
+            .ValueGeneratedOnAdd();
 
         modelBuilder
             .Entity<ProjectImage>()

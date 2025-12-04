@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Controllers;
 
@@ -18,7 +19,7 @@ public class TagController(ITagService tagService) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<Tag>> GetTag(Guid id)
+    public async Task<ActionResult<Tag>> GetTag(TagId id)
     {
         var result = await tagService.GetTagAsync(id);
         return result.ToResponse();
@@ -41,7 +42,7 @@ public class TagController(ITagService tagService) : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize]
-    public async Task<ActionResult<Tag>> PutTag(Guid id, [FromBody] CreateTag createTag)
+    public async Task<ActionResult<Tag>> PutTag(TagId id, [FromBody] CreateTag createTag)
     {
         var result = await tagService.UpdateTagAsync(id, createTag);
         return result.ToResponse();
@@ -49,7 +50,7 @@ public class TagController(ITagService tagService) : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteTag(Guid id)
+    public async Task<IActionResult> DeleteTag(TagId id)
     {
         var result = await tagService.DeleteTagAsync(id);
         return result.ToResponse();

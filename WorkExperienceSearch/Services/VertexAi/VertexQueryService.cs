@@ -121,7 +121,7 @@ public class VertexQueryService : IVertexQueryService
 
                 list.Add(new RawVertexCitation
                 {
-                    ProjectId = ExtractProjectId(documentName),
+                    Id = ExtractId(documentName),
                     FeatureType = ExtractFeatureType(documentName),
                     Title = ExtractTitle(text)
                 });
@@ -140,7 +140,7 @@ public class VertexQueryService : IVertexQueryService
                 {
                     list.Add(new RawVertexCitation
                     {
-                        ProjectId = ExtractProjectId(documentName),
+                        Id = ExtractId(documentName),
                         FeatureType = ExtractFeatureType(documentName),
                         Title = null
                     });
@@ -151,7 +151,7 @@ public class VertexQueryService : IVertexQueryService
         return list;
     }
 
-    private static Guid? ExtractProjectId(string documentName)
+    private static Guid? ExtractId(string documentName)
     {
         var parts = documentName.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var docIndex = Array.IndexOf(parts, "documents");
@@ -189,34 +189,34 @@ public class VertexQueryService : IVertexQueryService
     private async Task<IReadOnlyList<VertexCitation>> EnrichCitationsAsync(IEnumerable<RawVertexCitation> citations, CancellationToken cancellationToken)
     {
         var rawList = citations.ToList();
-        var projectIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Project && c.ProjectId.HasValue).Select(c => c.ProjectId!.Value).Distinct().ToList();
-        var companyIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Company && c.ProjectId.HasValue).Select(c => c.ProjectId!.Value).Distinct().ToList();
-        var tagIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Tag && c.ProjectId.HasValue).Select(c => c.ProjectId!.Value).Distinct().ToList();
+        var projectIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Project && c.Id.HasValue).Select(c => c.Id!.Value).Distinct().ToList();
+        var companyIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Company && c.Id.HasValue).Select(c => c.Id!.Value).Distinct().ToList();
+        var tagIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Tag && c.Id.HasValue).Select(c => c.Id!.Value).Distinct().ToList();
 
         var projects = await _database.Project
             .Include(p => p.Tags)
             .Include(p => p.Images)
             .Include(p => p.Repositories)
-            .Where(p => projectIds.Contains(p.Id))
+            .Where(p => projectIds.Contains(p.Id.Value))
             .ToListAsync(cancellationToken);
 
-        var companies = await _database.Company.Where(c => companyIds.Contains(c.Id)).ToListAsync(cancellationToken);
-        var tags = await _database.Tag.Where(t => tagIds.Contains(t.Id)).ToListAsync(cancellationToken);
+        var companies = await _database.Company.Where(c => companyIds.Contains(c.Id.Value)).ToListAsync(cancellationToken);
+        var tags = await _database.Tag.Where(t => tagIds.Contains(t.Id.Value)).ToListAsync(cancellationToken);
 
-        var projectLookup = projects.ToDictionary(p => p.Id);
-        var companyLookup = companies.ToDictionary(c => c.Id);
-        var tagLookup = tags.ToDictionary(t => t.Id);
+        var projectLookup = projects.ToDictionary(p => p.Id.Value);
+        var companyLookup = companies.ToDictionary(c => c.Id.Value);
+        var tagLookup = tags.ToDictionary(t => t.Id.Value);
 
         return rawList.Select(c =>
         {
-            projectLookup.TryGetValue(c.ProjectId ?? Guid.Empty, out var project);
-            companyLookup.TryGetValue(c.ProjectId ?? Guid.Empty, out var company);
-            tagLookup.TryGetValue(c.ProjectId ?? Guid.Empty, out var tag);
+            projectLookup.TryGetValue(c.Id ?? Guid.Empty, out var project);
+            companyLookup.TryGetValue(c.Id ?? Guid.Empty, out var company);
+            tagLookup.TryGetValue(c.Id ?? Guid.Empty, out var tag);
 
             return new VertexCitation
             {
                 FeatureType = c.FeatureType,
-                Id = c.ProjectId,
+                Id = c.Id,
                 Title = c.Title ?? project?.Title ?? company?.Name ?? tag?.Title,
                 Project = project,
                 Company = company,
@@ -255,7 +255,7 @@ public record VertexCitation
 
 internal record RawVertexCitation
 {
-    public Guid? ProjectId { get; init; }
+    public Guid? Id { get; init; }
     public VertexFeatureType? FeatureType { get; init; }
     public string? Title { get; init; }
 }

@@ -6,7 +6,7 @@ namespace Work_Experience_Search.Services;
 
 public class ProjectRepositoryService(Database context) : IProjectRepositoryService
 {
-    public async Task<Result<IEnumerable<ProjectRepository>>> GetProjectRepositoriesAsync(Guid projectId)
+    public async Task<Result<IEnumerable<ProjectRepository>>> GetProjectRepositoriesAsync(ProjectId projectId)
     {
         var project = await context.Project.FindAsync(projectId);
         if (project == null) return new NotFoundFailure<IEnumerable<ProjectRepository>>("Project not found.");
@@ -14,7 +14,7 @@ public class ProjectRepositoryService(Database context) : IProjectRepositoryServ
         return new Success<IEnumerable<ProjectRepository>>(project.Repositories);
     }
 
-    public async Task<Result<ProjectRepository>> GetProjectRepositoryAsync(Guid projectId, Guid id)
+    public async Task<Result<ProjectRepository>> GetProjectRepositoryAsync(ProjectId projectId, ProjectRepositoryId id)
     {
         var project = await context.Project.FindAsync(projectId);
         if (project == null) return new NotFoundFailure<ProjectRepository>("Project not found.");
@@ -25,7 +25,7 @@ public class ProjectRepositoryService(Database context) : IProjectRepositoryServ
         return new Success<ProjectRepository>(repository);
     }
 
-    public async Task<Result<List<ProjectRepository>>> SyncProjectRepositoriesAsync(Guid projectId, List<CreateProjectRepository> repositories)
+    public async Task<Result<List<ProjectRepository>>> SyncProjectRepositoriesAsync(ProjectId projectId, List<CreateProjectRepository> repositories)
     {
         var project = await context.Project.FindAsync(projectId);
         if (project == null) return new NotFoundFailure<List<ProjectRepository>>("Project not found.");

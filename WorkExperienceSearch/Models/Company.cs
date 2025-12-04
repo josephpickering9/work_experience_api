@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Models;
 
 public class Company
 {
-    [Required] public Guid Id { get; set; } = Guid.NewGuid();
+    [Required] public CompanyId Id { get; set; } = CompanyId.New();
 
     [Required] public string Name { get; set; } = null!;
 

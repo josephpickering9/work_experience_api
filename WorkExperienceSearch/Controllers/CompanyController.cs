@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Controllers;
 
@@ -18,7 +19,7 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<Company>> GetCompany(Guid id)
+    public async Task<ActionResult<Company>> GetCompany(CompanyId id)
     {
         var result = await companyService.GetCompanyAsync(id);
         return result.ToResponse();
@@ -43,7 +44,7 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
     [HttpPut("{id:guid}")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<Company>> PutCompany(Guid id, [FromForm] CreateCompany createCompany)
+    public async Task<ActionResult<Company>> PutCompany(CompanyId id, [FromForm] CreateCompany createCompany)
     {
         var result = await companyService.UpdateCompanyAsync(id, createCompany);
         return result.ToResponse();
@@ -51,7 +52,7 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteCompany(Guid id)
+    public async Task<IActionResult> DeleteCompany(CompanyId id)
     {
         var result = await companyService.DeleteCompanyAsync(id);
         return result.ToResponse();
