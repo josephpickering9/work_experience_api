@@ -13,7 +13,7 @@ namespace WorkExperienceSearchTests.Tests.Unit.Services;
 
 public class ProjectImageServiceTests : BaseServiceTests
 {
-    private const int ProjectId = 1;
+    private static readonly Guid ProjectId = Project1Id;
     private readonly ProjectImageService _projectImageService;
 
     public ProjectImageServiceTests()
@@ -43,7 +43,7 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImagesAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int invalidProjectId = 99;
+        var invalidProjectId = Guid.NewGuid();
 
         // Act
         var result = (await _projectImageService.GetProjectImagesAsync(invalidProjectId)).ExpectFailure();
@@ -57,7 +57,7 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImageAsync_ValidProjectIdAndImageId_ReturnsProjectImage()
     {
         // Arrange
-        const int imageId = 1;
+        var imageId = Image1Id;
 
         // Act
         var result = (await _projectImageService.GetProjectImageAsync(ProjectId, imageId)).ExpectSuccess();
@@ -71,8 +71,8 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImageAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int invalidProjectId = 99;
-        const int imageId = 1;
+        var invalidProjectId = Guid.NewGuid();
+        var imageId = Image1Id;
 
         // Act
         var result = (await _projectImageService.GetProjectImageAsync(invalidProjectId, imageId)).ExpectFailure();
@@ -86,7 +86,7 @@ public class ProjectImageServiceTests : BaseServiceTests
     public async Task GetProjectImageAsync_InvalidImageId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int invalidImageId = 99;
+        var invalidImageId = Guid.NewGuid();
 
         // Act
         var result = (await _projectImageService.GetProjectImageAsync(ProjectId, invalidImageId)).ExpectFailure();
@@ -102,11 +102,11 @@ public class ProjectImageServiceTests : BaseServiceTests
         // Arrange
         var images = new List<CreateProjectImage>
         {
-            new() { Id = 1, Type = ImageType.Logo },
-            new() { Id = 2, Type = ImageType.Banner },
-            new() { Id = 3, Type = ImageType.Card },
-            new() { Id = 4, Type = ImageType.Desktop, Order = 1 },
-            new() { Id = 6, Type = ImageType.Mobile, Order = 1 },
+            new() { Id = Image1Id, Type = ImageType.Logo },
+            new() { Id = Image2Id, Type = ImageType.Banner },
+            new() { Id = Image3Id, Type = ImageType.Card },
+            new() { Id = Image4Id, Type = ImageType.Desktop, Order = 1 },
+            new() { Id = Image6Id, Type = ImageType.Mobile, Order = 1 },
             new() { Image = null, Type = ImageType.Desktop, Order = 2 },
             new() { Image = null, Type = ImageType.Desktop, Order = 3 },
             new() { Image = null, Type = ImageType.Mobile, Order = 2 },
@@ -127,11 +127,11 @@ public class ProjectImageServiceTests : BaseServiceTests
         // Arrange
         var images = new List<CreateProjectImage>
         {
-            new() { Id = 1, Type = ImageType.Logo },
-            new() { Id = 2, Type = ImageType.Banner },
-            new() { Id = 3, Type = ImageType.Card },
-            new() { Id = 4, Type = ImageType.Desktop, Order = 1 },
-            new() { Id = 6, Type = ImageType.Mobile, Order = 1 },
+            new() { Id = Image1Id, Type = ImageType.Logo },
+            new() { Id = Image2Id, Type = ImageType.Banner },
+            new() { Id = Image3Id, Type = ImageType.Card },
+            new() { Id = Image4Id, Type = ImageType.Desktop, Order = 1 },
+            new() { Id = Image6Id, Type = ImageType.Mobile, Order = 1 },
             new() { Image = null, Type = ImageType.Desktop, Order = 2 },
             new() { Image = null, Type = ImageType.Desktop, Order = 3 },
             new() { Image = null, Type = ImageType.Mobile, Order = 2 },

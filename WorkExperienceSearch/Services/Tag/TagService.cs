@@ -23,7 +23,7 @@ public class TagService(Database context) : ITagService
         return new Success<IEnumerable<Tag>>(await tags.ToListAsync());
     }
 
-    public async Task<Result<Tag>> GetTagAsync(int id)
+    public async Task<Result<Tag>> GetTagAsync(Guid id)
     {
         var tag = await context.Tag.FindAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
@@ -96,7 +96,7 @@ public class TagService(Database context) : ITagService
         return new Success<List<Tag>>(tagsList);
     }
 
-    public async Task<Result<Tag>> UpdateTagAsync(int id, CreateTag createTag)
+    public async Task<Result<Tag>> UpdateTagAsync(Guid id, CreateTag createTag)
     {
         var tag = await context.Tag.FindAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
@@ -117,7 +117,7 @@ public class TagService(Database context) : ITagService
         return new Success<Tag>(tag);
     }
 
-    public async Task<Result<Tag>> DeleteTagAsync(int id)
+    public async Task<Result<Tag>> DeleteTagAsync(Guid id)
     {
         var tag = await context.Tag.FindAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");

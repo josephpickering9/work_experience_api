@@ -6,13 +6,13 @@ namespace Work_Experience_Search.Services.VertexAi;
 public interface IVertexIngestService
 {
     Task UpsertProjectAsync(Project project, string tenantId, CancellationToken cancellationToken = default);
-    Task DeleteProjectAsync(int projectId, string tenantId, CancellationToken cancellationToken = default);
+    Task DeleteProjectAsync(Guid projectId, string tenantId, CancellationToken cancellationToken = default);
 
     Task UpsertCompanyAsync(Company company, string tenantId, CancellationToken cancellationToken = default);
-    Task DeleteCompanyAsync(int companyId, string tenantId, CancellationToken cancellationToken = default);
+    Task DeleteCompanyAsync(Guid companyId, string tenantId, CancellationToken cancellationToken = default);
 
     Task UpsertTagAsync(Tag tag, string tenantId, CancellationToken cancellationToken = default);
-    Task DeleteTagAsync(int tagId, string tenantId, CancellationToken cancellationToken = default);
+    Task DeleteTagAsync(Guid tagId, string tenantId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -41,7 +41,7 @@ public class VertexIngestService : IVertexIngestService
             cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteProjectAsync(int projectId, string tenantId, CancellationToken cancellationToken = default)
+    public async Task DeleteProjectAsync(Guid projectId, string tenantId, CancellationToken cancellationToken = default)
     {
         await _chatbotClient.DeleteFeatureAsync(tenantId, VertexFeatureType.Project, projectId.ToString(), cancellationToken);
     }
@@ -60,7 +60,7 @@ public class VertexIngestService : IVertexIngestService
             cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteCompanyAsync(int companyId, string tenantId, CancellationToken cancellationToken = default)
+    public async Task DeleteCompanyAsync(Guid companyId, string tenantId, CancellationToken cancellationToken = default)
     {
         await _chatbotClient.DeleteFeatureAsync(tenantId, VertexFeatureType.Company, companyId.ToString(), cancellationToken);
     }
@@ -79,7 +79,7 @@ public class VertexIngestService : IVertexIngestService
             cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteTagAsync(int tagId, string tenantId, CancellationToken cancellationToken = default)
+    public async Task DeleteTagAsync(Guid tagId, string tenantId, CancellationToken cancellationToken = default)
     {
         await _chatbotClient.DeleteFeatureAsync(tenantId, VertexFeatureType.Tag, tagId.ToString(), cancellationToken);
     }
@@ -118,13 +118,13 @@ public class VertexIngestService : IVertexIngestService
 
 public class VertexProjectDto
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
     public string Title { get; init; } = string.Empty;
     public string ShortDescription { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public int Year { get; init; }
     public string? Website { get; init; }
-    public int? CompanyId { get; init; }
+    public Guid? CompanyId { get; init; }
     public string? Company { get; init; }
     public List<string> Tags { get; init; } = [];
     public List<string> TagTypes { get; init; } = [];
@@ -132,7 +132,7 @@ public class VertexProjectDto
 
 public class VertexCompanyDto
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public string? Website { get; init; }

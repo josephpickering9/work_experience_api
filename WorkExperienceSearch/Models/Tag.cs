@@ -6,7 +6,7 @@ namespace Work_Experience_Search.Models;
 
 public class Tag
 {
-    [Required] public int Id { get; set; }
+    [Required] public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required] public string Title { get; set; } = null!;
 

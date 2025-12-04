@@ -17,8 +17,8 @@ public class TagController(ITagService tagService) : ControllerBase
         return tags.ToResponse();
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<Tag>> GetTag(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<Tag>> GetTag(Guid id)
     {
         var result = await tagService.GetTagAsync(id);
         return result.ToResponse();
@@ -39,17 +39,17 @@ public class TagController(ITagService tagService) : ControllerBase
         return result.ToResponse();
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     [Authorize]
-    public async Task<ActionResult<Tag>> PutTag(int id, [FromBody] CreateTag createTag)
+    public async Task<ActionResult<Tag>> PutTag(Guid id, [FromBody] CreateTag createTag)
     {
         var result = await tagService.UpdateTagAsync(id, createTag);
         return result.ToResponse();
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteTag(int id)
+    public async Task<IActionResult> DeleteTag(Guid id)
     {
         var result = await tagService.DeleteTagAsync(id);
         return result.ToResponse();

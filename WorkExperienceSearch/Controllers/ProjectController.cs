@@ -17,8 +17,8 @@ public class ProjectController(IProjectService projectService) : ControllerBase
         return projects.ToResponse();
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<Project>> GetProject(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<Project>> GetProject(Guid id)
     {
         var project = await projectService.GetProjectAsync(id);
         return project.ToResponse();
@@ -31,8 +31,8 @@ public class ProjectController(IProjectService projectService) : ControllerBase
         return project.ToResponse();
     }
 
-    [HttpGet("{id:int}/related")]
-    public async Task<ActionResult<IEnumerable<Project>>> GetRelatedProjects(int id)
+    [HttpGet("{id:guid}/related")]
+    public async Task<ActionResult<IEnumerable<Project>>> GetRelatedProjects(Guid id)
     {
         var projects = await projectService.GetRelatedProjectsAsync(id);
         return projects.ToResponse();
@@ -47,18 +47,18 @@ public class ProjectController(IProjectService projectService) : ControllerBase
         return project.ToResponse();
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<Project>> PutProject(int id, [FromForm] CreateProject createProject)
+    public async Task<ActionResult<Project>> PutProject(Guid id, [FromForm] CreateProject createProject)
     {
         var project = await projectService.UpdateProjectAsync(id, createProject);
         return project.ToResponse();
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteProject(int id)
+    public async Task<IActionResult> DeleteProject(Guid id)
     {
         var project = await projectService.DeleteProjectAsync(id);
         return project.ToResponse();
@@ -73,7 +73,7 @@ public class CreateProject
 
     [Required] public string Description { get; init; } = null!;
 
-    public int? CompanyId { get; init; }
+    public Guid? CompanyId { get; init; }
 
     [Required] public int Year { get; init; }
 
@@ -90,7 +90,7 @@ public class CreateProject
 
 public class CreateProjectImage
 {
-    public int? Id { get; init; }
+    public Guid? Id { get; init; }
 
     public IFormFile? Image { get; init; }
 
@@ -101,7 +101,7 @@ public class CreateProjectImage
 
 public class CreateProjectRepository
 {
-    public int? Id { get; init; }
+    public Guid? Id { get; init; }
 
     [Required] public string Title { get; init; } = null!;
 

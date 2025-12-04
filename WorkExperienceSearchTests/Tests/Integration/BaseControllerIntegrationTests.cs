@@ -59,11 +59,11 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
     }
 
     protected async Task<Project> CreateProjectAsync(
-        int projectId,
+        Guid projectId,
         string title = "Test Project",
         string description = "Test Description",
         string shortDescription = "Test Short Description",
-        int? companyId = null,
+        Guid? companyId = null,
         int year = 2021,
         string website = "https://example.com",
         List<string>? tags = null
@@ -104,7 +104,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
     }
 
     protected async Task<Tag> CreateTagAsync(
-        int tagId,
+        Guid tagId,
         string title = "Test Tag",
         TagType type = TagType.Frontend,
         string? icon = null,
@@ -130,7 +130,7 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
     }
 
     protected async Task<Company> CreateCompanyAsync(
-        int companyId,
+        Guid companyId,
         string name = "Test Company",
         string description = "Test Description",
         string website = "https://example.com"
@@ -181,6 +181,8 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
                 content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
             else if (value is int intValue)
                 content.Add(new StringContent(intValue.ToString()), property.Name);
+            else if (value is Guid guidValue)
+                content.Add(new StringContent(guidValue.ToString()), property.Name);
             else
                 content.Add(new StringContent(JsonConvert.SerializeObject(value)), property.Name);
         }

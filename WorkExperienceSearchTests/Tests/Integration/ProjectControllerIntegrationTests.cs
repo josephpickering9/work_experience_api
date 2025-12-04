@@ -19,9 +19,9 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Arrange
         var projects = new List<Project>
         {
-            await CreateProjectAsync(1),
-            await CreateProjectAsync(2),
-            await CreateProjectAsync(3)
+            await CreateProjectAsync(Guid.NewGuid()),
+            await CreateProjectAsync(Guid.NewGuid()),
+            await CreateProjectAsync(Guid.NewGuid())
         };
 
         // Act
@@ -40,7 +40,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetProject_ExistingId_ReturnsProject()
     {
         // Arrange
-        const int testProjectId = 10;
+        var testProjectId = Guid.NewGuid();
         var tags = new List<string> { "Tag1", "Tag2" };
         var expectedProject = await CreateProjectAsync(testProjectId, tags: tags);
 
@@ -65,7 +65,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetProject_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        const int nonExistingProjectId = 999;
+        var nonExistingProjectId = Guid.NewGuid();
 
         // Act
         var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectId}");
@@ -78,7 +78,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task GetProject_ExistingSlug_ReturnsProject()
     {
         // Arrange
-        const int testProjectId = 11;
+        var testProjectId = Guid.NewGuid();
         var expectedProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -116,8 +116,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     {
         // Arrange
         var tags = new List<string> { "Tag1", "Tag2" };
-        var expectedProject = await CreateProjectAsync(1, tags: tags);
-        var relatedProject = await CreateProjectAsync(2, tags: tags);
+        var expectedProject = await CreateProjectAsync(Guid.NewGuid(), tags: tags);
+        var relatedProject = await CreateProjectAsync(Guid.NewGuid(), tags: tags);
 
         // Act
         var httpResponse = await Client.GetAsync($"/project/{expectedProject.Id}/related");
@@ -198,7 +198,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Title = "New Project",
             ShortDescription = "A short description",
             Description = "A long description",
-            CompanyId = 1,
+            CompanyId = Guid.NewGuid(),
             Year = 2021,
             Website = "https://example.com",
             Tags = ["Tag1", "Tag2"]
@@ -253,7 +253,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PutProject_ExistingId_UpdatesProject()
     {
         // Arrange
-        const int testProjectId = 13;
+        var testProjectId = Guid.NewGuid();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         var updateProject = new CreateProject
@@ -311,7 +311,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task PutProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
-        const int testProjectId = 14;
+        var testProjectId = Guid.NewGuid();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -320,7 +320,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Title = "Updated Project",
             ShortDescription = "Updated short description",
             Description = "Updated long description",
-            CompanyId = 1,
+            CompanyId = Guid.NewGuid(),
             Year = 2021,
             Website = "https://updated-example.com",
             Tags = ["UpdatedTag1", "UpdatedTag2"]
@@ -339,7 +339,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task DeleteProject_ExistingId_DeletesProject()
     {
         // Arrange
-        const int testProjectId = 15;
+        var testProjectId = Guid.NewGuid();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act
@@ -358,7 +358,7 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     public async Task DeleteProject_WithoutAuth_ReturnsUnauthorized()
     {
         // Arrange
-        const int testProjectId = 16;
+        var testProjectId = Guid.NewGuid();
         var existingProject = await CreateProjectAsync(testProjectId);
 
         // Act

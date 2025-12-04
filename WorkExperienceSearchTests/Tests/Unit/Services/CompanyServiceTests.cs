@@ -33,7 +33,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task GetCompanyAsync_ValidId_ReturnsCompany()
     {
         // Arrange
-        const int companyId = 1;
+        var companyId = CompanyId;
 
         // Act
         var result = (await _companyService.GetCompanyAsync(companyId)).ExpectSuccess();
@@ -47,7 +47,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task GetCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int companyId = 99;
+        var companyId = Guid.NewGuid();
 
         // Act
         var result = (await _companyService.GetCompanyAsync(companyId)).ExpectFailure();
@@ -74,7 +74,7 @@ public class CompanyServiceTests : BaseServiceTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(2, result.Id);
+        Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal(createCompany.Name, result.Name);
     }
 
@@ -103,7 +103,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task UpdateCompanyAsync_ValidId_ReturnsUpdatedCompany()
     {
         // Arrange
-        const int companyId = 1;
+        var companyId = CompanyId;
         var updateCompany = new CreateCompany
         {
             Name = "Updated Company",
@@ -127,7 +127,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task UpdateCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int companyId = 99;
+        var companyId = Guid.NewGuid();
         var updateCompany = new CreateCompany
         {
             Name = "Updated Company",
@@ -148,7 +148,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task DeleteCompanyAsync_ValidId_DeletesCompany()
     {
         // Arrange
-        const int companyId = 1;
+        var companyId = CompanyId;
 
         // Act
         (await _companyService.DeleteCompanyAsync(companyId)).ExpectSuccess();
@@ -162,7 +162,7 @@ public class CompanyServiceTests : BaseServiceTests
     public async Task DeleteCompanyAsync_InvalidId_ThrowsNotFoundFailure()
     {
         // Arrange
-        const int companyId = 99;
+        var companyId = Guid.NewGuid();
 
         // Act
         var result = (await _companyService.DeleteCompanyAsync(companyId)).ExpectFailure();
@@ -181,10 +181,6 @@ public class CompanyServiceTests : BaseServiceTests
         }
     }
 
-    private static IEnumerable<Company> GetTestCompanies()
-    {
-        var company = CreateCompany(1, "Test Company", "Test Description", "testLogo", "https://example.com");
-
-        return [company];
-    }
+    private static IEnumerable<Company> GetTestCompanies() =>
+        [CreateCompany(CompanyId, "Test Company", "Test Description", "testLogo", "https://example.com")];
 }

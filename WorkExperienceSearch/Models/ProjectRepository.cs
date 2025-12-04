@@ -6,7 +6,7 @@ namespace Work_Experience_Search.Models;
 
 public class ProjectRepository
 {
-    [Required] public int Id { get; set; }
+    [Required] public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required] public string Title { get; set; } = null!;
 
@@ -14,6 +14,6 @@ public class ProjectRepository
 
     public int? Order { get; set; }
 
-    public int? ProjectId { get; set; }
+    public Guid ProjectId { get; set; }
     [Required] [JsonIgnore] public Project? Project { get; set; }
 }

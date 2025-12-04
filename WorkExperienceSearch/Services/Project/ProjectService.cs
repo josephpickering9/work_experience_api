@@ -19,7 +19,7 @@ public class ProjectService(
         return new Success<IEnumerable<Project>>(projects);
     }
 
-    public async Task<Result<Project>> GetProjectAsync(int id)
+    public async Task<Result<Project>> GetProjectAsync(Guid id)
     {
         var project = await GetProjectsQuery().SingleOrDefaultAsync(p => p.Id == id);
         if (project == null) return new NotFoundFailure<Project>("Project not found.");
@@ -35,7 +35,7 @@ public class ProjectService(
         return new Success<Project>(project);
     }
 
-    public async Task<Result<IEnumerable<Project>>> GetRelatedProjectsAsync(int projectId)
+    public async Task<Result<IEnumerable<Project>>> GetRelatedProjectsAsync(Guid projectId)
     {
         var projectTags = context.Project
             .Include(pt => pt.Tags)
@@ -88,7 +88,7 @@ public class ProjectService(
         return new Success<Project>(project);
     }
 
-    public async Task<Result<Project>> UpdateProjectAsync(int id, CreateProject createProject)
+    public async Task<Result<Project>> UpdateProjectAsync(Guid id, CreateProject createProject)
     {
         var projectResult = await GetProjectAsync(id);
         if (!projectResult.IsSuccess || projectResult.Data == null) return projectResult;
@@ -117,7 +117,7 @@ public class ProjectService(
         return new Success<Project>(project);
     }
 
-    public async Task<Result<Project>> DeleteProjectAsync(int id)
+    public async Task<Result<Project>> DeleteProjectAsync(Guid id)
     {
         var project = await context.Project.FindAsync(id);
         if (project == null) return new NotFoundFailure<Project>("Project not found.");

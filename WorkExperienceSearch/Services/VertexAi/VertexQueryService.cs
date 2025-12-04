@@ -147,11 +147,11 @@ public class VertexQueryService : IVertexQueryService
         return list;
     }
 
-    private static int? ExtractProjectId(string documentName)
+    private static Guid? ExtractProjectId(string documentName)
     {
         var parts = documentName.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var docIndex = Array.IndexOf(parts, "documents");
-        if (docIndex >= 0 && docIndex + 1 < parts.Length && int.TryParse(parts[docIndex + 1], out var id))
+        if (docIndex >= 0 && docIndex + 1 < parts.Length && Guid.TryParse(parts[docIndex + 1], out var id))
         {
             return id;
         }
@@ -202,7 +202,7 @@ public record VertexQueryResult(string Answer, IReadOnlyList<VertexCitation> Cit
 
 public record VertexCitation
 {
-    public int? ProjectId { get; init; }
+    public Guid? ProjectId { get; init; }
     public VertexFeatureType? FeatureType { get; init; }
     public string? Title { get; init; }
 }

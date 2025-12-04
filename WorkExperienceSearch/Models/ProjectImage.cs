@@ -6,7 +6,7 @@ namespace Work_Experience_Search.Models;
 
 public class ProjectImage
 {
-    [Required] public int Id { get; set; }
+    [Required] public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required] public string Image { get; set; } = null!;
 
@@ -16,7 +16,7 @@ public class ProjectImage
 
     public bool IsOptimised { get; set; } = false;
 
-    public int? ProjectId { get; set; }
+    public Guid ProjectId { get; set; }
     [Required] [JsonIgnore] public Project? Project { get; set; }
 }
 

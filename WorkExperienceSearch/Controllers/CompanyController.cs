@@ -17,8 +17,8 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
         return result.ToResponse();
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<Company>> GetCompany(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<Company>> GetCompany(Guid id)
     {
         var result = await companyService.GetCompanyAsync(id);
         return result.ToResponse();
@@ -40,18 +40,18 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
         return result.ToResponse();
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<Company>> PutCompany(int id, [FromForm] CreateCompany createCompany)
+    public async Task<ActionResult<Company>> PutCompany(Guid id, [FromForm] CreateCompany createCompany)
     {
         var result = await companyService.UpdateCompanyAsync(id, createCompany);
         return result.ToResponse();
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteCompany(int id)
+    public async Task<IActionResult> DeleteCompany(Guid id)
     {
         var result = await companyService.DeleteCompanyAsync(id);
         return result.ToResponse();

@@ -16,9 +16,9 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         // Arrange
         var tags = new List<Tag>
         {
-            await CreateTagAsync(1, "Tag 1"),
-            await CreateTagAsync(2, "Tag 2"),
-            await CreateTagAsync(3, "Tag 3")
+            await CreateTagAsync(Guid.NewGuid(), "Tag 1"),
+            await CreateTagAsync(Guid.NewGuid(), "Tag 2"),
+            await CreateTagAsync(Guid.NewGuid(), "Tag 3")
         };
 
         // Act
@@ -37,7 +37,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task GetTag_ExistingId_ReturnsTag()
     {
         // Arrange
-        const int testTagId = 1;
+        var testTagId = Guid.NewGuid();
         await CreateTagAsync(testTagId);
 
         // Act
@@ -55,7 +55,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task GetTag_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        const int nonExistingTagId = 999;
+        var nonExistingTagId = Guid.NewGuid();
 
         // Act
         var httpResponse = await Client.GetAsync($"/tag/{nonExistingTagId}");
@@ -113,7 +113,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task PostTag_ExistingTag_ReturnsConflict()
     {
         // Arrange
-        await CreateTagAsync(1, "Conflict Tag");
+        await CreateTagAsync(Guid.NewGuid(), "Conflict Tag");
         var createTag = new CreateTag
         {
             Title = "Conflict Tag",
@@ -142,7 +142,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
         };
 
         // Act
-        var httpResponse = await Client.PutAsync("/tag/1", CreateJsonContent(updateTag));
+        var httpResponse = await Client.PutAsync($"/tag/{Guid.NewGuid()}", CreateJsonContent(updateTag));
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
@@ -152,7 +152,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task PutTag_ValidId_ReturnsUpdatedTag()
     {
         // Arrange
-        const int tagId = 1;
+        var tagId = Guid.NewGuid();
         await CreateTagAsync(tagId);
         var updateTag = new CreateTag
         {
@@ -178,7 +178,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task PutTag_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        const int nonExistingTagId = 999;
+        var nonExistingTagId = Guid.NewGuid();
         var updateTag = new CreateTag
         {
             Title = "Updated Tag",
@@ -198,7 +198,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task DeleteTag_Unauthorized_ReturnsUnauthorized()
     {
         // Act
-        var httpResponse = await Client.DeleteAsync("/tag/1");
+        var httpResponse = await Client.DeleteAsync($"/tag/{Guid.NewGuid()}");
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
@@ -208,7 +208,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task DeleteTag_ValidId_DeletesTag()
     {
         // Arrange
-        const int tagId = 1;
+        var tagId = Guid.NewGuid();
         await CreateTagAsync(tagId);
 
         // Act
@@ -220,7 +220,7 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     public async Task DeleteTag_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        const int nonExistingTagId = 999;
+        var nonExistingTagId = Guid.NewGuid();
 
         // Act
         var httpResponse = await AuthenticatedClient.DeleteAsync($"/tag/{nonExistingTagId}");

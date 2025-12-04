@@ -6,7 +6,7 @@ namespace Work_Experience_Search.Models;
 
 public class Project
 {
-    [Required] public int Id { get; set; }
+    [Required] public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required] public string Title { get; set; } = null!;
 
@@ -14,7 +14,7 @@ public class Project
 
     [Required] public string Description { get; set; } = null!;
 
-    public int? CompanyId { get; set; } = null!;
+    public Guid? CompanyId { get; set; } = null!;
     public Company? Company { get; set; } = null!;
 
     [Required] public int Year { get; set; }
