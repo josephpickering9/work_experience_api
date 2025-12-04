@@ -15,11 +15,17 @@ public class VertexAiOptions
     public string Collection { get; set; } = "default_collection";
     public string Branch { get; set; } = "0";
     public string Model { get; set; } = "gemini-2.5-pro";
-    public string ModelLocation { get; set; } = "us-central1";
-    public string Environment { get; set; } = "local";
+    public string ModelLocation { get; set; } = "global";
+    public VertexEnvironment Environment { get; set; } = VertexEnvironment.Local;
     public string QueryDataStoreSuffix { get; set; } = "project_structured";
     public string? CredentialsFile { get; set; }
     public string? CredentialsJson { get; set; }
+}
+
+public enum VertexEnvironment
+{
+    Local,
+    Production
 }
 
 public interface IVertexChatbotClient
@@ -252,7 +258,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         {
             var engine = new Engine
             {
-                DisplayName = "Chatbot",
+                DisplayName = $"{_options.Environment} Chatbot",
                 IndustryVertical = IndustryVertical.Generic,
                 SolutionType = SolutionType.Search
             };
@@ -311,9 +317,9 @@ public class VertexChatbotClient : IVertexChatbotClient
     private string GetCollectionName() => CollectionName.FromProjectLocationCollection(_options.ProjectId, _options.Location, _options.Collection).ToString();
     private string GetBranchName(string dataStoreId) => BranchName.FromProjectLocationCollectionDataStoreBranch(_options.ProjectId, _options.Location, _options.Collection, dataStoreId, _options.Branch).ToString();
     private string GetDocumentName(string dataStoreId, string documentId) => DocumentName.FromProjectLocationDataStoreBranchDocument(_options.ProjectId, _options.Location, dataStoreId, _options.Branch, documentId).ToString();
-    private string GetEngineId() => $"{_options.Environment}-blended-search";
-    private string GetFeatureDataStoreId(VertexFeatureType featureType) => $"{_options.Environment}_{featureType.ToString().ToLowerInvariant()}_structured";
-    private string GetDocumentDataStoreId() => $"{_options.Environment}_unstructured";
+    private string GetEngineId() => $"{_options.Environment.ToString().ToLowerInvariant()}-chatbot";
+    private string GetFeatureDataStoreId(VertexFeatureType featureType) => $"{_options.Environment.ToString().ToLowerInvariant()}_{featureType.ToString().ToLowerInvariant()}_structured";
+    private string GetDocumentDataStoreId() => $"{_options.Environment.ToString().ToLowerInvariant()}_unstructured";
 
     private static string GetResourceId(string name) => name.Split("/").Last();
 
