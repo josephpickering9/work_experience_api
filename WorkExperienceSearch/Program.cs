@@ -28,6 +28,7 @@ builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.Configure<VertexAiOptions>(builder.Configuration.GetSection("VertexAi"));
 builder.Services.AddSingleton<IVertexChatbotClient, VertexChatbotClient>();
+builder.Services.AddScoped<IVertexIngestService, VertexIngestService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

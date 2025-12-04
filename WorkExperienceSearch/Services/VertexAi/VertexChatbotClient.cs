@@ -1,8 +1,6 @@
 using System.Text.Json;
-using System.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.DiscoveryEngine.V1;
-using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Auth;
 using Microsoft.Extensions.Options;
@@ -255,9 +253,9 @@ public class VertexChatbotClient : IVertexChatbotClient
             engine.DataStoreIds.Add(dataStores.UnstructuredDataStoreId);
             engine.SearchEngineConfig = new Engine.Types.SearchEngineConfig
             {
-                SearchTier = SearchTier.SearchTierEnterprise
+                SearchTier = SearchTier.Enterprise
             };
-            engine.SearchEngineConfig.SearchAddOns.Add(SearchAddOn.SearchAddOnLlm);
+            engine.SearchEngineConfig.SearchAddOns.Add(SearchAddOn.Llm);
 
             var request = new CreateEngineRequest
             {
