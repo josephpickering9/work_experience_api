@@ -15,6 +15,9 @@ public class VertexAiOptions
     public string Collection { get; set; } = "default_collection";
     public string Branch { get; set; } = "0";
     public string DefaultTenantId { get; set; } = "default";
+    public string Model { get; set; } = "gemini-2.5-pro";
+    public string ModelLocation { get; set; } = "us-central1";
+    public string QueryDataStoreSuffix { get; set; } = "project_structured";
     public string? CredentialsFile { get; set; }
     public string? CredentialsJson { get; set; }
 }

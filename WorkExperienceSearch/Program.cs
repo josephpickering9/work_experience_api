@@ -30,6 +30,8 @@ builder.Services.Configure<VertexAiOptions>(builder.Configuration.GetSection("Ve
 builder.Services.AddSingleton<IVertexChatbotClient, VertexChatbotClient>();
 builder.Services.AddScoped<IVertexIngestService, VertexIngestService>();
 builder.Services.AddScoped<IVertexIngestOrchestrator, VertexIngestOrchestrator>();
+builder.Services.AddScoped<IVertexQueryService, VertexQueryService>();
+builder.Services.AddHttpClient();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
