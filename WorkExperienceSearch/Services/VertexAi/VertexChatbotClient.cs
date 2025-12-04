@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Google.Api.Gax.Grpc;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.DiscoveryEngine.V1;
 using Google.Protobuf.WellKnownTypes;
@@ -20,10 +21,8 @@ public class VertexAiOptions
 public interface IVertexChatbotClient
 {
     Task InitialiseCachesAsync(string tenantId, bool ensureSchema = false, CancellationToken cancellationToken = default);
-    Task UpsertFeatureAsync<T>(string tenantId, string featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default);
-    Task DeleteFeatureAsync(string tenantId, string featureType, string documentId, CancellationToken cancellationToken = default);
-    Task ImportDocumentsAsync(string tenantId, IEnumerable<string> gcsUris, CancellationToken cancellationToken = default);
-    Task DeleteDocumentsAsync(string tenantId, IEnumerable<string> documentIds, CancellationToken cancellationToken = default);
+    Task UpsertFeatureAsync<T>(string tenantId, VertexFeatureType featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default);
+    Task DeleteFeatureAsync(string tenantId, VertexFeatureType featureType, string documentId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -57,7 +56,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         await GetOrCreateEngineAsync(tenantId, dataStores, cancellationToken);
     }
 
-    public async Task UpsertFeatureAsync<T>(string tenantId, string featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default)
+    public async Task UpsertFeatureAsync<T>(string tenantId, VertexFeatureType featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default)
     {
         var dataStoreId = GetFeatureDataStoreId(tenantId, featureType);
         await GetOrCreateDataStoreAsync(tenantId, dataStoreId, $"{featureType} Structured JSON", DataStore.Types.ContentConfig.NoContent, featureType, jsonSchema, ensureSchema, cancellationToken);
@@ -84,7 +83,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         }
     }
 
-    public async Task DeleteFeatureAsync(string tenantId, string featureType, string documentId, CancellationToken cancellationToken = default)
+    public async Task DeleteFeatureAsync(string tenantId, VertexFeatureType featureType, string documentId, CancellationToken cancellationToken = default)
     {
         var dataStoreId = GetFeatureDataStoreId(tenantId, featureType);
         await GetOrCreateDataStoresAsync(tenantId, cancellationToken: cancellationToken);
@@ -114,7 +113,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         };
 
         var operation = await _documentClient.ImportDocumentsAsync(request, cancellationToken: cancellationToken);
-        await operation.PollUntilCompletedAsync(cancellationToken);
+        await operation.PollUntilCompletedAsync(callSettings: CallSettings.FromCancellationToken(cancellationToken));
     }
 
     public async Task DeleteDocumentsAsync(string tenantId, IEnumerable<string> documentIds, CancellationToken cancellationToken = default)
@@ -140,8 +139,13 @@ public class VertexChatbotClient : IVertexChatbotClient
 
     private async Task<GoogleChatbotDataStores> GetOrCreateDataStoresAsync(string tenantId, bool ensureSchema = false, CancellationToken cancellationToken = default)
     {
-        var structuredTypes = new[] { "document", "entity", "metric", "note", "portfolio", "proxy_vote", "questionnaire", "rfp_question", "task" };
-        var structuredDataStoreIds = new List<(string FeatureType, string Id)>();
+        var structuredTypes = new[]
+        {
+            VertexFeatureType.Company,
+            VertexFeatureType.Project,
+            VertexFeatureType.Tag
+        };
+        var structuredDataStoreIds = new List<(VertexFeatureType FeatureType, string Id)>();
 
         foreach (var type in structuredTypes)
         {
@@ -150,12 +154,10 @@ public class VertexChatbotClient : IVertexChatbotClient
             structuredDataStoreIds.Add((type, GetResourceId(dataStore.Name)));
         }
 
-        var unstructured = await GetOrCreateDataStoreAsync(tenantId, GetDocumentDataStoreId(tenantId), "Unstructured Docs", DataStore.Types.ContentConfig.ContentRequired, null, null, false, cancellationToken);
-
-        return new GoogleChatbotDataStores(structuredDataStoreIds, GetResourceId(unstructured.Name));
+        return new GoogleChatbotDataStores(structuredDataStoreIds);
     }
 
-    private async Task<DataStore> GetOrCreateDataStoreAsync(string tenantId, string dataStoreId, string displayName, DataStore.Types.ContentConfig contentConfig, string? featureType, string? jsonSchema, bool ensureSchema, CancellationToken cancellationToken)
+    private async Task<DataStore> GetOrCreateDataStoreAsync(string tenantId, string dataStoreId, string displayName, DataStore.Types.ContentConfig contentConfig, VertexFeatureType? featureType, string? jsonSchema, bool ensureSchema, CancellationToken cancellationToken)
     {
         var dataStoreName = DataStoreName.FromProjectLocationDataStore(_options.ProjectId, _options.Location, dataStoreId).ToString();
 
@@ -191,13 +193,14 @@ public class VertexChatbotClient : IVertexChatbotClient
                 DataStore = newDataStore
             };
 
-            var created = await _dataStoreClient.CreateDataStoreAsync(request, cancellationToken: cancellationToken);
+            var operation = await _dataStoreClient.CreateDataStoreAsync(request, cancellationToken: cancellationToken);
+            var created = await operation.PollUntilCompletedAsync(callSettings: CallSettings.FromCancellationToken(cancellationToken));
             if (ensureSchema && jsonSchema != null)
             {
                 await EnsureSchemaUpToDateAsync(dataStoreId, jsonSchema, cancellationToken);
             }
 
-            return created;
+            return created.Result;
         }
     }
 
@@ -250,7 +253,6 @@ public class VertexChatbotClient : IVertexChatbotClient
                 SolutionType = SolutionType.Search
             };
             engine.DataStoreIds.AddRange(dataStores.StructuredDataStoreIds.Select(x => x.Id));
-            engine.DataStoreIds.Add(dataStores.UnstructuredDataStoreId);
             engine.SearchEngineConfig = new Engine.Types.SearchEngineConfig
             {
                 SearchTier = SearchTier.Enterprise
@@ -264,16 +266,15 @@ public class VertexChatbotClient : IVertexChatbotClient
                 Engine = engine
             };
 
-            return await _engineClient.CreateEngineAsync(request, cancellationToken: cancellationToken);
+            var operation = await _engineClient.CreateEngineAsync(request, cancellationToken: cancellationToken);
+            var created = await operation.PollUntilCompletedAsync(callSettings: CallSettings.FromCancellationToken(cancellationToken));
+            return created.Result;
         }
     }
 
     private async Task EnsureEngineDataStoresAsync(Engine engine, GoogleChatbotDataStores dataStores, CancellationToken cancellationToken)
     {
-        var expected = dataStores.StructuredDataStoreIds.Select(x => x.Id)
-            .Concat(new[] { dataStores.UnstructuredDataStoreId })
-            .ToHashSet();
-
+        var expected = dataStores.StructuredDataStoreIds.Select(x => x.Id).ToHashSet();
         if (engine.DataStoreIds.ToHashSet().SetEquals(expected)) return;
 
         var updated = engine.Clone();
@@ -307,16 +308,18 @@ public class VertexChatbotClient : IVertexChatbotClient
     private string GetBranchName(string dataStoreId) => BranchName.FromProjectLocationCollectionDataStoreBranch(_options.ProjectId, _options.Location, _options.Collection, dataStoreId, _options.Branch).ToString();
     private string GetDocumentName(string dataStoreId, string documentId) => DocumentName.FromProjectLocationDataStoreBranchDocument(_options.ProjectId, _options.Location, dataStoreId, _options.Branch, documentId).ToString();
     private string GetEngineId(string tenantId) => $"{tenantId}-blended-search";
-    private string GetFeatureDataStoreId(string tenantId, string featureType) => $"{tenantId}_{featureType}_structured";
+    private string GetFeatureDataStoreId(string tenantId, VertexFeatureType featureType) => $"{tenantId}_{featureType.ToString().ToLowerInvariant()}_structured";
     private string GetDocumentDataStoreId(string tenantId) => $"{tenantId}_unstructured";
 
     private static string GetResourceId(string name) => name.Split("/").Last();
 
     private static Struct MapToStruct<T>(T value)
     {
-        var element = JsonSerializer.SerializeToElement(value ?? new { });
+        var element = value is null
+            ? JsonSerializer.SerializeToElement(new { })
+            : JsonSerializer.SerializeToElement(value);
         return Struct.Parser.ParseJson(element.GetRawText());
     }
 }
 
-public record GoogleChatbotDataStores(IReadOnlyList<(string FeatureType, string Id)> StructuredDataStoreIds, string UnstructuredDataStoreId);
+public record GoogleChatbotDataStores(IReadOnlyList<(VertexFeatureType FeatureType, string Id)> StructuredDataStoreIds);
