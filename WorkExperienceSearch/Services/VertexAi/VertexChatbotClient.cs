@@ -16,6 +16,7 @@ public class VertexAiOptions
     public string Branch { get; set; } = "0";
     public string Model { get; set; } = "gemini-2.5-pro";
     public string ModelLocation { get; set; } = "us-central1";
+    public string Environment { get; set; } = "local";
     public string QueryDataStoreSuffix { get; set; } = "project_structured";
     public string? CredentialsFile { get; set; }
     public string? CredentialsJson { get; set; }
@@ -310,9 +311,9 @@ public class VertexChatbotClient : IVertexChatbotClient
     private string GetCollectionName() => CollectionName.FromProjectLocationCollection(_options.ProjectId, _options.Location, _options.Collection).ToString();
     private string GetBranchName(string dataStoreId) => BranchName.FromProjectLocationCollectionDataStoreBranch(_options.ProjectId, _options.Location, _options.Collection, dataStoreId, _options.Branch).ToString();
     private string GetDocumentName(string dataStoreId, string documentId) => DocumentName.FromProjectLocationDataStoreBranchDocument(_options.ProjectId, _options.Location, dataStoreId, _options.Branch, documentId).ToString();
-    private string GetEngineId() => "blended-search";
-    private string GetFeatureDataStoreId(VertexFeatureType featureType) => $"{featureType.ToString().ToLowerInvariant()}_structured";
-    private string GetDocumentDataStoreId() => "unstructured";
+    private string GetEngineId() => $"{_options.Environment}-blended-search";
+    private string GetFeatureDataStoreId(VertexFeatureType featureType) => $"{_options.Environment}_{featureType.ToString().ToLowerInvariant()}_structured";
+    private string GetDocumentDataStoreId() => $"{_options.Environment}_unstructured";
 
     private static string GetResourceId(string name) => name.Split("/").Last();
 

@@ -31,7 +31,7 @@ public class VertexQueryService : IVertexQueryService
 
     public async Task<VertexQueryResult> QueryAsync(string query, CancellationToken cancellationToken = default)
     {
-        var dataStoreId = _options.QueryDataStoreSuffix;
+        var dataStoreId = $"{_options.Environment}_{_options.QueryDataStoreSuffix}";
         var datastoreResource = $"projects/{_options.ProjectId}/locations/{_options.Location}/collections/{_options.Collection}/dataStores/{dataStoreId}";
         var hostLocation = string.IsNullOrWhiteSpace(_options.ModelLocation) ? _options.Location : _options.ModelLocation;
 
