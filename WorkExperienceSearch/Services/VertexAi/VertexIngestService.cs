@@ -29,8 +29,6 @@ public class VertexIngestService : IVertexIngestService
 
     public async Task UpsertProjectAsync(Project project, string tenantId, CancellationToken cancellationToken = default)
     {
-        await _chatbotClient.InitialiseCachesAsync(tenantId, ensureSchema: true, cancellationToken);
-
         var dto = FlattenProject(project);
         var schema = VertexSchemaGenerator.GenerateSchema<VertexProjectDto>();
         await _chatbotClient.UpsertFeatureAsync(
@@ -39,7 +37,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: project.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: true,
+            ensureSchema: false,
             cancellationToken: cancellationToken);
     }
 
@@ -50,8 +48,6 @@ public class VertexIngestService : IVertexIngestService
 
     public async Task UpsertCompanyAsync(Company company, string tenantId, CancellationToken cancellationToken = default)
     {
-        await _chatbotClient.InitialiseCachesAsync(tenantId, ensureSchema: true, cancellationToken);
-
         var dto = FlattenCompany(company);
         var schema = VertexSchemaGenerator.GenerateSchema<VertexCompanyDto>();
         await _chatbotClient.UpsertFeatureAsync(
@@ -60,7 +56,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: company.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: true,
+            ensureSchema: false,
             cancellationToken: cancellationToken);
     }
 
@@ -71,8 +67,6 @@ public class VertexIngestService : IVertexIngestService
 
     public async Task UpsertTagAsync(Tag tag, string tenantId, CancellationToken cancellationToken = default)
     {
-        await _chatbotClient.InitialiseCachesAsync(tenantId, ensureSchema: true, cancellationToken);
-
         var dto = FlattenTag(tag);
         var schema = VertexSchemaGenerator.GenerateSchema<VertexTagDto>();
         await _chatbotClient.UpsertFeatureAsync(
@@ -81,7 +75,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: tag.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: true,
+            ensureSchema: false,
             cancellationToken: cancellationToken);
     }
 

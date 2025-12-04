@@ -14,6 +14,7 @@ public class VertexAiOptions
     public string Location { get; set; } = "global";
     public string Collection { get; set; } = "default_collection";
     public string Branch { get; set; } = "0";
+    public string DefaultTenantId { get; set; } = "default";
     public string? CredentialsFile { get; set; }
     public string? CredentialsJson { get; set; }
 }

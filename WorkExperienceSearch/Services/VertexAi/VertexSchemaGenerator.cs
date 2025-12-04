@@ -15,9 +15,11 @@ public static class VertexSchemaGenerator
         WriteIndented = true
     };
 
-    public static string GenerateSchema<T>() => JsonSerializer.Serialize(BuildSchema(typeof(T)), SerializerOptions);
+    private const string Draft202012 = "https://json-schema.org/draft/2020-12/schema";
 
-    private static object BuildSchema(Type type)
+    public static string GenerateSchema<T>() => JsonSerializer.Serialize(BuildSchema(typeof(T), isRoot: true), SerializerOptions);
+
+    private static object BuildSchema(Type type, bool isRoot = false)
     {
         if (TryGetPrimitiveSchema(type, out var primitive)) return primitive!;
 
@@ -51,6 +53,10 @@ public static class VertexSchemaGenerator
             ["type"] = "object",
             ["properties"] = properties
         };
+        if (isRoot)
+        {
+            obj["$schema"] = Draft202012;
+        }
         if (required.Count > 0) obj["required"] = required;
 
         return obj;
