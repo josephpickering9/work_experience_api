@@ -1,12 +1,15 @@
 using System.Text.Json;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
+using Work_Experience_Search.Models;
+using Work_Experience_Search.Services;
 
 namespace Work_Experience_Search.Services.VertexAi;
 
 public interface IVertexQueryService
 {
-    Task<VertexQueryResult> QueryAsync(string query, string? tenantId, CancellationToken cancellationToken = default);
+    Task<VertexQueryResult> QueryAsync(string query, CancellationToken cancellationToken = default);
 }
 
 public class VertexQueryService : IVertexQueryService
@@ -15,19 +18,20 @@ public class VertexQueryService : IVertexQueryService
     private readonly VertexAiOptions _options;
     private readonly GoogleCredential _credential;
     private readonly ILogger<VertexQueryService> _logger;
+    private readonly Database _database;
 
-    public VertexQueryService(IHttpClientFactory httpClientFactory, IOptions<VertexAiOptions> options, ILogger<VertexQueryService> logger)
+    public VertexQueryService(IHttpClientFactory httpClientFactory, IOptions<VertexAiOptions> options, ILogger<VertexQueryService> logger, Database database)
     {
         _httpClient = httpClientFactory.CreateClient(nameof(VertexQueryService));
         _options = options.Value;
         _logger = logger;
+        _database = database;
         _credential = BuildCredential(_options).CreateScoped("https://www.googleapis.com/auth/cloud-platform");
     }
 
-    public async Task<VertexQueryResult> QueryAsync(string query, string? tenantId, CancellationToken cancellationToken = default)
+    public async Task<VertexQueryResult> QueryAsync(string query, CancellationToken cancellationToken = default)
     {
-        var tenant = string.IsNullOrWhiteSpace(tenantId) ? _options.DefaultTenantId : tenantId;
-        var dataStoreId = $"{tenant}_{_options.QueryDataStoreSuffix}";
+        var dataStoreId = _options.QueryDataStoreSuffix;
         var datastoreResource = $"projects/{_options.ProjectId}/locations/{_options.Location}/collections/{_options.Collection}/dataStores/{dataStoreId}";
         var hostLocation = string.IsNullOrWhiteSpace(_options.ModelLocation) ? _options.Location : _options.ModelLocation;
 
@@ -86,7 +90,7 @@ public class VertexQueryService : IVertexQueryService
         }
 
         var answer = ExtractAnswer(raw);
-        var citations = ExtractCitations(raw);
+        var citations = await EnrichCitationsAsync(ExtractCitations(raw), cancellationToken);
         return new VertexQueryResult(answer ?? string.Empty, citations);
     }
 
@@ -99,10 +103,10 @@ public class VertexQueryService : IVertexQueryService
         return textPart?.GetProperty("text").GetString();
     }
 
-    private static IReadOnlyList<VertexCitation> ExtractCitations(string json)
+    private static IReadOnlyList<RawVertexCitation> ExtractCitations(string json)
     {
         using var doc = JsonDocument.Parse(json);
-        var list = new List<VertexCitation>();
+        var list = new List<RawVertexCitation>();
         var candidate = doc.RootElement.GetPropertyOrDefault("candidates")?.EnumerateArray().FirstOrDefault();
 
         var groundingChunks = candidate?.GetPropertyOrDefault("groundingMetadata")?.GetPropertyOrDefault("groundingChunks");
@@ -115,7 +119,7 @@ public class VertexQueryService : IVertexQueryService
                 var text = context?.GetPropertyOrDefault("text")?.GetString();
                 if (string.IsNullOrWhiteSpace(documentName)) continue;
 
-                list.Add(new VertexCitation
+                list.Add(new RawVertexCitation
                 {
                     ProjectId = ExtractProjectId(documentName),
                     FeatureType = ExtractFeatureType(documentName),
@@ -134,7 +138,7 @@ public class VertexQueryService : IVertexQueryService
                 var documentName = uri ?? source;
                 if (!string.IsNullOrWhiteSpace(documentName))
                 {
-                    list.Add(new VertexCitation
+                    list.Add(new RawVertexCitation
                     {
                         ProjectId = ExtractProjectId(documentName),
                         FeatureType = ExtractFeatureType(documentName),
@@ -182,6 +186,45 @@ public class VertexQueryService : IVertexQueryService
         return titleLine != null ? titleLine["Title:".Length..].Trim() : null;
     }
 
+    private async Task<IReadOnlyList<VertexCitation>> EnrichCitationsAsync(IEnumerable<RawVertexCitation> citations, CancellationToken cancellationToken)
+    {
+        var rawList = citations.ToList();
+        var projectIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Project && c.ProjectId.HasValue).Select(c => c.ProjectId!.Value).Distinct().ToList();
+        var companyIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Company && c.ProjectId.HasValue).Select(c => c.ProjectId!.Value).Distinct().ToList();
+        var tagIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Tag && c.ProjectId.HasValue).Select(c => c.ProjectId!.Value).Distinct().ToList();
+
+        var projects = await _database.Project
+            .Include(p => p.Tags)
+            .Include(p => p.Images)
+            .Include(p => p.Repositories)
+            .Where(p => projectIds.Contains(p.Id))
+            .ToListAsync(cancellationToken);
+
+        var companies = await _database.Company.Where(c => companyIds.Contains(c.Id)).ToListAsync(cancellationToken);
+        var tags = await _database.Tag.Where(t => tagIds.Contains(t.Id)).ToListAsync(cancellationToken);
+
+        var projectLookup = projects.ToDictionary(p => p.Id);
+        var companyLookup = companies.ToDictionary(c => c.Id);
+        var tagLookup = tags.ToDictionary(t => t.Id);
+
+        return rawList.Select(c =>
+        {
+            projectLookup.TryGetValue(c.ProjectId ?? Guid.Empty, out var project);
+            companyLookup.TryGetValue(c.ProjectId ?? Guid.Empty, out var company);
+            tagLookup.TryGetValue(c.ProjectId ?? Guid.Empty, out var tag);
+
+            return new VertexCitation
+            {
+                FeatureType = c.FeatureType,
+                Id = c.ProjectId,
+                Title = c.Title ?? project?.Title ?? company?.Name ?? tag?.Title,
+                Project = project,
+                Company = company,
+                Tag = tag
+            };
+        }).ToList();
+    }
+
     private static GoogleCredential BuildCredential(VertexAiOptions options)
     {
         if (!string.IsNullOrWhiteSpace(options.CredentialsFile))
@@ -201,6 +244,16 @@ public class VertexQueryService : IVertexQueryService
 public record VertexQueryResult(string Answer, IReadOnlyList<VertexCitation> Citations);
 
 public record VertexCitation
+{
+    public Guid? Id { get; init; }
+    public VertexFeatureType? FeatureType { get; init; }
+    public string? Title { get; init; }
+    public Project? Project { get; init; }
+    public Company? Company { get; init; }
+    public Tag? Tag { get; init; }
+}
+
+internal record RawVertexCitation
 {
     public Guid? ProjectId { get; init; }
     public VertexFeatureType? FeatureType { get; init; }

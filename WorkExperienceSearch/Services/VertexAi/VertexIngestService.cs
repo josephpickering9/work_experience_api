@@ -5,14 +5,14 @@ namespace Work_Experience_Search.Services.VertexAi;
 
 public interface IVertexIngestService
 {
-    Task UpsertProjectAsync(Project project, string tenantId, CancellationToken cancellationToken = default);
-    Task DeleteProjectAsync(Guid projectId, string tenantId, CancellationToken cancellationToken = default);
+    Task UpsertProjectAsync(Project project, CancellationToken cancellationToken = default);
+    Task DeleteProjectAsync(Guid projectId, CancellationToken cancellationToken = default);
 
-    Task UpsertCompanyAsync(Company company, string tenantId, CancellationToken cancellationToken = default);
-    Task DeleteCompanyAsync(Guid companyId, string tenantId, CancellationToken cancellationToken = default);
+    Task UpsertCompanyAsync(Company company, CancellationToken cancellationToken = default);
+    Task DeleteCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
 
-    Task UpsertTagAsync(Tag tag, string tenantId, CancellationToken cancellationToken = default);
-    Task DeleteTagAsync(Guid tagId, string tenantId, CancellationToken cancellationToken = default);
+    Task UpsertTagAsync(Tag tag, CancellationToken cancellationToken = default);
+    Task DeleteTagAsync(Guid tagId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -27,12 +27,11 @@ public class VertexIngestService : IVertexIngestService
         _chatbotClient = chatbotClient;
     }
 
-    public async Task UpsertProjectAsync(Project project, string tenantId, CancellationToken cancellationToken = default)
+    public async Task UpsertProjectAsync(Project project, CancellationToken cancellationToken = default)
     {
         var dto = FlattenProject(project);
         var schema = VertexSchemaGenerator.GenerateSchema<VertexProjectDto>();
         await _chatbotClient.UpsertFeatureAsync(
-            tenantId: tenantId,
             featureType: VertexFeatureType.Project,
             documentId: project.Id.ToString(),
             value: dto,
@@ -41,17 +40,16 @@ public class VertexIngestService : IVertexIngestService
             cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteProjectAsync(Guid projectId, string tenantId, CancellationToken cancellationToken = default)
+    public async Task DeleteProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        await _chatbotClient.DeleteFeatureAsync(tenantId, VertexFeatureType.Project, projectId.ToString(), cancellationToken);
+        await _chatbotClient.DeleteFeatureAsync(VertexFeatureType.Project, projectId.ToString(), cancellationToken);
     }
 
-    public async Task UpsertCompanyAsync(Company company, string tenantId, CancellationToken cancellationToken = default)
+    public async Task UpsertCompanyAsync(Company company, CancellationToken cancellationToken = default)
     {
         var dto = FlattenCompany(company);
         var schema = VertexSchemaGenerator.GenerateSchema<VertexCompanyDto>();
         await _chatbotClient.UpsertFeatureAsync(
-            tenantId: tenantId,
             featureType: VertexFeatureType.Company,
             documentId: company.Id.ToString(),
             value: dto,
@@ -60,17 +58,16 @@ public class VertexIngestService : IVertexIngestService
             cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteCompanyAsync(Guid companyId, string tenantId, CancellationToken cancellationToken = default)
+    public async Task DeleteCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
-        await _chatbotClient.DeleteFeatureAsync(tenantId, VertexFeatureType.Company, companyId.ToString(), cancellationToken);
+        await _chatbotClient.DeleteFeatureAsync(VertexFeatureType.Company, companyId.ToString(), cancellationToken);
     }
 
-    public async Task UpsertTagAsync(Tag tag, string tenantId, CancellationToken cancellationToken = default)
+    public async Task UpsertTagAsync(Tag tag, CancellationToken cancellationToken = default)
     {
         var dto = FlattenTag(tag);
         var schema = VertexSchemaGenerator.GenerateSchema<VertexTagDto>();
         await _chatbotClient.UpsertFeatureAsync(
-            tenantId: tenantId,
             featureType: VertexFeatureType.Tag,
             documentId: tag.Id.ToString(),
             value: dto,
@@ -79,9 +76,9 @@ public class VertexIngestService : IVertexIngestService
             cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteTagAsync(Guid tagId, string tenantId, CancellationToken cancellationToken = default)
+    public async Task DeleteTagAsync(Guid tagId, CancellationToken cancellationToken = default)
     {
-        await _chatbotClient.DeleteFeatureAsync(tenantId, VertexFeatureType.Tag, tagId.ToString(), cancellationToken);
+        await _chatbotClient.DeleteFeatureAsync(VertexFeatureType.Tag, tagId.ToString(), cancellationToken);
     }
 
     private static VertexProjectDto FlattenProject(Project project) =>

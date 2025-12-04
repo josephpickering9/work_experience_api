@@ -14,7 +14,6 @@ public class VertexAiOptions
     public string Location { get; set; } = "global";
     public string Collection { get; set; } = "default_collection";
     public string Branch { get; set; } = "0";
-    public string DefaultTenantId { get; set; } = "default";
     public string Model { get; set; } = "gemini-2.5-pro";
     public string ModelLocation { get; set; } = "us-central1";
     public string QueryDataStoreSuffix { get; set; } = "project_structured";
@@ -24,9 +23,9 @@ public class VertexAiOptions
 
 public interface IVertexChatbotClient
 {
-    Task InitialiseCachesAsync(string tenantId, bool ensureSchema = false, CancellationToken cancellationToken = default);
-    Task UpsertFeatureAsync<T>(string tenantId, VertexFeatureType featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default);
-    Task DeleteFeatureAsync(string tenantId, VertexFeatureType featureType, string documentId, CancellationToken cancellationToken = default);
+    Task InitialiseCachesAsync(bool ensureSchema = false, CancellationToken cancellationToken = default);
+    Task UpsertFeatureAsync<T>(VertexFeatureType featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default);
+    Task DeleteFeatureAsync(VertexFeatureType featureType, string documentId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -54,16 +53,16 @@ public class VertexChatbotClient : IVertexChatbotClient
         _schemaClient = new SchemaServiceClientBuilder { ChannelCredentials = credential.ToChannelCredentials() }.Build();
     }
 
-    public async Task InitialiseCachesAsync(string tenantId, bool ensureSchema = false, CancellationToken cancellationToken = default)
+    public async Task InitialiseCachesAsync(bool ensureSchema = false, CancellationToken cancellationToken = default)
     {
-        var dataStores = await GetOrCreateDataStoresAsync(tenantId, ensureSchema, cancellationToken);
-        await GetOrCreateEngineAsync(tenantId, dataStores, cancellationToken);
+        var dataStores = await GetOrCreateDataStoresAsync(ensureSchema, cancellationToken);
+        await GetOrCreateEngineAsync(dataStores, cancellationToken);
     }
 
-    public async Task UpsertFeatureAsync<T>(string tenantId, VertexFeatureType featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default)
+    public async Task UpsertFeatureAsync<T>(VertexFeatureType featureType, string documentId, T value, string? jsonSchema = null, bool ensureSchema = false, CancellationToken cancellationToken = default)
     {
-        var dataStoreId = GetFeatureDataStoreId(tenantId, featureType);
-        await GetOrCreateDataStoreAsync(tenantId, dataStoreId, $"{featureType} Structured JSON", DataStore.Types.ContentConfig.NoContent, featureType, jsonSchema, ensureSchema, cancellationToken);
+        var dataStoreId = GetFeatureDataStoreId(featureType);
+        await GetOrCreateDataStoreAsync(dataStoreId, $"{featureType} Structured JSON", DataStore.Types.ContentConfig.NoContent, featureType, jsonSchema, ensureSchema, cancellationToken);
 
         var docName = GetDocumentName(dataStoreId, documentId);
         var document = new Document
@@ -87,10 +86,10 @@ public class VertexChatbotClient : IVertexChatbotClient
         }
     }
 
-    public async Task DeleteFeatureAsync(string tenantId, VertexFeatureType featureType, string documentId, CancellationToken cancellationToken = default)
+    public async Task DeleteFeatureAsync(VertexFeatureType featureType, string documentId, CancellationToken cancellationToken = default)
     {
-        var dataStoreId = GetFeatureDataStoreId(tenantId, featureType);
-        await GetOrCreateDataStoresAsync(tenantId, cancellationToken: cancellationToken);
+        var dataStoreId = GetFeatureDataStoreId(featureType);
+        await GetOrCreateDataStoresAsync(cancellationToken: cancellationToken);
 
         try
         {
@@ -105,10 +104,10 @@ public class VertexChatbotClient : IVertexChatbotClient
         }
     }
 
-    public async Task ImportDocumentsAsync(string tenantId, IEnumerable<string> gcsUris, CancellationToken cancellationToken = default)
+    public async Task ImportDocumentsAsync(IEnumerable<string> gcsUris, CancellationToken cancellationToken = default)
     {
-        var dataStoreId = GetDocumentDataStoreId(tenantId);
-        await GetOrCreateDataStoreAsync(tenantId, dataStoreId, "Unstructured Docs", DataStore.Types.ContentConfig.ContentRequired, null, null, false, cancellationToken);
+        var dataStoreId = GetDocumentDataStoreId();
+        await GetOrCreateDataStoreAsync(dataStoreId, "Unstructured Docs", DataStore.Types.ContentConfig.ContentRequired, null, null, false, cancellationToken);
 
         var request = new ImportDocumentsRequest
         {
@@ -120,10 +119,10 @@ public class VertexChatbotClient : IVertexChatbotClient
         await operation.PollUntilCompletedAsync(callSettings: CallSettings.FromCancellationToken(cancellationToken));
     }
 
-    public async Task DeleteDocumentsAsync(string tenantId, IEnumerable<string> documentIds, CancellationToken cancellationToken = default)
+    public async Task DeleteDocumentsAsync(IEnumerable<string> documentIds, CancellationToken cancellationToken = default)
     {
-        var dataStoreId = GetDocumentDataStoreId(tenantId);
-        await GetOrCreateDataStoresAsync(tenantId, cancellationToken: cancellationToken);
+        var dataStoreId = GetDocumentDataStoreId();
+        await GetOrCreateDataStoresAsync(cancellationToken: cancellationToken);
 
         foreach (var id in documentIds)
         {
@@ -141,7 +140,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         }
     }
 
-    private async Task<GoogleChatbotDataStores> GetOrCreateDataStoresAsync(string tenantId, bool ensureSchema = false, CancellationToken cancellationToken = default)
+    private async Task<GoogleChatbotDataStores> GetOrCreateDataStoresAsync(bool ensureSchema = false, CancellationToken cancellationToken = default)
     {
         var structuredTypes = new[]
         {
@@ -153,15 +152,15 @@ public class VertexChatbotClient : IVertexChatbotClient
 
         foreach (var type in structuredTypes)
         {
-            var dataStoreId = GetFeatureDataStoreId(tenantId, type);
-            var dataStore = await GetOrCreateDataStoreAsync(tenantId, dataStoreId, $"{type} Structured JSON", DataStore.Types.ContentConfig.NoContent, type, null, ensureSchema, cancellationToken);
+            var dataStoreId = GetFeatureDataStoreId(type);
+            var dataStore = await GetOrCreateDataStoreAsync(dataStoreId, $"{type} Structured JSON", DataStore.Types.ContentConfig.NoContent, type, null, ensureSchema, cancellationToken);
             structuredDataStoreIds.Add((type, GetResourceId(dataStore.Name)));
         }
 
         return new GoogleChatbotDataStores(structuredDataStoreIds);
     }
 
-    private async Task<DataStore> GetOrCreateDataStoreAsync(string tenantId, string dataStoreId, string displayName, DataStore.Types.ContentConfig contentConfig, VertexFeatureType? featureType, string? jsonSchema, bool ensureSchema, CancellationToken cancellationToken)
+    private async Task<DataStore> GetOrCreateDataStoreAsync(string dataStoreId, string displayName, DataStore.Types.ContentConfig contentConfig, VertexFeatureType? featureType, string? jsonSchema, bool ensureSchema, CancellationToken cancellationToken)
     {
         var dataStoreName = DataStoreName.FromProjectLocationDataStore(_options.ProjectId, _options.Location, dataStoreId).ToString();
 
@@ -179,7 +178,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         {
             var newDataStore = new DataStore
             {
-                DisplayName = $"{tenantId} ({displayName})",
+                DisplayName = displayName,
                 ContentConfig = contentConfig
             };
             newDataStore.SolutionTypes.Add(SolutionType.Search);
@@ -237,9 +236,9 @@ public class VertexChatbotClient : IVertexChatbotClient
         }
     }
 
-    private async Task<Engine> GetOrCreateEngineAsync(string tenantId, GoogleChatbotDataStores dataStores, CancellationToken cancellationToken)
+    private async Task<Engine> GetOrCreateEngineAsync(GoogleChatbotDataStores dataStores, CancellationToken cancellationToken)
     {
-        var engineId = GetEngineId(tenantId);
+        var engineId = GetEngineId();
         var engineName = EngineName.FromProjectLocationCollectionEngine(_options.ProjectId, _options.Location, _options.Collection, engineId).ToString();
 
         try
@@ -252,7 +251,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         {
             var engine = new Engine
             {
-                DisplayName = $"{tenantId} Chatbot",
+                DisplayName = "Chatbot",
                 IndustryVertical = IndustryVertical.Generic,
                 SolutionType = SolutionType.Search
             };
@@ -311,9 +310,9 @@ public class VertexChatbotClient : IVertexChatbotClient
     private string GetCollectionName() => CollectionName.FromProjectLocationCollection(_options.ProjectId, _options.Location, _options.Collection).ToString();
     private string GetBranchName(string dataStoreId) => BranchName.FromProjectLocationCollectionDataStoreBranch(_options.ProjectId, _options.Location, _options.Collection, dataStoreId, _options.Branch).ToString();
     private string GetDocumentName(string dataStoreId, string documentId) => DocumentName.FromProjectLocationDataStoreBranchDocument(_options.ProjectId, _options.Location, dataStoreId, _options.Branch, documentId).ToString();
-    private string GetEngineId(string tenantId) => $"{tenantId}-blended-search";
-    private string GetFeatureDataStoreId(string tenantId, VertexFeatureType featureType) => $"{tenantId}_{featureType.ToString().ToLowerInvariant()}_structured";
-    private string GetDocumentDataStoreId(string tenantId) => $"{tenantId}_unstructured";
+    private string GetEngineId() => "blended-search";
+    private string GetFeatureDataStoreId(VertexFeatureType featureType) => $"{featureType.ToString().ToLowerInvariant()}_structured";
+    private string GetDocumentDataStoreId() => "unstructured";
 
     private static string GetResourceId(string name) => name.Split("/").Last();
 

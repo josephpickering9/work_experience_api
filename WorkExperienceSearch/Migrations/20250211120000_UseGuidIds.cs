@@ -13,70 +13,31 @@ namespace Work_Experience_Search.Migrations
         {
             migrationBuilder.Sql("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewId",
-                table: "ProjectRepository",
-                type: "uuid",
-                nullable: false,
-                defaultValueSql: "uuid_generate_v4()");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"ProjectRepository\" ADD COLUMN IF NOT EXISTS \"NewId\" uuid NOT NULL DEFAULT uuid_generate_v4();");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"ProjectRepository\" ADD COLUMN IF NOT EXISTS \"NewProjectId\" uuid NULL;");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewProjectId",
-                table: "ProjectRepository",
-                type: "uuid",
-                nullable: true);
+            migrationBuilder.Sql(
+                "ALTER TABLE \"ProjectImage\" ADD COLUMN IF NOT EXISTS \"NewId\" uuid NOT NULL DEFAULT uuid_generate_v4();");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"ProjectImage\" ADD COLUMN IF NOT EXISTS \"NewProjectId\" uuid NULL;");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewId",
-                table: "ProjectImage",
-                type: "uuid",
-                nullable: false,
-                defaultValueSql: "uuid_generate_v4()");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"Project\" ADD COLUMN IF NOT EXISTS \"NewId\" uuid NOT NULL DEFAULT uuid_generate_v4();");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"Project\" ADD COLUMN IF NOT EXISTS \"NewCompanyId\" uuid NULL;");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewProjectId",
-                table: "ProjectImage",
-                type: "uuid",
-                nullable: true);
+            migrationBuilder.Sql(
+                "ALTER TABLE \"ProjectTag\" ADD COLUMN IF NOT EXISTS \"NewTagsId\" uuid NULL;");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"ProjectTag\" ADD COLUMN IF NOT EXISTS \"NewProjectsId\" uuid NULL;");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewId",
-                table: "Project",
-                type: "uuid",
-                nullable: false,
-                defaultValueSql: "uuid_generate_v4()");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"Company\" ADD COLUMN IF NOT EXISTS \"NewId\" uuid NOT NULL DEFAULT uuid_generate_v4();");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewCompanyId",
-                table: "Project",
-                type: "uuid",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewTagsId",
-                table: "ProjectTag",
-                type: "uuid",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewProjectsId",
-                table: "ProjectTag",
-                type: "uuid",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewId",
-                table: "Company",
-                type: "uuid",
-                nullable: false,
-                defaultValueSql: "uuid_generate_v4()");
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "NewId",
-                table: "Tag",
-                type: "uuid",
-                nullable: false,
-                defaultValueSql: "uuid_generate_v4()");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"Tag\" ADD COLUMN IF NOT EXISTS \"NewId\" uuid NOT NULL DEFAULT uuid_generate_v4();");
 
             migrationBuilder.Sql("""
                 UPDATE "Project" p
@@ -103,9 +64,9 @@ namespace Work_Experience_Search.Migrations
                 UPDATE "ProjectTag" pt
                 SET "NewProjectsId" = p."NewId",
                     "NewTagsId" = t."NewId"
-                FROM "Project" p
-                JOIN "Tag" t ON pt."TagsId" = t."Id"
-                WHERE pt."ProjectsId" = p."Id";
+                FROM "Project" p, "Tag" t
+                WHERE pt."ProjectsId" = p."Id"
+                  AND pt."TagsId" = t."Id";
                 """);
 
             migrationBuilder.DropForeignKey(
