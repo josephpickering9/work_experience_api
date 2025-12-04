@@ -1,7 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Google.Apis.Auth.OAuth2;
-using Google.Api.Gax.Grpc;
 using Microsoft.Extensions.Options;
 
 namespace Work_Experience_Search.Services.VertexAi;
@@ -89,7 +87,7 @@ public class VertexQueryService : IVertexQueryService
 
         var answer = ExtractAnswer(raw);
         var citations = ExtractCitations(raw);
-        return new VertexQueryResult(answer ?? string.Empty, citations, raw);
+        return new VertexQueryResult(answer ?? string.Empty, citations);
     }
 
     private static string? ExtractAnswer(string json)
@@ -101,27 +99,87 @@ public class VertexQueryService : IVertexQueryService
         return textPart?.GetProperty("text").GetString();
     }
 
-    private static IReadOnlyList<string> ExtractCitations(string json)
+    private static IReadOnlyList<VertexCitation> ExtractCitations(string json)
     {
         using var doc = JsonDocument.Parse(json);
-        var list = new List<string>();
+        var list = new List<VertexCitation>();
         var candidate = doc.RootElement.GetPropertyOrDefault("candidates")?.EnumerateArray().FirstOrDefault();
-        var citation = candidate?.GetPropertyOrDefault("citationMetadata")?.GetPropertyOrDefault("citations");
-        if (citation == null) return list;
 
-        foreach (var c in citation.Value.EnumerateArray())
+        var groundingChunks = candidate?.GetPropertyOrDefault("groundingMetadata")?.GetPropertyOrDefault("groundingChunks");
+        if (groundingChunks is { ValueKind: JsonValueKind.Array })
         {
-            var uri = c.GetPropertyOrDefault("uri")?.GetString();
-            var start = c.GetPropertyOrDefault("startIndex")?.GetInt32();
-            var end = c.GetPropertyOrDefault("endIndex")?.GetInt32();
-            var source = c.GetPropertyOrDefault("source")?.GetString();
-            var label = uri ?? source;
-            if (!string.IsNullOrEmpty(label))
+            foreach (var chunk in groundingChunks.Value.EnumerateArray())
             {
-                list.Add(label);
+                var context = chunk.GetPropertyOrDefault("retrievedContext");
+                var documentName = context?.GetPropertyOrDefault("documentName")?.GetString();
+                var text = context?.GetPropertyOrDefault("text")?.GetString();
+                if (string.IsNullOrWhiteSpace(documentName)) continue;
+
+                list.Add(new VertexCitation
+                {
+                    ProjectId = ExtractProjectId(documentName),
+                    FeatureType = ExtractFeatureType(documentName),
+                    Title = ExtractTitle(text)
+                });
             }
         }
+
+        var citation = candidate?.GetPropertyOrDefault("citationMetadata")?.GetPropertyOrDefault("citations");
+        if (citation is { ValueKind: JsonValueKind.Array })
+        {
+            foreach (var c in citation.Value.EnumerateArray())
+            {
+                var uri = c.GetPropertyOrDefault("uri")?.GetString();
+                var source = c.GetPropertyOrDefault("source")?.GetString();
+                var documentName = uri ?? source;
+                if (!string.IsNullOrWhiteSpace(documentName))
+                {
+                    list.Add(new VertexCitation
+                    {
+                        ProjectId = ExtractProjectId(documentName),
+                        FeatureType = ExtractFeatureType(documentName),
+                        Title = null
+                    });
+                }
+            }
+        }
+
         return list;
+    }
+
+    private static int? ExtractProjectId(string documentName)
+    {
+        var parts = documentName.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var docIndex = Array.IndexOf(parts, "documents");
+        if (docIndex >= 0 && docIndex + 1 < parts.Length && int.TryParse(parts[docIndex + 1], out var id))
+        {
+            return id;
+        }
+
+        return null;
+    }
+
+    private static VertexFeatureType? ExtractFeatureType(string documentName)
+    {
+        var parts = documentName.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var dsIndex = Array.IndexOf(parts, "dataStores");
+        if (dsIndex >= 0 && dsIndex + 1 < parts.Length)
+        {
+            var dataStore = parts[dsIndex + 1].ToLowerInvariant();
+            if (dataStore.Contains("project")) return VertexFeatureType.Project;
+            if (dataStore.Contains("company")) return VertexFeatureType.Company;
+            if (dataStore.Contains("tag")) return VertexFeatureType.Tag;
+        }
+
+        return null;
+    }
+
+    private static string? ExtractTitle(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        var lines = text.Split('\n');
+        var titleLine = lines.FirstOrDefault(l => l.StartsWith("Title:", StringComparison.OrdinalIgnoreCase));
+        return titleLine != null ? titleLine["Title:".Length..].Trim() : null;
     }
 
     private static GoogleCredential BuildCredential(VertexAiOptions options)
@@ -140,7 +198,14 @@ public class VertexQueryService : IVertexQueryService
     }
 }
 
-public record VertexQueryResult(string Answer, IReadOnlyList<string> Citations, string Raw);
+public record VertexQueryResult(string Answer, IReadOnlyList<VertexCitation> Citations);
+
+public record VertexCitation
+{
+    public int? ProjectId { get; init; }
+    public VertexFeatureType? FeatureType { get; init; }
+    public string? Title { get; init; }
+}
 
 internal static class JsonExtensions
 {
