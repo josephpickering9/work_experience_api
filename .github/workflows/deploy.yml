@@ -204,8 +204,15 @@ jobs:
             export DOTNET_ROOT=/usr/share/dotnet
             export PATH="$PATH:$DOTNET_ROOT:$HOME/.dotnet/tools"
             dotnet publish -c Release
+
+            # Ensure configuration files are in the publish directory the app runs from
             cp appsettings.json "$RELEASE_BIN_PATH"/
             cp .env "$RELEASE_BIN_PATH"/
+
+            # Also set env vars for safety so ConnectionStrings__DefaultConnection is available
+            export ConnectionStrings__DefaultConnection="${{ secrets.DATABASE_CONNECTION_STRING }}"
+            export DOTNET_ENVIRONMENT=Production
+
             dotnet ef database update \
               --project WorkExperienceSearch.csproj \
               --startup-project WorkExperienceSearch.csproj
