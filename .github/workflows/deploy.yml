@@ -201,25 +201,22 @@ jobs:
             VertexAi:CredentialsJson=${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}
             EOF
 
-            export DOTNET_ROOT=/usr/share/dotnet
-            export PATH="$PATH:$DOTNET_ROOT:$HOME/.dotnet/tools"
-            dotnet publish -c Release
-
             # Ensure configuration files are in the publish directory the app runs from
             cp appsettings.json "$RELEASE_BIN_PATH"/
             cp .env "$RELEASE_BIN_PATH"/
 
-            # Also set env vars for safety so ConnectionStrings__DefaultConnection is available
-            export ConnectionStrings__DefaultConnection="${{ secrets.DATABASE_CONNECTION_STRING }}"
-            export DOTNET_ENVIRONMENT=Production
+            export DOTNET_ROOT=/usr/share/dotnet
+            export PATH="$PATH:$DOTNET_ROOT:$HOME/.dotnet/tools"
+            dotnet publish -c Release
+            dotnet ef database update
 
-            dotnet ef database update \
-              --project WorkExperienceSearch.csproj \
-              --startup-project WorkExperienceSearch.csproj
+            # Stop any currently running instance to avoid port conflicts and stale configs
+            pkill -f "WorkExperienceSearch.dll" || true
 
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
             ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
             cd "$RELEASE_BIN_PATH"
+            nohup dotnet "WorkExperienceSearch.dll" > /dev/null 2>&1 &  
             nohup dotnet "WorkExperienceSearch.dll" > /dev/null 2>&1 &
   
   run-after-hooks:
