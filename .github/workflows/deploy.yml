@@ -160,7 +160,7 @@ jobs:
           envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING,ROOT_PATH
           script: |
             cd "$RELEASE_PATH"
-            cat > appsettings.json << 'EOF'
+            cat > appsettings.json << EOF
             {
               "ConnectionStrings": {
                 "DefaultConnection": "${{ secrets.DATABASE_CONNECTION_STRING }}"
@@ -184,7 +184,7 @@ jobs:
             }
             EOF
 
-            cat > .env << 'EOF'
+            cat > .env << EOF
             DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}
             Auth0:Domain=${{ secrets.AUTH0_DOMAIN }}
             Auth0:ClientId=${{ secrets.AUTH0_CLIENT_ID }}
