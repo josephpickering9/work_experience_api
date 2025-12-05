@@ -211,13 +211,13 @@ jobs:
             dotnet ef database update
 
             # Stop any currently running instance to avoid port conflicts and stale configs
-            pkill -f "WorkExperienceSearch.dll" || true
+            pid=$(lsof -t +D "$ACTIVE_RELEASE_PATH" 2>/dev/null | head -n1)[ -n "$pid" ] && kill "$pid"
+            [ -n "$pid" ] && kill "$pid"
 
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
             ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
             cd "$RELEASE_BIN_PATH"
             nohup dotnet "WorkExperienceSearch.dll" > /dev/null 2>&1 &  
-            nohup dotnet "WorkExperienceSearch.dll" > /dev/null 2>&1 &
   
   run-after-hooks:
     name: '${{ matrix.server.name }}: After hook'
