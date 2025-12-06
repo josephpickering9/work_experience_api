@@ -217,7 +217,9 @@ jobs:
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
             ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
             cd "$RELEASE_BIN_PATH"
-            nohup dotnet "WorkExperienceSearch.dll" > /dev/null 2>&1 &  
+            LOG_PATH="${BASE_PATH}/logs"
+            mkdir -p "$LOG_PATH"
+            nohup dotnet "WorkExperienceSearch.dll" > "$LOG_PATH/api.log" /dev/null 2>&1 &
   
   run-after-hooks:
     name: '${{ matrix.server.name }}: After hook'
