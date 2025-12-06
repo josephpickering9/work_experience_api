@@ -65,6 +65,10 @@ public class CreateCompany
 
     [Required] public string Description { get; init; } = null!;
 
+    public DateOnly? StartDate { get; init; }
+
+    public DateOnly? EndDate { get; init; }
+
     public IFormFile? Logo { get; init; }
 
     public string? Website { get; init; }

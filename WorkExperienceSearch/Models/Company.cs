@@ -11,6 +11,10 @@ public class Company
 
     [Required] public string Description { get; set; } = null!;
 
+    public DateOnly? StartDate { get; set; }
+
+    public DateOnly? EndDate { get; set; }
+
     public string? Website { get; set; } = null!;
 
     public string? Logo { get; set; } = null!;

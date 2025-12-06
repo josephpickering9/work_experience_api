@@ -136,14 +136,19 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         CompanyId companyId,
         string name = "Test Company",
         string description = "Test Description",
-        string website = "https://example.com"
+        string website = "https://example.com",
+        DateOnly? startDate = null,
+        DateOnly? endDate = null
     )
     {
+        var resolvedStartDate = startDate;
         var company = new Company
         {
             Id = companyId,
             Name = name,
             Description = description,
+            StartDate = resolvedStartDate,
+            EndDate = endDate ?? resolvedStartDate?.AddYears(1),
             Website = website
         };
 
@@ -184,6 +189,8 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
                 content.Add(new StreamContent(fileValue.OpenReadStream()), property.Name, fileValue.FileName);
             else if (value is int intValue)
                 content.Add(new StringContent(intValue.ToString()), property.Name);
+            else if (value is DateOnly dateValue)
+                content.Add(new StringContent(dateValue.ToString("yyyy-MM-dd")), property.Name);
             else if (value is IId idValue)
                 content.Add(new StringContent(idValue.Value.ToString()), property.Name);
             else if (value is Guid guidValue)

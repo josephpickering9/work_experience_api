@@ -73,6 +73,8 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         {
             Name = "New Company",
             Description = "New Description",
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
             Website = "https://newcompany.com"
         };
         var content = GetMultipartFormDataContent(newCompany);
@@ -92,6 +94,8 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         {
             Name = "Test Company",
             Description = "Test Description",
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
             Website = "https://testcompany.com"
         };
         var content = GetMultipartFormDataContent(newCompany);
@@ -107,6 +111,8 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.NotNull(actualCompany);
         Assert.Equal(newCompany.Name, actualCompany.Name);
         Assert.Equal(newCompany.Description, actualCompany.Description);
+        Assert.Equal(newCompany.StartDate, actualCompany.StartDate);
+        Assert.Equal(newCompany.EndDate, actualCompany.EndDate);
         Assert.Equal(newCompany.Website, actualCompany.Website);
     }
 
@@ -119,6 +125,8 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         {
             Name = "Conflict Company",
             Description = "Test Description",
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
             Website = "https://testcompany.com"
         };
         var content = GetMultipartFormDataContent(newCompany);
@@ -140,6 +148,8 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         {
             Name = "Updated Company",
             Description = "Updated Description",
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
             Website = "https://updatedcompany.com"
         };
         var content = GetMultipartFormDataContent(updateCompany);
@@ -156,6 +166,8 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.Equal(companyId, actualCompany.Id);
         Assert.Equal(updateCompany.Name, actualCompany.Name);
         Assert.Equal(updateCompany.Description, actualCompany.Description);
+        Assert.Equal(updateCompany.StartDate, actualCompany.StartDate);
+        Assert.Equal(updateCompany.EndDate, actualCompany.EndDate);
         Assert.Equal(updateCompany.Website, actualCompany.Website);
     }
 
@@ -168,6 +180,8 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
         {
             Name = "Updated Company",
             Description = "Updated Description",
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
             Website = "https://updatedcompany.com"
         };
         var content = GetMultipartFormDataContent(updateCompany);

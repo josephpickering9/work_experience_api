@@ -79,13 +79,22 @@ public class BaseServiceTests : IAsyncLifetime
         };
     }
 
-    protected static Company CreateCompany(CompanyId id, string name, string description, string logo, string website)
+    protected static Company CreateCompany(
+        CompanyId id,
+        string name,
+        string description,
+        string logo,
+        string website,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null)
     {
         return new Company
         {
             Id = id,
             Name = name,
             Description = description,
+            StartDate = startDate,
+            EndDate = endDate,
             Logo = logo,
             Website = website
         };
@@ -163,7 +172,16 @@ public class BaseServiceTests : IAsyncLifetime
     }
     
     private static IEnumerable<Company> GetTestCompanies() =>
-        [CreateCompany(Company1Id, "Test Company", "Test Description", "testLogo", "https://example.com")];
+        [
+            CreateCompany(
+                Company1Id,
+                "Test Company",
+                "Test Description",
+                "testLogo",
+                "https://example.com",
+                new DateOnly(2020, 1, 1),
+                new DateOnly(2021, 1, 1))
+        ];
     
     private async Task<IEnumerable<Project>> GetTestProjects()
     {

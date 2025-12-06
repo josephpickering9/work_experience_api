@@ -61,6 +61,8 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
             Description = createCompany.Description,
             Logo = logoPath,
             Website = createCompany.Website,
+            StartDate = createCompany.StartDate,
+            EndDate = createCompany.EndDate,
             Slug = createCompany.Name.ToSlug()
         };
 
@@ -94,6 +96,8 @@ public class CompanyService(Database context, IFileService fileService) : ICompa
         company.Name = createCompany.Name;
         company.Description = createCompany.Description;
         company.Website = createCompany.Website;
+        company.StartDate = createCompany.StartDate;
+        company.EndDate = createCompany.EndDate;
         company.Slug = createCompany.Name.ToSlug();
 
         await context.SaveChangesAsync();

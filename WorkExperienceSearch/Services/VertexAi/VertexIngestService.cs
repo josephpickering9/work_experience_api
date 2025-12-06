@@ -102,7 +102,9 @@ public class VertexIngestService : IVertexIngestService
             Id = company.Id,
             Name = company.Name,
             Description = company.Description,
-            Website = company.Website
+            Website = company.Website,
+            StartDate = company.StartDate,
+            EndDate = company.EndDate
         };
 
     private static VertexTagDto FlattenTag(Tag tag) =>
@@ -133,6 +135,8 @@ public class VertexCompanyDto
     public string Name { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public string? Website { get; init; }
+    public DateOnly? StartDate { get; init; }
+    public DateOnly? EndDate { get; init; }
 }
 
 public class VertexTagDto
