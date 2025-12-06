@@ -67,6 +67,8 @@ public class CompanyServiceTests : BaseServiceTests
             Name = "New Company",
             Description = "New Description",
             Logo = null,
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
             Website = "https://example.com"
         };
 
@@ -76,6 +78,8 @@ public class CompanyServiceTests : BaseServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(createCompany.Name, result.Name);
+        Assert.Equal(createCompany.StartDate, result.StartDate);
+        Assert.Equal(createCompany.EndDate, result.EndDate);
     }
 
     [Fact]
@@ -87,6 +91,8 @@ public class CompanyServiceTests : BaseServiceTests
             Name = "Conflict Company",
             Description = "Conflict Description",
             Logo = null,
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
             Website = "https://example.com"
         };
         (await _companyService.CreateCompanyAsync(createCompany)).ExpectSuccess();
@@ -109,6 +115,8 @@ public class CompanyServiceTests : BaseServiceTests
             Name = "Updated Company",
             Description = "Updated Description",
             Logo = null,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://updated-example.com"
         };
 
@@ -121,6 +129,8 @@ public class CompanyServiceTests : BaseServiceTests
         Assert.Equal(updateCompany.Name, result.Name);
         Assert.Equal(updateCompany.Description, result.Description);
         Assert.Equal(updateCompany.Website, result.Website);
+        Assert.Equal(updateCompany.StartDate, result.StartDate);
+        Assert.Equal(updateCompany.EndDate, result.EndDate);
     }
 
     [Fact]
@@ -133,6 +143,8 @@ public class CompanyServiceTests : BaseServiceTests
             Name = "Updated Company",
             Description = "Updated Description",
             Logo = null,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://updated-example.com"
         };
 
