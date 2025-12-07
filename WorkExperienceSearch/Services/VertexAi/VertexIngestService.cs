@@ -88,7 +88,8 @@ public class VertexIngestService : IVertexIngestService
             Title = project.Title,
             ShortDescription = project.ShortDescription,
             Description = project.Description,
-            Year = project.Year,
+            StartDate = project.StartDate,
+            EndDate = project.EndDate,
             Website = project.Website,
             Company = project.Company?.Name,
             CompanyId = project.CompanyId,
@@ -121,7 +122,8 @@ public class VertexProjectDto
     public string Title { get; init; } = string.Empty;
     public string ShortDescription { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
-    public int Year { get; init; }
+    public DateOnly StartDate { get; init; }
+    public DateOnly? EndDate { get; init; }
     public string? Website { get; init; }
     public CompanyId? CompanyId { get; init; }
     public string? Company { get; init; }

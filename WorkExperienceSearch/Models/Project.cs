@@ -18,7 +18,9 @@ public class Project
     public CompanyId? CompanyId { get; set; } = null!;
     public Company? Company { get; set; } = null!;
 
-    [Required] public int Year { get; set; }
+    [Required] public DateOnly StartDate { get; set; }
+
+    public DateOnly? EndDate { get; set; }
 
     public string? Website { get; set; }
 

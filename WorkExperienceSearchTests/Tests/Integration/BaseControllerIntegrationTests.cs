@@ -66,11 +66,13 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         string description = "Test Description",
         string shortDescription = "Test Short Description",
         CompanyId? companyId = null,
-        int year = 2021,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
         string website = "https://example.com",
         List<string>? tags = null
     )
     {
+        var resolvedStartDate = startDate ?? new DateOnly(2021, 1, 1);
         var project = new Project
         {
             Id = projectId,
@@ -78,7 +80,8 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
             Description = description,
             ShortDescription = shortDescription,
             CompanyId = companyId,
-            Year = year,
+            StartDate = resolvedStartDate,
+            EndDate = endDate ?? resolvedStartDate.AddYears(1),
             Website = website,
             Slug = title.ToSlug(),
             Tags = []

@@ -59,7 +59,7 @@ public class ProjectServiceTests : BaseServiceTests
     }
 
     [Fact]
-    public async Task GetProjectsAsync_OrderedByYearDescending()
+    public async Task GetProjectsAsync_OrderedByDateDescending()
     {
         // Arrange is done in the constructor
 
@@ -93,7 +93,8 @@ public class ProjectServiceTests : BaseServiceTests
         // Arrange
         const string validSlug = "client-portal";
         await SaveProject(CreateProject(ProjectId.New(), "Client Portal", "Client Portal Description",
-            "Client Portal Short Description", Company1Id, 2021,
+            "Client Portal Short Description", Company1Id, new DateOnly(2021, 1, 1),
+            new DateOnly(2022, 1, 1),
             "https://clientportal.com", []));
 
         // Act
@@ -175,7 +176,8 @@ public class ProjectServiceTests : BaseServiceTests
             Description = "Test Description",
             ShortDescription = "Test Short Description",
             CompanyId = Company1Id,
-            Year = 2021,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://example.com",
             Tags = ["Test Tag"]
         };
@@ -192,12 +194,15 @@ public class ProjectServiceTests : BaseServiceTests
         Assert.Equal(newProject.Description, result.Description);
         Assert.Equal(newProject.ShortDescription, result.ShortDescription);
         Assert.Equal(newProject.CompanyId, result.CompanyId);
-        Assert.Equal(newProject.Year, result.Year);
+        Assert.Equal(newProject.StartDate, result.StartDate);
+        Assert.Equal(newProject.EndDate, result.EndDate);
         Assert.Equal(newProject.Website, result.Website);
 
         var projectInDb = await Context.Project.FindAsync(result.Id);
         Assert.NotNull(projectInDb);
         Assert.Equal(newProject.Title, projectInDb.Title);
+        Assert.Equal(newProject.StartDate, projectInDb.StartDate);
+        Assert.Equal(newProject.EndDate, projectInDb.EndDate);
         Assert.NotNull(projectInDb.Tags);
         Assert.Equal(newProject.Tags.Count, projectInDb.Tags.Count);
         Assert.Contains(projectInDb.Tags, t => t.Title == "Test Tag");
@@ -209,7 +214,8 @@ public class ProjectServiceTests : BaseServiceTests
         // Arrange
         var tag = CreateTag(TagId.New(), "Updated Tag", TagType.Backend);
         var existingProject = await SaveProject(CreateProject(ProjectId.New(), "Test Update Project", "Test Description",
-            "Test Short Description", Company1Id, 2021,
+            "Test Short Description", Company1Id, new DateOnly(2021, 1, 1),
+            new DateOnly(2022, 1, 1),
             "https://example.com", [tag]));
 
         var updateData = new CreateProject
@@ -218,7 +224,8 @@ public class ProjectServiceTests : BaseServiceTests
             Description = "Updated Description",
             ShortDescription = "Updated Short Description",
             CompanyId = Company1Id,
-            Year = 2021,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://updated.com",
             Tags = ["Updated Tag"]
         };
@@ -235,7 +242,8 @@ public class ProjectServiceTests : BaseServiceTests
         Assert.Equal(updateData.Description, result.Description);
         Assert.Equal(updateData.ShortDescription, result.ShortDescription);
         Assert.Equal(updateData.CompanyId, result.CompanyId);
-        Assert.Equal(updateData.Year, result.Year);
+        Assert.Equal(updateData.StartDate, result.StartDate);
+        Assert.Equal(updateData.EndDate, result.EndDate);
         Assert.Equal(updateData.Website, result.Website);
 
         var projectInDb = await Context.Project.FindAsync(existingProject.Id);
@@ -244,7 +252,8 @@ public class ProjectServiceTests : BaseServiceTests
         Assert.Equal(updateData.Description, projectInDb.Description);
         Assert.Equal(updateData.ShortDescription, projectInDb.ShortDescription);
         Assert.Equal(updateData.CompanyId, projectInDb.CompanyId);
-        Assert.Equal(updateData.Year, projectInDb.Year);
+        Assert.Equal(updateData.StartDate, projectInDb.StartDate);
+        Assert.Equal(updateData.EndDate, projectInDb.EndDate);
         Assert.Equal(updateData.Website, projectInDb.Website);
         Assert.NotNull(projectInDb.Tags);
         Assert.Equal(updateData.Tags.Count, projectInDb.Tags.Count);
