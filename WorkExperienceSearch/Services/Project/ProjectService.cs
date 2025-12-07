@@ -147,7 +147,7 @@ public class ProjectService(
                     (p.ShortDescription != null && p.ShortDescription.ToLower().Contains(normalizedSearch)));
         }
 
-        return projects.OrderByDescending(p => p.EndDate ?? p.StartDate);
+        return projects.OrderByDescending(p => p.StartDate).ThenByDescending(p => p.EndDate);
     }
 
     private async Task<Result<Project>> SyncProjectRelations(Project project, CreateProject createProject)
