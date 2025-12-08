@@ -143,7 +143,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             ShortDescription = "A short description",
             Description = "A long description",
             CompanyId = null,
-            Year = 2021,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://example.com",
             Tags = ["Tag1", "Tag2"],
             Images = [],
@@ -165,7 +166,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.Equal(newProject.Description, actualProject.Description);
         Assert.Equal(newProject.ShortDescription, actualProject.ShortDescription);
         Assert.Equal(newProject.CompanyId, actualProject.CompanyId);
-        Assert.Equal(newProject.Year, actualProject.Year);
+        Assert.Equal(newProject.StartDate, actualProject.StartDate);
+        Assert.Equal(newProject.EndDate, actualProject.EndDate);
         Assert.Equal(newProject.Website, actualProject.Website);
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(newProject.Tags.Count, actualProject.Tags.Count);
@@ -178,7 +180,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.Equal(newProject.Description, projectInDb.Description);
         Assert.Equal(newProject.ShortDescription, projectInDb.ShortDescription);
         Assert.Equal(newProject.CompanyId, projectInDb.CompanyId);
-        Assert.Equal(newProject.Year, projectInDb.Year);
+        Assert.Equal(newProject.StartDate, projectInDb.StartDate);
+        Assert.Equal(newProject.EndDate, projectInDb.EndDate);
         Assert.Equal(newProject.Website, projectInDb.Website);
 
         if (projectInDb != null)
@@ -200,7 +203,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             ShortDescription = "A short description",
             Description = "A long description",
             CompanyId = CompanyId.New(),
-            Year = 2021,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://example.com",
             Tags = ["Tag1", "Tag2"]
         };
@@ -224,7 +228,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             ShortDescription = "A short description",
             Description = "A long description",
             CompanyId = null,
-            Year = 2021,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://example.com",
             Tags = ["Tag1", "Tag2"]
         };
@@ -263,7 +268,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             ShortDescription = "Updated short description",
             Description = "Updated long description",
             CompanyId = null,
-            Year = 2021,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://updated-example.com",
             Tags = ["UpdatedTag1", "UpdatedTag2"]
         };
@@ -283,7 +289,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.Equal(updateProject.Description, actualProject.Description);
         Assert.Equal(updateProject.ShortDescription, actualProject.ShortDescription);
         Assert.Equal(updateProject.CompanyId, actualProject.CompanyId);
-        Assert.Equal(updateProject.Year, actualProject.Year);
+        Assert.Equal(updateProject.StartDate, actualProject.StartDate);
+        Assert.Equal(updateProject.EndDate, actualProject.EndDate);
         Assert.Equal(updateProject.Website, actualProject.Website);
         Assert.NotNull(actualProject.Tags);
         Assert.Equal(updateProject.Tags.Count, actualProject.Tags.Count);
@@ -296,7 +303,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         Assert.Equal(updateProject.Description, projectInDb.Description);
         Assert.Equal(updateProject.ShortDescription, projectInDb.ShortDescription);
         Assert.Equal(updateProject.CompanyId, projectInDb.CompanyId);
-        Assert.Equal(updateProject.Year, projectInDb.Year);
+        Assert.Equal(updateProject.StartDate, projectInDb.StartDate);
+        Assert.Equal(updateProject.EndDate, projectInDb.EndDate);
         Assert.Equal(updateProject.Website, projectInDb.Website);
 
         if (projectInDb != null)
@@ -322,7 +330,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             ShortDescription = "Updated short description",
             Description = "Updated long description",
             CompanyId = CompanyId.New(),
-            Year = 2021,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
             Website = "https://updated-example.com",
             Tags = ["UpdatedTag1", "UpdatedTag2"]
         };

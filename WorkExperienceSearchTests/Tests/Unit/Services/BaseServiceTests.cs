@@ -106,11 +106,13 @@ public class BaseServiceTests : IAsyncLifetime
         string description = "Description",
         string shortDescription = "Short Description",
         CompanyId? companyId = null!,
-        int year = 2020,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
         string website = null!,
         List<Tag> tags = null!
     )
     {
+        var resolvedStartDate = startDate ?? new DateOnly(2020, 1, 1);
         return new Project
         {
             Id = id,
@@ -118,7 +120,8 @@ public class BaseServiceTests : IAsyncLifetime
             Description = description,
             ShortDescription = shortDescription,
             CompanyId = companyId,
-            Year = year,
+            StartDate = resolvedStartDate,
+            EndDate = endDate ?? resolvedStartDate.AddYears(1),
             Website = website,
             Tags = tags,
             Slug = title.ToSlug()
@@ -193,13 +196,15 @@ public class BaseServiceTests : IAsyncLifetime
             CreateProject(Project1Id, "Visit Northumberland",
                 "A website for Visit Northumberland using C# and ASP.NET Core MVC.",
                 "A website for Visit Northumberland", companies.First().Id,
-                2020, "https://visitnorthumberland.com/", [tags[0], tags[1]]),
+                new DateOnly(2020, 1, 1), new DateOnly(2021, 1, 1), "https://visitnorthumberland.com/", [tags[0], tags[1]]),
             CreateProject(Project2Id, "BeatCovidNE", "A website for BeatCovidNE using C# and ASP.NET Core MVC.",
-                "A website for BeatCovidNE", companies.First().Id, 2021,
+                "A website for BeatCovidNE", companies.First().Id, new DateOnly(2021, 1, 1),
+                new DateOnly(2022, 1, 1),
                 "https://beatcovidne.co.uk/", [tags[1], tags[2]]),
             CreateProject(Project3Id, "taxigoat",
                 "A website & mobile application for taxigoat using Xamarin Forms and ASP.NET Core API.",
-                "A website for taxigoat", companies.First().Id, 2019,
+                "A website for taxigoat", companies.First().Id, new DateOnly(2019, 1, 1),
+                new DateOnly(2020, 1, 1),
                 "https://taxigoat.co.uk/", [tags[2]])
         ];
     }

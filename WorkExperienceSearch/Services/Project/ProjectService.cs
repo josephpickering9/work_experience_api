@@ -73,7 +73,8 @@ public class ProjectService(
             ShortDescription = createProject.ShortDescription,
             Description = createProject.Description,
             CompanyId = createProject.CompanyId,
-            Year = createProject.Year,
+            StartDate = createProject.StartDate,
+            EndDate = createProject.EndDate,
             Website = createProject.Website,
             ShowMockup = createProject.ShowMockup,
             Slug = createProject.Title.ToSlug()
@@ -103,7 +104,8 @@ public class ProjectService(
         project.ShortDescription = createProject.ShortDescription;
         project.Description = createProject.Description;
         project.CompanyId = createProject.CompanyId;
-        project.Year = createProject.Year;
+        project.StartDate = createProject.StartDate;
+        project.EndDate = createProject.EndDate;
         project.Website = createProject.Website;
         project.ShowMockup = createProject.ShowMockup;
         project.Slug = createProject.Title.ToSlug();
@@ -145,7 +147,7 @@ public class ProjectService(
                     (p.ShortDescription != null && p.ShortDescription.ToLower().Contains(normalizedSearch)));
         }
 
-        return projects.OrderByDescending(p => p.Year);
+        return projects.OrderByDescending(p => p.StartDate).ThenByDescending(p => p.EndDate);
     }
 
     private async Task<Result<Project>> SyncProjectRelations(Project project, CreateProject createProject)

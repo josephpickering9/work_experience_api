@@ -76,7 +76,9 @@ public class CreateProject
 
     public CompanyId? CompanyId { get; init; }
 
-    [Required] public int Year { get; init; }
+    [Required] public DateOnly StartDate { get; init; }
+
+    public DateOnly? EndDate { get; init; }
 
     public string? Website { get; init; }
 
