@@ -211,8 +211,16 @@ jobs:
             dotnet ef database update
 
             # Stop any currently running instance to avoid port conflicts and stale configs
-            pid=$(lsof -t +D "$ACTIVE_RELEASE_PATH" 2>/dev/null | head -n1)[ -n "$pid" ] && kill "$pid"
-            [ -n "$pid" ] && kill "$pid"
+            port_pid=$(lsof -t -i:5000 -sTCP:LISTEN 2>/dev/null | head -n1)
+            if [ -n "$port_pid" ]; then
+              kill "$port_pid" || true
+              sleep 2
+            fi
+
+            dir_pid=$(lsof -t +D "$ACTIVE_RELEASE_PATH" 2>/dev/null | head -n1)
+            if [ -n "$dir_pid" ]; then
+              kill "$dir_pid" || true
+            fi
 
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
             ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
