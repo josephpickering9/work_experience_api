@@ -31,5 +31,6 @@ public enum TagType
     [Description("Other")] Other, // 4
     [Description("Data")] Data, // 5
     [Description("CMS")] CMS, // 6
-    [Description("Mobile")] Mobile // 7
+    [Description("Mobile")] Mobile, // 7
+    [Description("AI")] AI // 8
 }
