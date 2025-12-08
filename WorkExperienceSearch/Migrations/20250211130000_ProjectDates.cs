@@ -25,9 +25,22 @@ namespace Work_Experience_Search.Migrations
 
             migrationBuilder.Sql("""
                 UPDATE "Project"
-                SET "StartDate" = make_date("Year", 1, 1),
-                    "EndDate" = make_date("Year", 12, 31)
-                WHERE "Year" IS NOT NULL
+                SET "StartDate" = make_date(
+                        CASE
+                            WHEN "Year" BETWEEN 1 AND 9999 THEN "Year"
+                            ELSE 1
+                        END,
+                        1,
+                        1
+                    ),
+                    "EndDate" = make_date(
+                        CASE
+                            WHEN "Year" BETWEEN 1 AND 9999 THEN "Year"
+                            ELSE 1
+                        END,
+                        12,
+                        31
+                    )
                 """);
 
             migrationBuilder.AlterColumn<DateOnly>(
