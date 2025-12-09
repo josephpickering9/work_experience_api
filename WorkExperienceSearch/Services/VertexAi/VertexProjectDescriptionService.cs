@@ -61,7 +61,7 @@ Output format:
         _options = options.Value;
         _logger = logger;
         _database = database;
-        _credential = BuildCredential(_options).CreateScoped("https://www.googleapis.com/auth/cloud-platform");
+        _credential = VertexCredentialFactory.Create(_options, _logger).CreateScoped("https://www.googleapis.com/auth/cloud-platform");
     }
 
     public async Task<Result<ProjectDescriptionSuggestionResponse>> SuggestDescriptionAsync(ProjectId projectId, SuggestProjectDescriptionRequest request, CancellationToken cancellationToken = default)
@@ -218,20 +218,6 @@ Additional structured data (may be empty):
         return null;
     }
 
-    private static GoogleCredential BuildCredential(VertexAiOptions options)
-    {
-        if (!string.IsNullOrWhiteSpace(options.CredentialsFile))
-        {
-            return GoogleCredential.FromFile(options.CredentialsFile);
-        }
-
-        if (!string.IsNullOrWhiteSpace(options.CredentialsJson))
-        {
-            return GoogleCredential.FromJson(options.CredentialsJson);
-        }
-
-        return GoogleCredential.GetApplicationDefault();
-    }
 }
 
 public record ProjectDescriptionSuggestionResponse(ProjectId ProjectId, string Title, string ExistingDescription, string SuggestedDescription);

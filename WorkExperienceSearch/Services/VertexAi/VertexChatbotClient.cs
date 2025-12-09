@@ -53,7 +53,7 @@ public class VertexChatbotClient : IVertexChatbotClient
         _options = options.Value;
         _logger = logger;
 
-        var credential = BuildCredential(_options);
+        var credential = VertexCredentialFactory.Create(_options, _logger);
         _engineClient = new EngineServiceClientBuilder { ChannelCredentials = credential.ToChannelCredentials() }.Build();
         _dataStoreClient = new DataStoreServiceClientBuilder { ChannelCredentials = credential.ToChannelCredentials() }.Build();
         _documentClient = new DocumentServiceClientBuilder { ChannelCredentials = credential.ToChannelCredentials() }.Build();
@@ -296,21 +296,6 @@ public class VertexChatbotClient : IVertexChatbotClient
             Engine = updated,
             UpdateMask = new FieldMask { Paths = { "data_store_ids" } }
         }, cancellationToken: cancellationToken);
-    }
-
-    private GoogleCredential BuildCredential(VertexAiOptions options)
-    {
-        if (!string.IsNullOrWhiteSpace(options.CredentialsFile))
-        {
-            return GoogleCredential.FromFile(options.CredentialsFile);
-        }
-
-        if (!string.IsNullOrWhiteSpace(options.CredentialsJson))
-        {
-            return GoogleCredential.FromJson(options.CredentialsJson);
-        }
-
-        return GoogleCredential.GetApplicationDefault();
     }
 
     private string GetLocationName() => LocationName.FromProjectLocation(_options.ProjectId, _options.Location).ToString();
