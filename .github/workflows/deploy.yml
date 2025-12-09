@@ -152,14 +152,24 @@ jobs:
           ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
           BASE_PATH: ${{ matrix.server.path }}
           DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
+          VERTEX_AI_CREDENTIALS_JSON: ${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}
         with:
           host: ${{ matrix.server.ip }}
           username: ${{ matrix.server.username }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ matrix.server.port }}
-          envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING,ROOT_PATH
+          envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING,ROOT_PATH,VERTEX_AI_CREDENTIALS_JSON
           script: |
             cd "$RELEASE_PATH"
+
+            SERVICE_ACCOUNT_PATH="$RELEASE_PATH/service-account.json"
+            if [ -n "$VERTEX_AI_CREDENTIALS_JSON" ]; then
+              echo "$VERTEX_AI_CREDENTIALS_JSON" | base64 -d > "$SERVICE_ACCOUNT_PATH"
+            else
+              echo "Vertex AI credential secret (VERTEX_AI_CREDENTIALS_JSON) is missing or empty." >&2
+              exit 1
+            fi
+
             cat > appsettings.json << EOF
             {
               "ConnectionStrings": {
@@ -179,7 +189,8 @@ jobs:
                 "Environment": "${{ secrets.VERTEX_AI_ENVIRONMENT }}",
                 "Model": "${{ secrets.VERTEX_AI_MODEL }}",
                 "ModelLocation": "${{ secrets.VERTEX_AI_MODEL_LOCATION }}",
-                "QueryDataStoreSuffix": "${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}"
+                "QueryDataStoreSuffix": "${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}",
+                "CredentialsFile": "$SERVICE_ACCOUNT_PATH"
               }
             }
             EOF
@@ -198,7 +209,7 @@ jobs:
             VertexAi:Model=${{ secrets.VERTEX_AI_MODEL }}
             VertexAi:ModelLocation=${{ secrets.VERTEX_AI_MODEL_LOCATION }}
             VertexAi:QueryDataStoreSuffix=${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}
-            VertexAi:CredentialsJson=${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}
+            VertexAi:CredentialsFile=$SERVICE_ACCOUNT_PATH
             EOF
 
             # Ensure configuration files are in the publish directory the app runs from
