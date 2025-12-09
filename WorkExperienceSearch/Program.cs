@@ -32,6 +32,7 @@ builder.Services.AddSingleton<IVertexChatbotClient, VertexChatbotClient>();
 builder.Services.AddScoped<IVertexIngestService, VertexIngestService>();
 builder.Services.AddScoped<IVertexIngestOrchestrator, VertexIngestOrchestrator>();
 builder.Services.AddScoped<IVertexQueryService, VertexQueryService>();
+builder.Services.AddScoped<IVertexProjectDescriptionService, VertexProjectDescriptionService>();
 builder.Services.AddHttpClient();
 
 builder.Services.AddEndpointsApiExplorer();

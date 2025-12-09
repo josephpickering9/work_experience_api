@@ -1,6 +1,8 @@
 using System.Net;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
@@ -314,6 +316,45 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             Assert.NotNull(projectInDb.Tags);
             Assert.Equal(updateProject.Tags.Count, projectInDb.Tags.Count);
         }
+    }
+
+    [Fact]
+    public async Task PutProject_CreateProjectJsonField_BindsAndUpdatesProject()
+    {
+        // Arrange
+        var testProjectId = ProjectId.New();
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        var updateProject = new CreateProject
+        {
+            Title = "Json Field Update",
+            ShortDescription = "Updated via createProject JSON field",
+            Description = "Updated description from JSON payload in multipart form",
+            CompanyId = existingProject.CompanyId,
+            StartDate = new DateOnly(2024, 1, 1),
+            EndDate = new DateOnly(2024, 12, 31),
+            Website = "https://json-update.example.com",
+            ShowMockup = true,
+            Tags = ["JsonTag1", "JsonTag2"]
+        };
+
+        var content = new MultipartFormDataContent();
+        content.Add(new StringContent(JsonConvert.SerializeObject(updateProject), Encoding.UTF8, "application/json"),
+            "createProject");
+
+        // Act
+        var httpResponse = await AuthenticatedClient.PutAsync($"/project/{existingProject.Id}", content);
+
+        // Assert
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = GetJsonContent<Project>(stringResponse);
+
+        Assert.NotNull(actualProject);
+        Assert.Equal(updateProject.Title, actualProject!.Title);
+        Assert.Equal(updateProject.ShortDescription, actualProject.ShortDescription);
+        Assert.Equal(updateProject.Description, actualProject.Description);
+        Assert.Equal(updateProject.Tags.Count, actualProject.Tags.Count);
     }
 
     [Fact]
