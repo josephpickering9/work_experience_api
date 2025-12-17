@@ -20,7 +20,7 @@ public class VertexController(
     }
 
     [HttpPost("query")]
-    public async Task<IActionResult> Query([FromBody] VertexQueryRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<VertexQueryResult>> Query([FromBody] VertexQueryRequest request, CancellationToken cancellationToken)
     {
         var result = await queryService.QueryAsync(request.Query, cancellationToken);
         return Ok(result);

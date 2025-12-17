@@ -3,7 +3,7 @@ using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
-using Work_Experience_Search.Services;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Services.VertexAi;
 
@@ -31,7 +31,7 @@ public class VertexQueryService : IVertexQueryService
 
     public async Task<VertexQueryResult> QueryAsync(string query, CancellationToken cancellationToken = default)
     {
-        var dataStoreId = $"{_options.Environment}_{_options.QueryDataStoreSuffix}";
+        var dataStoreId = $"{_options.Environment}_{_options.QueryDataStoreSuffix}".ToLowerInvariant();
         var datastoreResource = $"projects/{_options.ProjectId}/locations/{_options.Location}/collections/{_options.Collection}/dataStores/{dataStoreId}";
         var hostLocation = string.IsNullOrWhiteSpace(_options.ModelLocation) ? _options.Location : _options.ModelLocation;
 
@@ -189,29 +189,49 @@ public class VertexQueryService : IVertexQueryService
     private async Task<IReadOnlyList<VertexCitation>> EnrichCitationsAsync(IEnumerable<RawVertexCitation> citations, CancellationToken cancellationToken)
     {
         var rawList = citations.ToList();
-        var projectIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Project && c.Id.HasValue).Select(c => c.Id!.Value).Distinct().ToList();
-        var companyIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Company && c.Id.HasValue).Select(c => c.Id!.Value).Distinct().ToList();
-        var tagIds = rawList.Where(c => c.FeatureType == VertexFeatureType.Tag && c.Id.HasValue).Select(c => c.Id!.Value).Distinct().ToList();
+        var projectIds = rawList
+            .Where(c => c.FeatureType == VertexFeatureType.Project && c.Id.HasValue)
+            .Select(c => new ProjectId(c.Id!.Value))
+            .Distinct()
+            .ToList();
+        var companyIds = rawList
+            .Where(c => c.FeatureType == VertexFeatureType.Company && c.Id.HasValue)
+            .Select(c => new CompanyId(c.Id!.Value))
+            .Distinct()
+            .ToList();
+        var tagIds = rawList
+            .Where(c => c.FeatureType == VertexFeatureType.Tag && c.Id.HasValue)
+            .Select(c => new TagId(c.Id!.Value))
+            .Distinct()
+            .ToList();
 
         var projects = await _database.Project
             .Include(p => p.Tags)
             .Include(p => p.Images)
             .Include(p => p.Repositories)
-            .Where(p => projectIds.Contains(p.Id.Value))
+            .Where(p => projectIds.Contains(p.Id))
             .ToListAsync(cancellationToken);
 
-        var companies = await _database.Company.Where(c => companyIds.Contains(c.Id.Value)).ToListAsync(cancellationToken);
-        var tags = await _database.Tag.Where(t => tagIds.Contains(t.Id.Value)).ToListAsync(cancellationToken);
+        var companies = await _database.Company.Where(c => companyIds.Contains(c.Id)).ToListAsync(cancellationToken);
+        var tags = await _database.Tag.Where(t => tagIds.Contains(t.Id)).ToListAsync(cancellationToken);
 
-        var projectLookup = projects.ToDictionary(p => p.Id.Value);
-        var companyLookup = companies.ToDictionary(c => c.Id.Value);
-        var tagLookup = tags.ToDictionary(t => t.Id.Value);
+        var projectLookup = projects.ToDictionary(p => p.Id);
+        var companyLookup = companies.ToDictionary(c => c.Id);
+        var tagLookup = tags.ToDictionary(t => t.Id);
 
         return rawList.Select(c =>
         {
-            projectLookup.TryGetValue(c.Id ?? Guid.Empty, out var project);
-            companyLookup.TryGetValue(c.Id ?? Guid.Empty, out var company);
-            tagLookup.TryGetValue(c.Id ?? Guid.Empty, out var tag);
+            Project? project = null;
+            Company? company = null;
+            Tag? tag = null;
+
+            if (c.Id.HasValue)
+            {
+                var guid = c.Id.Value;
+                if (c.FeatureType == VertexFeatureType.Project) projectLookup.TryGetValue(new ProjectId(guid), out project);
+                if (c.FeatureType == VertexFeatureType.Company) companyLookup.TryGetValue(new CompanyId(guid), out company);
+                if (c.FeatureType == VertexFeatureType.Tag) tagLookup.TryGetValue(new TagId(guid), out tag);
+            }
 
             return new VertexCitation
             {
