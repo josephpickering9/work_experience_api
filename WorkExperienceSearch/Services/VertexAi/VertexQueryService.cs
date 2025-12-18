@@ -244,7 +244,6 @@ public class VertexQueryService : IVertexQueryService
             };
         }).ToList();
     }
-
 }
 
 public record VertexQueryResult(string Answer, IReadOnlyList<VertexCitation> Citations);

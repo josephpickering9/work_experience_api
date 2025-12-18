@@ -1,6 +1,6 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Google.Api.Gax.Grpc;
-using Google.Apis.Auth.OAuth2;
 using Google.Cloud.DiscoveryEngine.V1;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Auth;
@@ -47,6 +47,7 @@ public class VertexChatbotClient : IVertexChatbotClient
     private readonly DataStoreServiceClient _dataStoreClient;
     private readonly DocumentServiceClient _documentClient;
     private readonly SchemaServiceClient _schemaClient;
+    private readonly ConcurrentDictionary<string, DataStore> _dataStoreCache = new();
 
     public VertexChatbotClient(IOptions<VertexAiOptions> options, ILogger<VertexChatbotClient> logger)
     {
@@ -169,6 +170,18 @@ public class VertexChatbotClient : IVertexChatbotClient
 
     private async Task<DataStore> GetOrCreateDataStoreAsync(string dataStoreId, string displayName, DataStore.Types.ContentConfig contentConfig, VertexFeatureType? featureType, string? jsonSchema, bool ensureSchema, CancellationToken cancellationToken)
     {
+        if (_dataStoreCache.TryGetValue(dataStoreId, out var cachedDataStore))
+        {
+            if (!ensureSchema) return cachedDataStore;
+
+            if (jsonSchema != null && featureType != null)
+            {
+                await EnsureSchemaUpToDateAsync(dataStoreId, jsonSchema, cancellationToken);
+            }
+
+            return cachedDataStore;
+        }
+
         var dataStoreName = DataStoreName.FromProjectLocationDataStore(_options.ProjectId, _options.Location, dataStoreId).ToString();
 
         try
@@ -179,6 +192,7 @@ public class VertexChatbotClient : IVertexChatbotClient
                 await EnsureSchemaUpToDateAsync(dataStoreId, jsonSchema, cancellationToken);
             }
 
+            _dataStoreCache.TryAdd(dataStoreId, existing);
             return existing;
         }
         catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
@@ -210,9 +224,12 @@ public class VertexChatbotClient : IVertexChatbotClient
                 await EnsureSchemaUpToDateAsync(dataStoreId, jsonSchema, cancellationToken);
             }
 
+            _dataStoreCache.TryAdd(dataStoreId, created.Result);
+
             return created.Result;
         }
     }
+
 
     private async Task EnsureSchemaUpToDateAsync(string dataStoreId, string jsonSchema, CancellationToken cancellationToken)
     {
