@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Repositories;
 
 namespace Work_Experience_Search.Services.VertexAi;
 
@@ -18,14 +19,24 @@ public class VertexQueryService : IVertexQueryService
     private readonly VertexAiOptions _options;
     private readonly GoogleCredential _credential;
     private readonly ILogger<VertexQueryService> _logger;
-    private readonly Database _database;
+    private readonly IProjectRepository _projectRepository;
+    private readonly ICompanyRepository _companyRepository;
+    private readonly ITagRepository _tagRepository;
 
-    public VertexQueryService(IHttpClientFactory httpClientFactory, IOptions<VertexAiOptions> options, ILogger<VertexQueryService> logger, Database database)
+    public VertexQueryService(
+        IHttpClientFactory httpClientFactory, 
+        IOptions<VertexAiOptions> options, 
+        ILogger<VertexQueryService> logger, 
+        IProjectRepository projectRepository,
+        ICompanyRepository companyRepository,
+        ITagRepository tagRepository)
     {
         _httpClient = httpClientFactory.CreateClient(nameof(VertexQueryService));
         _options = options.Value;
         _logger = logger;
-        _database = database;
+        _projectRepository = projectRepository;
+        _companyRepository = companyRepository;
+        _tagRepository = tagRepository;
         _credential = VertexCredentialFactory.Create(_options, _logger).CreateScoped("https://www.googleapis.com/auth/cloud-platform");
     }
 
@@ -89,61 +100,71 @@ public class VertexQueryService : IVertexQueryService
             throw new InvalidOperationException($"Vertex query failed ({(int)response.StatusCode} {response.StatusCode}): {raw}");
         }
 
-        var answer = ExtractAnswer(raw);
-        var citations = await EnrichCitationsAsync(ExtractCitations(raw), cancellationToken);
+        GoogleSearchResponse? searchResponse;
+        try
+        {
+            searchResponse = JsonSerializer.Deserialize<GoogleSearchResponse>(raw);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to deserialize Vertex response: {Body}", raw);
+            throw;
+        }
+
+        if (searchResponse == null)
+        {
+             return new VertexQueryResult(string.Empty, new List<VertexCitation>());
+        }
+
+        var answer = ExtractAnswer(searchResponse);
+        var citations = await EnrichCitationsAsync(ExtractCitations(searchResponse), cancellationToken);
         return new VertexQueryResult(answer ?? string.Empty, citations);
     }
 
-    private static string? ExtractAnswer(string json)
+    private static string? ExtractAnswer(GoogleSearchResponse response)
     {
-        using var doc = JsonDocument.Parse(json);
-        var candidate = doc.RootElement.GetPropertyOrDefault("candidates")?.EnumerateArray().FirstOrDefault();
-        var parts = candidate?.GetPropertyOrDefault("content")?.GetPropertyOrDefault("parts");
-        var textPart = parts?.EnumerateArray().FirstOrDefault(p => p.TryGetProperty("text", out _));
-        return textPart?.GetProperty("text").GetString();
+        var candidate = response.Candidates.FirstOrDefault();
+        var part = candidate?.Content?.Parts.FirstOrDefault();
+        return part?.Text;
     }
 
-    private static IReadOnlyList<RawVertexCitation> ExtractCitations(string json)
+    private static IReadOnlyList<RawVertexCitation> ExtractCitations(GoogleSearchResponse response)
     {
-        using var doc = JsonDocument.Parse(json);
         var list = new List<RawVertexCitation>();
-        var candidate = doc.RootElement.GetPropertyOrDefault("candidates")?.EnumerateArray().FirstOrDefault();
+        var candidate = response.Candidates.FirstOrDefault();
+        if (candidate == null) return list;
 
-        var groundingChunks = candidate?.GetPropertyOrDefault("groundingMetadata")?.GetPropertyOrDefault("groundingChunks");
-        if (groundingChunks is { ValueKind: JsonValueKind.Array })
+        // 1. Extract from Grounding Metadata (Retrieved Context)
+        if (candidate.GroundingMetadata?.GroundingChunks != null)
         {
-            foreach (var chunk in groundingChunks.Value.EnumerateArray())
+            foreach (var chunk in candidate.GroundingMetadata.GroundingChunks)
             {
-                var context = chunk.GetPropertyOrDefault("retrievedContext");
-                var documentName = context?.GetPropertyOrDefault("documentName")?.GetString();
-                var text = context?.GetPropertyOrDefault("text")?.GetString();
-                if (string.IsNullOrWhiteSpace(documentName)) continue;
+                var context = chunk.RetrievedContext;
+                if (context == null || string.IsNullOrWhiteSpace(context.DocumentName)) continue;
 
                 list.Add(new RawVertexCitation
                 {
-                    Id = ExtractId(documentName),
-                    FeatureType = ExtractFeatureType(documentName),
-                    Title = ExtractTitle(text)
+                    Id = ExtractId(context.DocumentName),
+                    FeatureType = ExtractFeatureType(context.DocumentName),
+                    Title = ExtractTitle(context.Text)
                 });
             }
         }
 
-        var citation = candidate?.GetPropertyOrDefault("citationMetadata")?.GetPropertyOrDefault("citations");
-        if (citation is { ValueKind: JsonValueKind.Array })
+        // 2. Extract from Citation Metadata (Web Search / General)
+        if (candidate.CitationMetadata?.Citations != null)
         {
-            foreach (var c in citation.Value.EnumerateArray())
+            foreach (var c in candidate.CitationMetadata.Citations)
             {
-                var uri = c.GetPropertyOrDefault("uri")?.GetString();
-                var source = c.GetPropertyOrDefault("source")?.GetString();
-                var documentName = uri ?? source;
+                var documentName = c.Uri ?? c.Source;
                 if (!string.IsNullOrWhiteSpace(documentName))
                 {
-                    list.Add(new RawVertexCitation
-                    {
-                        Id = ExtractId(documentName),
-                        FeatureType = ExtractFeatureType(documentName),
-                        Title = null
-                    });
+                     list.Add(new RawVertexCitation
+                     {
+                         Id = ExtractId(documentName),
+                         FeatureType = ExtractFeatureType(documentName),
+                         Title = null
+                     });
                 }
             }
         }
@@ -155,9 +176,17 @@ public class VertexQueryService : IVertexQueryService
     {
         var parts = documentName.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var docIndex = Array.IndexOf(parts, "documents");
-        if (docIndex >= 0 && docIndex + 1 < parts.Length && Guid.TryParse(parts[docIndex + 1], out var id))
+        if (docIndex >= 0 && docIndex + 1 < parts.Length)
         {
-            return id;
+            var rawId = parts[docIndex + 1];
+            // Handle potential suffixes like ":chunk" or regular extensions if present?
+            // Vertex AI Search usually appends :chunk code for chunks.
+            var idPart = rawId.Split(':')[0];
+            
+            if (Guid.TryParse(idPart, out var id))
+            {
+                return id;
+            }
         }
 
         return null;
@@ -205,15 +234,9 @@ public class VertexQueryService : IVertexQueryService
             .Distinct()
             .ToList();
 
-        var projects = await _database.Project
-            .Include(p => p.Tags)
-            .Include(p => p.Images)
-            .Include(p => p.Repositories)
-            .Where(p => projectIds.Contains(p.Id))
-            .ToListAsync(cancellationToken);
-
-        var companies = await _database.Company.Where(c => companyIds.Contains(c.Id)).ToListAsync(cancellationToken);
-        var tags = await _database.Tag.Where(t => tagIds.Contains(t.Id)).ToListAsync(cancellationToken);
+        var projects = await _projectRepository.GetByIdsAsync(projectIds, cancellationToken);
+        var companies = await _companyRepository.GetByIdsAsync(companyIds, cancellationToken);
+        var tags = await _tagRepository.GetByIdsAsync(tagIds, cancellationToken);
 
         var projectLookup = projects.ToDictionary(p => p.Id);
         var companyLookup = companies.ToDictionary(c => c.Id);
@@ -265,10 +288,4 @@ internal record RawVertexCitation
     public string? Title { get; init; }
 }
 
-internal static class JsonExtensions
-{
-    public static JsonElement? GetPropertyOrDefault(this JsonElement element, string name)
-    {
-        return element.TryGetProperty(name, out var value) ? value : null;
-    }
-}
+

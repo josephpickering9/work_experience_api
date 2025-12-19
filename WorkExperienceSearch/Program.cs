@@ -11,6 +11,7 @@ using Work_Experience_Search.Services;
 using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Services.VertexAi;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Repositories;
 
 DotEnv.Load();
 
@@ -20,6 +21,12 @@ builder.Services.AddDbContext<Database>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), o => o.CommandTimeout(300))
 );
 
+
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
+builder.Services.AddScoped<IProjectCodeRepository, ProjectCodeRepository>();
+builder.Services.AddScoped<IProjectImageRepository, ProjectImageRepository>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProjectImageService, ProjectImageService>();

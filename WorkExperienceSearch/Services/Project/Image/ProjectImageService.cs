@@ -4,13 +4,15 @@ using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 
+using Work_Experience_Search.Repositories;
+
 namespace Work_Experience_Search.Services;
 
-public class ProjectImageService(Database context, IFileService fileService, IImageService imageService) : IProjectImageService
+public class ProjectImageService(IProjectRepository projectRepository, IProjectImageRepository projectImageRepository, IFileService fileService, IImageService imageService) : IProjectImageService
 {
     public async Task<Result<IEnumerable<ProjectImage>>> GetProjectImagesAsync(ProjectId projectId)
     {
-        var project = await context.Project.FindAsync(projectId);
+        var project = await projectRepository.GetAsync(projectId);
         if (project == null) return new NotFoundFailure<IEnumerable<ProjectImage>>("Project not found.");
 
         return new Success<IEnumerable<ProjectImage>>(project.Images);
@@ -18,7 +20,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
     public async Task<Result<ProjectImage>> GetProjectImageAsync(ProjectId projectId, ProjectImageId id)
     {
-        var project = await context.Project.FindAsync(projectId);
+        var project = await projectRepository.GetAsync(projectId);
         if (project == null) return new NotFoundFailure<ProjectImage>("Project not found.");
 
         var image = project.Images.SingleOrDefault(i => i.Id == id);
@@ -29,7 +31,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
     public async Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(ProjectId projectId, List<CreateProjectImage> images)
     {
-        var project = await context.Project.FindAsync(projectId);
+        var project = await projectRepository.GetAsync(projectId);
         if (project == null) return new NotFoundFailure<List<ProjectImage>>("Project not found.");
 
         return await SyncProjectImagesAsync(project, images);
@@ -44,7 +46,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
 
         foreach (var image in imagesToDelete)
         {
-            context.ProjectImage.Remove(image);
+            await projectImageRepository.RemoveAsync(image);
             fileService.DeleteFile(image.Image);
         }
 
@@ -57,7 +59,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
                 if (existingImage != null)
                 {
                     fileService.DeleteFile(existingImage.Image);
-                    context.ProjectImage.Remove(existingImage);
+                    await projectImageRepository.RemoveAsync(existingImage);
                 }
             }
 
@@ -72,8 +74,7 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
                 IsOptimised = imagePath.Data.IsOptimsed
             };
 
-            context.ProjectImage.Add(projectImage);
-            await context.SaveChangesAsync();
+            await projectImageRepository.AddAsync(projectImage);
 
             imagesToSave.Add(projectImage);
         }
@@ -84,14 +85,14 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
             if (newImage?.Order != null) image.Order = newImage.Order;
         }
 
-        if (imagesToCreate.Count > 0 || imagesToDelete.Count > 0) await context.SaveChangesAsync();
+        if (imagesToCreate.Count > 0 || imagesToDelete.Count > 0 || imagesToSave.Count > 0) await projectImageRepository.SaveChangesAsync();
 
         return new Success<List<ProjectImage>>(imagesToSave);
     }
 
     public async Task<Result<bool>> OptimiseImagesAsync()
     {
-        var images = context.ProjectImage.Where(i => !i.IsOptimised).ToList();
+        var images = await projectImageRepository.GetUnoptimisedImagesAsync();
         foreach (var image in images)
         {
             var file = imageService.GetImage(image.Image);
@@ -103,13 +104,11 @@ public class ProjectImageService(Database context, IFileService fileService, IIm
             image.Image = optimisedImage.Data.FileName;
             image.IsOptimised = true;
 
-            context.ProjectImage.Update(image);
-            await context.SaveChangesAsync();
+            await projectImageRepository.UpdateAsync(image);
 
             fileService.DeleteFile(file.Data.FileName);
         }
 
-        await context.SaveChangesAsync();
         return new Success<bool>(true);
     }
 
