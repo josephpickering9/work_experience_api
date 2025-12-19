@@ -29,20 +29,9 @@ public class VertexIngestOrchestrator(
         var projectResult = await projectService.GetProjectsAsync(null);
         if (!projectResult.IsSuccess || projectResult.Data == null) return new Failure<VertexIngestSummary>("Failed to fetch projects.");
 
-        foreach (var company in companyResult.Data)
-        {
-            await vertexIngestService.UpsertCompanyAsync(company, cancellationToken);
-        }
-
-        foreach (var tag in tagResult.Data)
-        {
-            await vertexIngestService.UpsertTagAsync(tag, cancellationToken);
-        }
-
-        foreach (var project in projectResult.Data)
-        {
-            await vertexIngestService.UpsertProjectAsync(project, cancellationToken);
-        }
+        await Task.WhenAll(companyResult.Data.Select(company => vertexIngestService.UpsertCompanyAsync(company, cancellationToken)));
+        await Task.WhenAll(tagResult.Data.Select(tag => vertexIngestService.UpsertTagAsync(tag, cancellationToken)));
+        await Task.WhenAll(projectResult.Data.Select(project => vertexIngestService.UpsertProjectAsync(project, cancellationToken)));
 
         return new Success<VertexIngestSummary>(new VertexIngestSummary(
             CompaniesIngested: companyResult.Data.Count(),
