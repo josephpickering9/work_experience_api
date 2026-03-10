@@ -1,8 +1,15 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Services.VertexAi;
+
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class VertexKeyPropertyAttribute(string mapping) : Attribute
+{
+    public string Mapping { get; } = mapping;
+}
 
 /// <summary>
 /// Lightweight JSON Schema generator based on DTO reflection. Avoids manual string maintenance.
@@ -40,8 +47,11 @@ public static class VertexSchemaGenerator
         {
             if (prop.GetMethod is null) continue;
 
-            var schema = BuildSchema(prop.PropertyType);
-            properties[prop.Name] = schema;
+            var propSchema = BuildSchema(prop.PropertyType);
+            var keyMapping = prop.GetCustomAttribute<VertexKeyPropertyAttribute>();
+            if (keyMapping != null && propSchema is Dictionary<string, object?> dict)
+                dict["keyPropertyMapping"] = keyMapping.Mapping;
+            properties[prop.Name] = propSchema;
 
             var nullability = nullabilityContext.Create(prop);
             var isNullable = IsNullable(prop.PropertyType, nullability);
@@ -65,7 +75,7 @@ public static class VertexSchemaGenerator
     private static bool TryGetPrimitiveSchema(Type type, out object? schema)
     {
         var underlying = Nullable.GetUnderlyingType(type) ?? type;
-        if (underlying == typeof(string) || underlying == typeof(Guid))
+        if (underlying == typeof(string) || underlying == typeof(Guid) || typeof(IId).IsAssignableFrom(underlying))
         {
             schema = new Dictionary<string, object?> { ["type"] = "string" };
             return true;

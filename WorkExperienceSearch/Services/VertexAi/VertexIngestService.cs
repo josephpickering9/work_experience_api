@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
 
@@ -36,7 +37,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: project.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: false,
+            ensureSchema: true,
             cancellationToken: cancellationToken);
     }
 
@@ -54,7 +55,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: company.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: false,
+            ensureSchema: true,
             cancellationToken: cancellationToken);
     }
 
@@ -72,7 +73,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: tag.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: false,
+            ensureSchema: true,
             cancellationToken: cancellationToken);
     }
 
@@ -81,13 +82,16 @@ public class VertexIngestService : IVertexIngestService
         await _chatbotClient.DeleteFeatureAsync(VertexFeatureType.Tag, tagId.ToString(), cancellationToken);
     }
 
+    private static string StripHtml(string html) =>
+        Regex.Replace(html, "<[^>]*>", " ").Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">").Replace("&nbsp;", " ").Trim();
+
     private static VertexProjectDto FlattenProject(Project project) =>
         new()
         {
             Id = project.Id,
             Title = project.Title,
             ShortDescription = project.ShortDescription,
-            Description = project.Description,
+            Description = StripHtml(project.Description),
             StartDate = project.StartDate,
             EndDate = project.EndDate,
             Website = project.Website,
@@ -102,7 +106,7 @@ public class VertexIngestService : IVertexIngestService
         {
             Id = company.Id,
             Name = company.Name,
-            Description = company.Description,
+            Description = StripHtml(company.Description),
             Website = company.Website,
             StartDate = company.StartDate,
             EndDate = company.EndDate
@@ -119,14 +123,14 @@ public class VertexIngestService : IVertexIngestService
 public class VertexProjectDto
 {
     public ProjectId Id { get; init; }
-    public string Title { get; init; } = string.Empty;
+    [VertexKeyProperty("title")] public string Title { get; init; } = string.Empty;
     public string ShortDescription { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public DateOnly StartDate { get; init; }
+    [VertexKeyProperty("description")] public string Description { get; init; } = string.Empty;
+    [VertexKeyProperty("createTime")] public DateOnly StartDate { get; init; }
     public DateOnly? EndDate { get; init; }
-    public string? Website { get; init; }
+    [VertexKeyProperty("uri")] public string? Website { get; init; }
     public CompanyId? CompanyId { get; init; }
-    public string? Company { get; init; }
+    [VertexKeyProperty("category")] public string? Company { get; init; }
     public List<string> Tags { get; init; } = [];
     public List<string> TagTypes { get; init; } = [];
 }
@@ -134,15 +138,15 @@ public class VertexProjectDto
 public class VertexCompanyDto
 {
     public CompanyId Id { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public string? Website { get; init; }
+    [VertexKeyProperty("title")] public string Name { get; init; } = string.Empty;
+    [VertexKeyProperty("description")] public string Description { get; init; } = string.Empty;
+    [VertexKeyProperty("uri")] public string? Website { get; init; }
     public DateOnly? StartDate { get; init; }
     public DateOnly? EndDate { get; init; }
 }
 
 public class VertexTagDto
 {
-    public string Title { get; init; } = string.Empty;
-    public string Type { get; init; } = string.Empty;
+    [VertexKeyProperty("title")] public string Title { get; init; } = string.Empty;
+    [VertexKeyProperty("category")] public string Type { get; init; } = string.Empty;
 }

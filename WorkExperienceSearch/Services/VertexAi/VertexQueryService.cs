@@ -55,7 +55,7 @@ public class VertexQueryService : IVertexQueryService
                 role = "system",
                 parts = new[]
                 {
-                    new { text = "You are a retrieval bot. Answer strictly using the retrieved context from the Vertex AI Search datastore. If the answer is not present in the retrieved context, reply with \"I don't have enough information to answer that.\" Keep answers concise and reference project titles where applicable. Please use UK english in your response." }
+                    new { text = "You are a retrieval bot. Answer strictly using the retrieved context from the Vertex AI Search datastore. If the answer is not present in the retrieved context, reply with \"I don't have enough information to answer that.\" When answering, always prefer explicit direct statements in the data (e.g. \"This is the project I'm most proud of\") over inferred or implied meanings (e.g. describing something as a passion project). Keep answers concise and reference project titles where applicable. Please use UK english in your response." }
                 }
             },
             contents = new[]
@@ -74,7 +74,8 @@ public class VertexQueryService : IVertexQueryService
                     {
                         vertexAiSearch = new
                         {
-                            datastore = datastoreResource
+                            datastore = datastoreResource,
+                            maxResults = 20
                         }
                     }
                 }
