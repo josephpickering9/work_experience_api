@@ -24,9 +24,9 @@ public class VertexQueryService : IVertexQueryService
     private readonly ITagRepository _tagRepository;
 
     public VertexQueryService(
-        IHttpClientFactory httpClientFactory, 
-        IOptions<VertexAiOptions> options, 
-        ILogger<VertexQueryService> logger, 
+        IHttpClientFactory httpClientFactory,
+        IOptions<VertexAiOptions> options,
+        ILogger<VertexQueryService> logger,
         IProjectRepository projectRepository,
         ICompanyRepository companyRepository,
         ITagRepository tagRepository)
@@ -55,7 +55,7 @@ public class VertexQueryService : IVertexQueryService
                 role = "system",
                 parts = new[]
                 {
-                    new { text = "You are a retrieval bot. Answer strictly using the retrieved context from the Vertex AI Search datastore. If the answer is not present in the retrieved context, reply with \"I don't have enough information to answer that.\" Keep answers concise and reference project titles where applicable." }
+                    new { text = "You are a retrieval bot. Answer strictly using the retrieved context from the Vertex AI Search datastore. If the answer is not present in the retrieved context, reply with \"I don't have enough information to answer that.\" Keep answers concise and reference project titles where applicable. Please use UK english in your response." }
                 }
             },
             contents = new[]
@@ -182,7 +182,7 @@ public class VertexQueryService : IVertexQueryService
             // Handle potential suffixes like ":chunk" or regular extensions if present?
             // Vertex AI Search usually appends :chunk code for chunks.
             var idPart = rawId.Split(':')[0];
-            
+
             if (Guid.TryParse(idPart, out var id))
             {
                 return id;
