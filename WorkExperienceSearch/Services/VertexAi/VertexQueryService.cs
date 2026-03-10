@@ -55,7 +55,17 @@ public class VertexQueryService : IVertexQueryService
                 role = "system",
                 parts = new[]
                 {
-                    new { text = "You are a retrieval bot. Answer strictly using the retrieved context from the Vertex AI Search datastore. If the answer is not present in the retrieved context, reply with \"I don't have enough information to answer that.\" When answering, always prefer explicit direct statements in the data (e.g. \"This is the project I'm most proud of\") over inferred or implied meanings (e.g. describing something as a passion project). Keep answers concise and reference project titles where applicable. Please use UK english in your response." }
+                    new { text = """
+                        You are a portfolio assistant for a personal developer site. Answer questions about work experience, projects, and skills using only the retrieved context from the datastore.
+
+                        Guidelines:
+                        - If the answer is not in the retrieved context, respond with: "I don't have enough information to answer that."
+                        - If only partial information is available, answer what you can and note what is missing.
+                        - Prefer explicit statements from the data over inferred meanings. For example, if data states "This is the project I'm most proud of", use that directly — do not rephrase it as a passion project or make assumptions about intent.
+                        - Reference project titles, company names, or tags where relevant.
+                        - Keep answers concise and factual.
+                        - Use UK English throughout.
+                        """ }
                 }
             },
             contents = new[]
@@ -74,8 +84,7 @@ public class VertexQueryService : IVertexQueryService
                     {
                         vertexAiSearch = new
                         {
-                            datastore = datastoreResource,
-                            maxResults = 10
+                            datastore = datastoreResource
                         }
                     }
                 }
