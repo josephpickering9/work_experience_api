@@ -122,31 +122,31 @@ public class VertexIngestService : IVertexIngestService
 
 public class VertexProjectDto
 {
-    public ProjectId Id { get; init; }
-    [VertexKeyProperty("title")] public string Title { get; init; } = string.Empty;
-    public string ShortDescription { get; init; } = string.Empty;
-    [VertexKeyProperty("description")] public string Description { get; init; } = string.Empty;
-    [VertexKeyProperty("createTime")] public DateOnly StartDate { get; init; }
-    public DateOnly? EndDate { get; init; }
-    [VertexKeyProperty("uri")] public string? Website { get; init; }
-    public CompanyId? CompanyId { get; init; }
-    [VertexKeyProperty("category")] public string? Company { get; init; }
-    public List<string> Tags { get; init; } = [];
-    public List<string> TagTypes { get; init; } = [];
+    [VertexField(retrievable: true)] public ProjectId Id { get; init; }
+    [VertexKeyProperty("title")] [VertexField(retrievable: true)] public string Title { get; init; } = string.Empty;
+    [VertexField(searchable: true, retrievable: true)] public string ShortDescription { get; init; } = string.Empty;
+    [VertexKeyProperty("description")] [VertexField(retrievable: true)] public string Description { get; init; } = string.Empty;
+    [VertexKeyProperty("create_time")] [VertexField(retrievable: true)] public DateOnly StartDate { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public DateOnly? EndDate { get; init; }
+    [VertexKeyProperty("uri")] [VertexField(retrievable: true)] public string? Website { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public CompanyId? CompanyId { get; init; }
+    [VertexKeyProperty("category")] [VertexField(retrievable: true)] public string? Company { get; init; }
+    [VertexField(searchable: true, indexable: true, retrievable: true)] public List<string> Tags { get; init; } = [];
+    [VertexField(indexable: true, retrievable: true)] public List<string> TagTypes { get; init; } = [];
 }
 
 public class VertexCompanyDto
 {
-    public CompanyId Id { get; init; }
-    [VertexKeyProperty("title")] public string Name { get; init; } = string.Empty;
-    [VertexKeyProperty("description")] public string Description { get; init; } = string.Empty;
-    [VertexKeyProperty("uri")] public string? Website { get; init; }
-    public DateOnly? StartDate { get; init; }
-    public DateOnly? EndDate { get; init; }
+    [VertexField(retrievable: true)] public CompanyId Id { get; init; }
+    [VertexKeyProperty("title")] [VertexField(retrievable: true)] public string Name { get; init; } = string.Empty;
+    [VertexKeyProperty("description")] [VertexField(retrievable: true)] public string Description { get; init; } = string.Empty;
+    [VertexKeyProperty("uri")] [VertexField(retrievable: true)] public string? Website { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public DateOnly? StartDate { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public DateOnly? EndDate { get; init; }
 }
 
 public class VertexTagDto
 {
-    [VertexKeyProperty("title")] public string Title { get; init; } = string.Empty;
-    [VertexKeyProperty("category")] public string Type { get; init; } = string.Empty;
+    [VertexKeyProperty("title")] [VertexField(retrievable: true)] public string Title { get; init; } = string.Empty;
+    [VertexKeyProperty("category")] [VertexField(retrievable: true)] public string Type { get; init; } = string.Empty;
 }

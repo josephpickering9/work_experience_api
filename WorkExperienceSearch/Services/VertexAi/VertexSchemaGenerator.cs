@@ -11,6 +11,14 @@ public sealed class VertexKeyPropertyAttribute(string mapping) : Attribute
     public string Mapping { get; } = mapping;
 }
 
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class VertexFieldAttribute(bool searchable = false, bool indexable = false, bool retrievable = false) : Attribute
+{
+    public bool Searchable { get; } = searchable;
+    public bool Indexable { get; } = indexable;
+    public bool Retrievable { get; } = retrievable;
+}
+
 /// <summary>
 /// Lightweight JSON Schema generator based on DTO reflection. Avoids manual string maintenance.
 /// </summary>
@@ -48,9 +56,28 @@ public static class VertexSchemaGenerator
             if (prop.GetMethod is null) continue;
 
             var propSchema = BuildSchema(prop.PropertyType);
-            var keyMapping = prop.GetCustomAttribute<VertexKeyPropertyAttribute>();
-            if (keyMapping != null && propSchema is Dictionary<string, object?> dict)
-                dict["keyPropertyMapping"] = keyMapping.Mapping;
+            if (propSchema is Dictionary<string, object?> dict)
+            {
+                var keyMapping = prop.GetCustomAttribute<VertexKeyPropertyAttribute>();
+                if (keyMapping != null)
+                    dict["keyPropertyMapping"] = keyMapping.Mapping;
+
+                var field = prop.GetCustomAttribute<VertexFieldAttribute>();
+                var isKeyProperty = keyMapping != null;
+                if (field != null)
+                {
+                    // Annotations on array types must go on items, not the array itself
+                    var annotationTarget = dict.TryGetValue("type", out var t) && t is "array" && dict["items"] is Dictionary<string, object?> items
+                        ? items
+                        : dict;
+
+                    // Key property fields cannot have searchable or indexable annotations
+                    if (field.Searchable && !isKeyProperty) annotationTarget["searchable"] = true;
+                    if (field.Indexable && !isKeyProperty) annotationTarget["indexable"] = true;
+                    if (field.Retrievable) annotationTarget["retrievable"] = true;
+                }
+            }
+
             properties[prop.Name] = propSchema;
 
             var nullability = nullabilityContext.Create(prop);
@@ -78,6 +105,12 @@ public static class VertexSchemaGenerator
         if (underlying == typeof(string) || underlying == typeof(Guid) || typeof(IId).IsAssignableFrom(underlying))
         {
             schema = new Dictionary<string, object?> { ["type"] = "string" };
+            return true;
+        }
+
+        if (underlying == typeof(DateOnly) || underlying == typeof(DateTime) || underlying == typeof(DateTimeOffset))
+        {
+            schema = new Dictionary<string, object?> { ["type"] = "datetime" };
             return true;
         }
 

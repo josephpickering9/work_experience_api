@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Google.Api.Gax.Grpc;
 using Google.Cloud.DiscoveryEngine.V1;
 using Google.Protobuf.WellKnownTypes;
@@ -321,7 +322,7 @@ public class VertexChatbotClient : IVertexChatbotClient
 
     private static readonly JsonSerializerOptions _structSerializerOptions = new()
     {
-        Converters = { new IdJsonConverterFactory() }
+        Converters = { new IdJsonConverterFactory(), (JsonConverter)new DateOnlyIso8601Converter() }
     };
 
     private static Struct MapToStruct<T>(T value)
@@ -334,3 +335,12 @@ public class VertexChatbotClient : IVertexChatbotClient
 }
 
 public record GoogleChatbotDataStores(IReadOnlyList<(VertexFeatureType FeatureType, string Id)> StructuredDataStoreIds);
+
+internal sealed class DateOnlyIso8601Converter : JsonConverter<DateOnly>
+{
+    public override DateOnly Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options) =>
+        DateOnly.Parse(reader.GetString()!);
+
+    public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(new DateTime(value.Year, value.Month, value.Day, 0, 0, 0, DateTimeKind.Utc).ToString("O"));
+}

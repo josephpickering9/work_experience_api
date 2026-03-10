@@ -42,7 +42,7 @@ public class VertexQueryService : IVertexQueryService
 
     public async Task<VertexQueryResult> QueryAsync(string query, CancellationToken cancellationToken = default)
     {
-        var dataStoreId = $"{_options.Environment}_{_options.QueryDataStoreSuffix}".ToLowerInvariant();
+        var dataStoreId = $"{_options.Environment.ToString().ToLowerInvariant()}_project_structured_{_options.DataStoreVersion}";
         var datastoreResource = $"projects/{_options.ProjectId}/locations/{_options.Location}/collections/{_options.Collection}/dataStores/{dataStoreId}";
         var hostLocation = string.IsNullOrWhiteSpace(_options.ModelLocation) ? _options.Location : _options.ModelLocation;
 
@@ -75,7 +75,7 @@ public class VertexQueryService : IVertexQueryService
                         vertexAiSearch = new
                         {
                             datastore = datastoreResource,
-                            maxResults = 20
+                            maxResults = 10
                         }
                     }
                 }
@@ -119,6 +119,13 @@ public class VertexQueryService : IVertexQueryService
 
         var answer = ExtractAnswer(searchResponse);
         var citations = await EnrichCitationsAsync(ExtractCitations(searchResponse), cancellationToken);
+
+        if (string.IsNullOrEmpty(answer))
+        {
+            var finishReasons = searchResponse.Candidates.Select(c => c.FinishReason ?? "null").ToList();
+            _logger.LogWarning("Vertex query returned empty answer. FinishReasons: [{Reasons}]. Raw: {Raw}", string.Join(", ", finishReasons), raw);
+        }
+
         return new VertexQueryResult(answer ?? string.Empty, citations);
     }
 
