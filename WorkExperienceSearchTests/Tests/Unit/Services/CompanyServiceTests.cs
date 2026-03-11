@@ -2,6 +2,7 @@ using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Repositories;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
@@ -16,7 +17,7 @@ public class CompanyServiceTests : BaseServiceTests
     public CompanyServiceTests()
     {
         var mockFileService = new Mock<IFileService>();
-        _companyService = new CompanyService(Context, mockFileService.Object);
+        _companyService = new CompanyService(new CompanyRepository(Context), mockFileService.Object);
     }
     
     [Fact]

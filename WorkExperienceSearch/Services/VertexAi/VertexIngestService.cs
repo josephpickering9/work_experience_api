@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
 
@@ -36,7 +37,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: project.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: false,
+            ensureSchema: true,
             cancellationToken: cancellationToken);
     }
 
@@ -54,7 +55,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: company.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: false,
+            ensureSchema: true,
             cancellationToken: cancellationToken);
     }
 
@@ -72,7 +73,7 @@ public class VertexIngestService : IVertexIngestService
             documentId: tag.Id.ToString(),
             value: dto,
             jsonSchema: schema,
-            ensureSchema: false,
+            ensureSchema: true,
             cancellationToken: cancellationToken);
     }
 
@@ -81,13 +82,16 @@ public class VertexIngestService : IVertexIngestService
         await _chatbotClient.DeleteFeatureAsync(VertexFeatureType.Tag, tagId.ToString(), cancellationToken);
     }
 
+    private static string StripHtml(string html) =>
+        Regex.Replace(html, "<[^>]*>", " ").Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">").Replace("&nbsp;", " ").Trim();
+
     private static VertexProjectDto FlattenProject(Project project) =>
         new()
         {
             Id = project.Id,
             Title = project.Title,
             ShortDescription = project.ShortDescription,
-            Description = project.Description,
+            Description = StripHtml(project.Description),
             StartDate = project.StartDate,
             EndDate = project.EndDate,
             Website = project.Website,
@@ -102,7 +106,7 @@ public class VertexIngestService : IVertexIngestService
         {
             Id = company.Id,
             Name = company.Name,
-            Description = company.Description,
+            Description = StripHtml(company.Description),
             Website = company.Website,
             StartDate = company.StartDate,
             EndDate = company.EndDate
@@ -118,31 +122,31 @@ public class VertexIngestService : IVertexIngestService
 
 public class VertexProjectDto
 {
-    public ProjectId Id { get; init; }
-    public string Title { get; init; } = string.Empty;
-    public string ShortDescription { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public DateOnly StartDate { get; init; }
-    public DateOnly? EndDate { get; init; }
-    public string? Website { get; init; }
-    public CompanyId? CompanyId { get; init; }
-    public string? Company { get; init; }
-    public List<string> Tags { get; init; } = [];
-    public List<string> TagTypes { get; init; } = [];
+    [VertexField(retrievable: true)] public ProjectId Id { get; init; }
+    [VertexKeyProperty("title")] [VertexField(retrievable: true)] public string Title { get; init; } = string.Empty;
+    [VertexField(searchable: true, retrievable: true)] public string ShortDescription { get; init; } = string.Empty;
+    [VertexKeyProperty("description")] [VertexField(retrievable: true)] public string Description { get; init; } = string.Empty;
+    [VertexKeyProperty("create_time")] [VertexField(retrievable: true)] public DateOnly StartDate { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public DateOnly? EndDate { get; init; }
+    [VertexKeyProperty("uri")] [VertexField(retrievable: true)] public string? Website { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public CompanyId? CompanyId { get; init; }
+    [VertexKeyProperty("category")] [VertexField(retrievable: true)] public string? Company { get; init; }
+    [VertexField(searchable: true, indexable: true, retrievable: true)] public List<string> Tags { get; init; } = [];
+    [VertexField(indexable: true, retrievable: true)] public List<string> TagTypes { get; init; } = [];
 }
 
 public class VertexCompanyDto
 {
-    public CompanyId Id { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public string? Website { get; init; }
-    public DateOnly? StartDate { get; init; }
-    public DateOnly? EndDate { get; init; }
+    [VertexField(retrievable: true)] public CompanyId Id { get; init; }
+    [VertexKeyProperty("title")] [VertexField(retrievable: true)] public string Name { get; init; } = string.Empty;
+    [VertexKeyProperty("description")] [VertexField(retrievable: true)] public string Description { get; init; } = string.Empty;
+    [VertexKeyProperty("uri")] [VertexField(retrievable: true)] public string? Website { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public DateOnly? StartDate { get; init; }
+    [VertexField(indexable: true, retrievable: true)] public DateOnly? EndDate { get; init; }
 }
 
 public class VertexTagDto
 {
-    public string Title { get; init; } = string.Empty;
-    public string Type { get; init; } = string.Empty;
+    [VertexKeyProperty("title")] [VertexField(retrievable: true)] public string Title { get; init; } = string.Empty;
+    [VertexKeyProperty("category")] [VertexField(retrievable: true)] public string Type { get; init; } = string.Empty;
 }

@@ -9,6 +9,8 @@ using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 using System.Text.Json.Serialization;
 
+using Work_Experience_Search.Repositories;
+
 namespace Work_Experience_Search.Services.VertexAi;
 
 public interface IVertexProjectDescriptionService
@@ -22,7 +24,7 @@ public class VertexProjectDescriptionService : IVertexProjectDescriptionService
     private readonly VertexAiOptions _options;
     private readonly GoogleCredential _credential;
     private readonly ILogger<VertexProjectDescriptionService> _logger;
-    private readonly Database _database;
+    private readonly IProjectRepository _projectRepository;
 
     private const string SystemPrompt = """
 You rewrite portfolio project descriptions for a personal developer site.
@@ -55,24 +57,18 @@ Output format:
         IHttpClientFactory httpClientFactory,
         IOptions<VertexAiOptions> options,
         ILogger<VertexProjectDescriptionService> logger,
-        Database database)
+        IProjectRepository projectRepository)
     {
         _httpClient = httpClientFactory.CreateClient(nameof(VertexProjectDescriptionService));
         _options = options.Value;
         _logger = logger;
-        _database = database;
+        _projectRepository = projectRepository;
         _credential = VertexCredentialFactory.Create(_options, _logger).CreateScoped("https://www.googleapis.com/auth/cloud-platform");
     }
 
     public async Task<Result<ProjectDescriptionSuggestionResponse>> SuggestDescriptionAsync(ProjectId projectId, SuggestProjectDescriptionRequest request, CancellationToken cancellationToken = default)
     {
-        var project = await _database.Project
-            .Include(p => p.Tags)
-            .Include(p => p.Images)
-            .Include(p => p.Repositories)
-            .Include(p => p.Company)
-            .AsNoTracking()
-            .SingleOrDefaultAsync(p => p.Id == projectId, cancellationToken);
+        var project = await _projectRepository.GetAsync(projectId, cancellationToken);
 
         if (project == null) return new NotFoundFailure<ProjectDescriptionSuggestionResponse>("Project not found.");
 
@@ -202,13 +198,29 @@ Additional structured data (may be empty):
     private static string? ExtractAnswer(string json)
     {
         using var doc = JsonDocument.Parse(json);
-        var candidate = doc.RootElement.GetPropertyOrDefault("candidates")?.EnumerateArray().FirstOrDefault();
-        var parts = candidate?.GetPropertyOrDefault("content")?.GetPropertyOrDefault("parts");
-        if (parts is { ValueKind: JsonValueKind.Array } partArray)
+        if (!doc.RootElement.TryGetProperty("candidates", out var candidatesElement))
+            return null;
+            
+        var candidate = candidatesElement.EnumerateArray().FirstOrDefault();
+        if (candidate.ValueKind == JsonValueKind.Undefined)
+            return null;
+            
+        if (!candidate.TryGetProperty("content", out var content))
+            return null;
+            
+        if (!content.TryGetProperty("parts", out var parts))
+            return null;
+            
+        if (parts.ValueKind == JsonValueKind.Array)
         {
-            var textParts = partArray
+            var textParts = parts
                 .EnumerateArray()
-                .Select(p => p.GetPropertyOrDefault("text")?.GetString())
+                .Select(p =>
+                {
+                    if (p.TryGetProperty("text", out var text))
+                        return text.GetString();
+                    return null;
+                })
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .ToList();
 

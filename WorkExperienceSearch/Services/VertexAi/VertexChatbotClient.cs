@@ -1,10 +1,12 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Google.Api.Gax.Grpc;
 using Google.Cloud.DiscoveryEngine.V1;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Auth;
 using Microsoft.Extensions.Options;
+using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Services.VertexAi;
 
@@ -17,7 +19,8 @@ public class VertexAiOptions
     public string Model { get; set; } = "gemini-2.5-pro";
     public string ModelLocation { get; set; } = "global";
     public VertexEnvironment Environment { get; set; } = VertexEnvironment.Local;
-    public string QueryDataStoreSuffix { get; set; } = "project_structured";
+    public string QueryDataStoreSuffix { get; set; } = "project_structured_v2";
+    public string DataStoreVersion { get; set; } = "v2";
     public string? CredentialsFile { get; set; }
     public string? CredentialsJson { get; set; }
 }
@@ -79,19 +82,11 @@ public class VertexChatbotClient : IVertexChatbotClient
             StructData = MapToStruct(value)
         };
 
-        try
+        await _documentClient.UpdateDocumentAsync(new UpdateDocumentRequest
         {
-            await _documentClient.UpdateDocumentAsync(new UpdateDocumentRequest { Document = document }, cancellationToken: cancellationToken);
-        }
-        catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
-        {
-            await _documentClient.CreateDocumentAsync(new CreateDocumentRequest
-            {
-                Parent = GetBranchName(dataStoreId),
-                DocumentId = documentId,
-                Document = document
-            }, cancellationToken: cancellationToken);
-        }
+            Document = document,
+            AllowMissing = true
+        }, cancellationToken: cancellationToken);
     }
 
     public async Task DeleteFeatureAsync(VertexFeatureType featureType, string documentId, CancellationToken cancellationToken = default)
@@ -320,18 +315,32 @@ public class VertexChatbotClient : IVertexChatbotClient
     private string GetBranchName(string dataStoreId) => BranchName.FromProjectLocationCollectionDataStoreBranch(_options.ProjectId, _options.Location, _options.Collection, dataStoreId, _options.Branch).ToString();
     private string GetDocumentName(string dataStoreId, string documentId) => DocumentName.FromProjectLocationDataStoreBranchDocument(_options.ProjectId, _options.Location, dataStoreId, _options.Branch, documentId).ToString();
     private string GetEngineId() => $"{_options.Environment.ToString().ToLowerInvariant()}-chatbot";
-    private string GetFeatureDataStoreId(VertexFeatureType featureType) => $"{_options.Environment.ToString().ToLowerInvariant()}_{featureType.ToString().ToLowerInvariant()}_structured";
+    private string GetFeatureDataStoreId(VertexFeatureType featureType) => $"{_options.Environment.ToString().ToLowerInvariant()}_{featureType.ToString().ToLowerInvariant()}_structured_{_options.DataStoreVersion}";
     private string GetDocumentDataStoreId() => $"{_options.Environment.ToString().ToLowerInvariant()}_unstructured";
 
     private static string GetResourceId(string name) => name.Split("/").Last();
+
+    private static readonly JsonSerializerOptions _structSerializerOptions = new()
+    {
+        Converters = { new IdJsonConverterFactory(), (JsonConverter)new DateOnlyIso8601Converter() }
+    };
 
     private static Struct MapToStruct<T>(T value)
     {
         var element = value is null
             ? JsonSerializer.SerializeToElement(new { })
-            : JsonSerializer.SerializeToElement(value);
+            : JsonSerializer.SerializeToElement(value, _structSerializerOptions);
         return Struct.Parser.ParseJson(element.GetRawText());
     }
 }
 
 public record GoogleChatbotDataStores(IReadOnlyList<(VertexFeatureType FeatureType, string Id)> StructuredDataStoreIds);
+
+internal sealed class DateOnlyIso8601Converter : JsonConverter<DateOnly>
+{
+    public override DateOnly Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options) =>
+        DateOnly.Parse(reader.GetString()!);
+
+    public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(new DateTime(value.Year, value.Month, value.Day, 0, 0, 0, DateTimeKind.Utc).ToString("O"));
+}

@@ -1,31 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Work_Experience_Search.Controllers;
+﻿using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Repositories;
 using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
-public class TagService(Database context) : ITagService
+public class TagService(ITagRepository repository) : ITagService
 {
     public async Task<Result<IEnumerable<Tag>>> GetTagsAsync(string? search)
     {
-        IQueryable<Tag> tags = context.Tag;
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var normalizedSearch = search.ToLowerInvariant();
-            tags = SupportsILike()
-                ? tags.Where(p => EF.Functions.ILike(p.Title, $"%{search}%"))
-                : tags.Where(p => p.Title != null && p.Title.ToLower().Contains(normalizedSearch));
-        }
-
-        return new Success<IEnumerable<Tag>>(await tags.ToListAsync());
+        var tags = await repository.SearchAsync(search);
+        return new Success<IEnumerable<Tag>>(tags);
     }
 
     public async Task<Result<Tag>> GetTagAsync(TagId id)
     {
-        var tag = await context.Tag.FindAsync(id);
+        var tag = await repository.GetAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
 
         return new Success<Tag>(tag);
@@ -33,7 +24,7 @@ public class TagService(Database context) : ITagService
 
     public async Task<Result<Tag>> GetTagBySlugAsync(string slug)
     {
-        var tag = await context.Tag.FirstOrDefaultAsync(t => t.Slug == slug);
+        var tag = await repository.GetAsync(slug);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
 
         return new Success<Tag>(tag);
@@ -41,9 +32,7 @@ public class TagService(Database context) : ITagService
 
     public async Task<Result<Tag>> CreateTagAsync(CreateTag createTag)
     {
-        var tagExists = SupportsILike()
-            ? await context.Tag.AnyAsync(p => EF.Functions.ILike(p.Title, createTag.Title))
-            : await context.Tag.AnyAsync(p => p.Title != null && p.Title.Equals(createTag.Title, StringComparison.OrdinalIgnoreCase));
+        var tagExists = await repository.ExistsAsync(createTag.Title);
         if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
 
         var tag = new Tag
@@ -55,10 +44,7 @@ public class TagService(Database context) : ITagService
             Slug = createTag.Title.ToSlug()
         };
 
-        var test = context.Tag.ToList();
-
-        context.Tag.Add(tag);
-        await context.SaveChangesAsync();
+        await repository.AddAsync(tag);
 
         return new Success<Tag>(tag);
     }
@@ -69,9 +55,7 @@ public class TagService(Database context) : ITagService
 
         foreach (var tag in tags)
         {
-            var existingTag = SupportsILike()
-                ? await context.Tag.FirstOrDefaultAsync(t => EF.Functions.ILike(tag, t.Title))
-                : await context.Tag.FirstOrDefaultAsync(t => t.Title != null && t.Title.Equals(tag, StringComparison.OrdinalIgnoreCase));
+            var existingTag = await repository.GetByTitleAsync(tag);
             if (existingTag != null)
             {
                 tagsList.Add(existingTag);
@@ -86,8 +70,7 @@ public class TagService(Database context) : ITagService
                     CustomColour = null
                 };
 
-                context.Tag.Add(newTag);
-                await context.SaveChangesAsync();
+                await repository.AddAsync(newTag);
 
                 tagsList.Add(newTag);
             }
@@ -98,12 +81,10 @@ public class TagService(Database context) : ITagService
 
     public async Task<Result<Tag>> UpdateTagAsync(TagId id, CreateTag createTag)
     {
-        var tag = await context.Tag.FindAsync(id);
+        var tag = await repository.GetAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
 
-        var tagExists = SupportsILike()
-            ? await context.Tag.AnyAsync(t => t.Id != tag.Id && EF.Functions.ILike(t.Title, createTag.Title))
-            : await context.Tag.AnyAsync(t => t.Id != tag.Id && t.Title != null && t.Title.Equals(createTag.Title, StringComparison.OrdinalIgnoreCase));
+        var tagExists = await repository.ExistsAsync(createTag.Title, id);
         if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
 
         tag.Title = createTag.Title;
@@ -112,22 +93,18 @@ public class TagService(Database context) : ITagService
         tag.CustomColour = createTag.CustomColour;
         tag.Slug = createTag.Title.ToSlug();
 
-        await context.SaveChangesAsync();
+        await repository.UpdateAsync(tag);
 
         return new Success<Tag>(tag);
     }
 
     public async Task<Result<Tag>> DeleteTagAsync(TagId id)
     {
-        var tag = await context.Tag.FindAsync(id);
+        var tag = await repository.GetAsync(id);
         if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
 
-        context.Tag.Remove(tag);
-        await context.SaveChangesAsync();
+        await repository.DeleteAsync(tag);
 
         return new Success<Tag>(tag);
     }
-
-    private bool SupportsILike() =>
-        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }
