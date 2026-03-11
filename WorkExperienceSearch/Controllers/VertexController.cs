@@ -19,9 +19,14 @@ public class VertexController(
         return result.ToResponse();
     }
 
+    private const int MaxQueryLength = 500;
+
     [HttpPost("query")]
     public async Task<ActionResult<VertexQueryResult>> Query([FromBody] VertexQueryRequest request, CancellationToken cancellationToken)
     {
+        if (request.Query.Length > MaxQueryLength)
+            return BadRequest($"Query must not exceed {MaxQueryLength} characters.");
+
         var result = await queryService.QueryAsync(request.Query, cancellationToken);
         return Ok(result);
     }
