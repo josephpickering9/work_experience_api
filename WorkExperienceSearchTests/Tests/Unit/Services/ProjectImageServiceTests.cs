@@ -3,6 +3,7 @@ using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Repositories;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Types;
@@ -19,7 +20,7 @@ public class ProjectImageServiceTests : BaseServiceTests
     {
         var mockFileService = new Mock<IFileService>();
         var mockImageService = new Mock<IImageService>();
-        _projectImageService = new ProjectImageService(Context, mockFileService.Object, mockImageService.Object);
+        _projectImageService = new ProjectImageService(new Work_Experience_Search.Repositories.ProjectRepository(Context), new ProjectImageRepository(Context), mockFileService.Object, mockImageService.Object);
 
         mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync(() => new Success<string>("testPath"));

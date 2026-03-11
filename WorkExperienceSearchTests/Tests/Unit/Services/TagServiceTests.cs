@@ -1,6 +1,7 @@
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Repositories;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
@@ -14,7 +15,7 @@ public class TagServiceTests : BaseServiceTests
 
     public TagServiceTests()
     {
-        _tagService = new TagService(Context);
+        _tagService = new TagService(new TagRepository(Context));
     }
 
     [Fact]
