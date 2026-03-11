@@ -73,7 +73,6 @@ public class TagRepository(Database context) : ITagRepository
 
     public async Task UpdateAsync(Tag tag, CancellationToken cancellationToken = default)
     {
-        // Entity is tracked, just save changes
         await context.SaveChangesAsync(cancellationToken);
     }
 
@@ -82,7 +81,7 @@ public class TagRepository(Database context) : ITagRepository
         context.Tag.Remove(tag);
         await context.SaveChangesAsync(cancellationToken);
     }
-    
+
     private bool SupportsILike() =>
         context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }

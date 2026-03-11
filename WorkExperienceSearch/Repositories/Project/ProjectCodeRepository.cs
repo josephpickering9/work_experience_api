@@ -17,7 +17,6 @@ public class ProjectCodeRepository(Database context) : IProjectCodeRepository
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    // Sometimes we might want to just save changes if we modified tracked entities
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await context.SaveChangesAsync(cancellationToken);

@@ -196,8 +196,6 @@ public class VertexQueryService : IVertexQueryService
         if (docIndex >= 0 && docIndex + 1 < parts.Length)
         {
             var rawId = parts[docIndex + 1];
-            // Handle potential suffixes like ":chunk" or regular extensions if present?
-            // Vertex AI Search usually appends :chunk code for chunks.
             var idPart = rawId.Split(':')[0];
 
             if (Guid.TryParse(idPart, out var id))

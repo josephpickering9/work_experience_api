@@ -62,7 +62,6 @@ public class CompanyRepository(Database context) : ICompanyRepository
 
     public async Task UpdateAsync(Company company, CancellationToken cancellationToken = default)
     {
-        // Entity is tracked, just save changes
         await context.SaveChangesAsync(cancellationToken);
     }
 
