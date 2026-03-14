@@ -56,15 +56,20 @@ public class VertexQueryService : IVertexQueryService
                 parts = new[]
                 {
                     new { text = """
-                        You are a portfolio assistant for a personal developer site. Answer questions about work experience, projects, and skills using only the retrieved context from the datastore.
+                        You are a portfolio assistant for Joseph Pickering (also known as Joe), a software developer.
 
-                        Guidelines:
-                        - If the answer is not in the retrieved context, respond with: "I don't have enough information to answer that."
-                        - If only partial information is available, answer what you can and note what is missing.
-                        - Prefer explicit statements from the data over inferred meanings. For example, if data states "This is the project I'm most proud of", use that directly — do not rephrase it as a passion project or make assumptions about intent.
-                        - Reference project titles, company names, or tags where relevant.
-                        - Keep answers concise and factual.
-                        - Use UK English throughout.
+                        Use only the retrieved context to answer questions. When the answer requires synthesising across multiple retrieved documents, draw connections between them to provide a complete answer.
+
+                        Only respond with "I don't have enough information to answer that." if the retrieved context contains no relevant information whatsoever.
+
+                        Context notes:
+                        - Common abbreviations: GCP = Google Cloud Platform, AWS = Amazon Web Services, CI/CD = continuous integration/deployment.
+                        - Portfolio data is written in the first person; all "I / my / me" statements refer to Joseph Pickering.
+                        - Queries may use "Joe", "Joseph", or "Joseph Pickering" — treat all as the same person.
+
+                        Style:
+                        - Concise and factual. Reference project titles, company names, or technologies where relevant.
+                        - UK English.
                         """ }
                 }
             },
@@ -84,7 +89,8 @@ public class VertexQueryService : IVertexQueryService
                     {
                         vertexAiSearch = new
                         {
-                            datastore = datastoreResource
+                            datastore = datastoreResource,
+                            maxResults = 20
                         }
                     }
                 }
@@ -121,9 +127,11 @@ public class VertexQueryService : IVertexQueryService
             throw;
         }
 
+        const string fallbackAnswer = "I don't have enough information to answer that.";
+
         if (searchResponse == null)
         {
-             return new VertexQueryResult(string.Empty, new List<VertexCitation>());
+            return new VertexQueryResult(fallbackAnswer, new List<VertexCitation>());
         }
 
         var answer = ExtractAnswer(searchResponse);
@@ -133,9 +141,10 @@ public class VertexQueryService : IVertexQueryService
         {
             var finishReasons = searchResponse.Candidates.Select(c => c.FinishReason ?? "null").ToList();
             _logger.LogWarning("Vertex query returned empty answer. FinishReasons: [{Reasons}]. Raw: {Raw}", string.Join(", ", finishReasons), raw);
+            answer = fallbackAnswer;
         }
 
-        return new VertexQueryResult(answer ?? string.Empty, citations);
+        return new VertexQueryResult(answer, citations);
     }
 
     private static string? ExtractAnswer(GoogleSearchResponse response)
@@ -151,7 +160,6 @@ public class VertexQueryService : IVertexQueryService
         var candidate = response.Candidates.FirstOrDefault();
         if (candidate == null) return list;
 
-        // 1. Extract from Grounding Metadata (Retrieved Context)
         if (candidate.GroundingMetadata?.GroundingChunks != null)
         {
             foreach (var chunk in candidate.GroundingMetadata.GroundingChunks)
@@ -168,7 +176,6 @@ public class VertexQueryService : IVertexQueryService
             }
         }
 
-        // 2. Extract from Citation Metadata (Web Search / General)
         if (candidate.CitationMetadata?.Citations != null)
         {
             foreach (var c in candidate.CitationMetadata.Citations)
