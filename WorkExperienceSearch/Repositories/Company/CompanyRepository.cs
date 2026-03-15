@@ -3,11 +3,12 @@ using Microsoft.Extensions.Caching.Memory;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Repositories;
 
 public class CompanyRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator)
-    : BaseRepository(context, cache), ICompanyRepository
+    : BaseRepository(cache), ICompanyRepository
 {
     public async Task<IEnumerable<Company>> GetByIdsAsync(IEnumerable<CompanyId> ids, CancellationToken cancellationToken = default)
     {
@@ -46,7 +47,7 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.ToLowerInvariant();
-            companies = SupportsILike()
+            companies = context.Database.SupportsILike()
                 ? companies.Where(c => EF.Functions.ILike(c.Name, $"%{search}%"))
                 : companies.Where(c => c.Name != null && c.Name.ToLower().Contains(normalizedSearch));
         }
@@ -58,14 +59,14 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
 
     public async Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default)
     {
-        return SupportsILike()
+        return context.Database.SupportsILike()
             ? await context.Company.AnyAsync(c => EF.Functions.ILike(c.Name, name), cancellationToken)
             : await context.Company.AnyAsync(c => c.Name != null && c.Name.Equals(name, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }
 
     public async Task<bool> ExistsAsync(string name, CompanyId excludeId, CancellationToken cancellationToken = default)
     {
-        return SupportsILike()
+        return context.Database.SupportsILike()
             ? await context.Company.AnyAsync(p => p.Id != excludeId && EF.Functions.ILike(p.Name, name), cancellationToken)
             : await context.Company.AnyAsync(p => p.Id != excludeId && p.Name != null && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }

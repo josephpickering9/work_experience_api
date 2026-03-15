@@ -11,7 +11,9 @@ internal static class VertexCredentialFactory
         if (!string.IsNullOrWhiteSpace(options.CredentialsFile))
         {
             logger.LogInformation("Using Vertex AI credentials file at {CredentialsFile}", options.CredentialsFile);
+#pragma warning disable CS0618
             return GoogleCredential.FromFile(options.CredentialsFile);
+#pragma warning restore CS0618
         }
 
         if (!string.IsNullOrWhiteSpace(options.CredentialsJson))
@@ -20,7 +22,9 @@ internal static class VertexCredentialFactory
 
             try
             {
+#pragma warning disable CS0618
                 return GoogleCredential.FromJson(json);
+#pragma warning restore CS0618
             }
             catch (Exception ex)
             {

@@ -14,7 +14,6 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     [Fact]
     public async Task GetTags_ReturnsTags()
     {
-        // Arrange
         var tags = new List<Tag>
         {
             await CreateTagAsync(TagId.New(), "Tag 1"),
@@ -22,13 +21,11 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
             await CreateTagAsync(TagId.New(), "Tag 3")
         };
 
-        // Act
         var httpResponse = await Client.GetAsync("/tag");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var response = GetJsonContent<List<Tag>>(stringResponse);
 
-        // Assert
         Assert.NotNull(response);
         Assert.NotEmpty(response);
         Assert.Equal(tags.Count, response.Count);
@@ -37,17 +34,14 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     [Fact]
     public async Task GetTag_ExistingId_ReturnsTag()
     {
-        // Arrange
         var testTagId = TagId.New();
         await CreateTagAsync(testTagId);
 
-        // Act
         var httpResponse = await Client.GetAsync($"/tag/{testTagId}");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var tag = GetJsonContent<Tag>(stringResponse);
 
-        // Assert
         Assert.NotNull(tag);
         Assert.Equal(testTagId, tag.Id);
     }
@@ -55,20 +49,16 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     [Fact]
     public async Task GetTag_NonExistingId_ReturnsNotFound()
     {
-        // Arrange
         var nonExistingTagId = TagId.New();
 
-        // Act
         var httpResponse = await Client.GetAsync($"/tag/{nonExistingTagId}");
 
-        // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task PostTag_Unauthorized_ReturnsUnauthorized()
     {
-        // Arrange
         var createTag = new CreateTag
         {
             Title = "New Tag",
@@ -77,17 +67,14 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
             CustomColour = null
         };
 
-        // Act
         var httpResponse = await Client.PostAsync("/tag", CreateJsonContent(createTag));
 
-        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task PostTag_ValidTag_ReturnsTag()
     {
-        // Arrange
         var createTag = new CreateTag
         {
             Title = "New Tag",
@@ -96,13 +83,11 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
             CustomColour = null
         };
 
-        // Act
         var httpResponse = await AuthenticatedClient.PostAsync("/tag", CreateJsonContent(createTag));
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var tag = GetJsonContent<Tag>(stringResponse);
 
-        // Assert
         Assert.NotNull(tag);
         Assert.Equal(createTag.Title, tag.Title);
         Assert.Equal(createTag.Type, tag.Type);
@@ -113,7 +98,6 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     [Fact]
     public async Task PostTag_ExistingTag_ReturnsConflict()
     {
-        // Arrange
         await CreateTagAsync(TagId.New(), "Conflict Tag");
         var createTag = new CreateTag
         {
@@ -123,17 +107,14 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
             CustomColour = null
         };
 
-        // Act
         var httpResponse = await AuthenticatedClient.PostAsync("/tag", CreateJsonContent(createTag));
 
-        // Assert
         Assert.Equal(HttpStatusCode.Conflict, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task PutTag_Unauthorized_ReturnsUnauthorized()
     {
-        // Arrange
         var updateTag = new CreateTag
         {
             Title = "Updated Tag",
@@ -142,17 +123,14 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
             CustomColour = null
         };
 
-        // Act
         var httpResponse = await Client.PutAsync($"/tag/{TagId.New()}", CreateJsonContent(updateTag));
 
-        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task PutTag_ValidId_ReturnsUpdatedTag()
     {
-        // Arrange
         var tagId = TagId.New();
         await CreateTagAsync(tagId);
         var updateTag = new CreateTag
@@ -163,13 +141,11 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
             CustomColour = null
         };
 
-        // Act
         var httpResponse = await AuthenticatedClient.PutAsync($"/tag/{tagId}", CreateJsonContent(updateTag));
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var tag = GetJsonContent<Tag>(stringResponse);
 
-        // Assert
         Assert.NotNull(tag);
         Assert.Equal(tagId, tag.Id);
         Assert.Equal(updateTag.Title, tag.Title);
@@ -178,7 +154,6 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     [Fact]
     public async Task PutTag_NonExistingId_ReturnsNotFound()
     {
-        // Arrange
         var nonExistingTagId = TagId.New();
         var updateTag = new CreateTag
         {
@@ -188,31 +163,25 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
             CustomColour = null
         };
 
-        // Act
         var httpResponse = await AuthenticatedClient.PutAsync($"/tag/{nonExistingTagId}", CreateJsonContent(updateTag));
 
-        // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task DeleteTag_Unauthorized_ReturnsUnauthorized()
     {
-        // Act
         var httpResponse = await Client.DeleteAsync($"/tag/{TagId.New()}");
 
-        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task DeleteTag_ValidId_DeletesTag()
     {
-        // Arrange
         var tagId = TagId.New();
         await CreateTagAsync(tagId);
 
-        // Act
         var httpResponse = await AuthenticatedClient.DeleteAsync($"/tag/{tagId}");
         httpResponse.EnsureSuccessStatusCode();
     }
@@ -220,13 +189,10 @@ public class TagControllerIntegrationTests(CustomWebApplicationFactory customWeb
     [Fact]
     public async Task DeleteTag_NonExistingId_ReturnsNotFound()
     {
-        // Arrange
         var nonExistingTagId = TagId.New();
 
-        // Act
         var httpResponse = await AuthenticatedClient.DeleteAsync($"/tag/{nonExistingTagId}");
 
-        // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
 }

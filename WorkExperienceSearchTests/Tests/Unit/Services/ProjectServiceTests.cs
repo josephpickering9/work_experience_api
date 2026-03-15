@@ -36,12 +36,9 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectsAsync_NoSearchTerm_ReturnsAllProjects()
     {
-        // Arrange is done in the constructor
 
-        // Act
         var result = (await _projectService.GetProjectsAsync(null)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(3, result.Count());
     }
@@ -49,12 +46,9 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectsAsync_WithSearchTerm_ReturnsMatchingProjects()
     {
-        // Arrange is done in the constructor
 
-        // Act
         var result = (await _projectService.GetProjectsAsync("ViSIT")).ExpectSuccess().ToList();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Single(result);
         Assert.Equal("Visit Northumberland", result.First().Title);
@@ -63,12 +57,9 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectsAsync_OrderedByDateDescending()
     {
-        // Arrange is done in the constructor
 
-        // Act
         var result = (await _projectService.GetProjectsAsync(null)).ExpectSuccess().ToList();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal("BeatCovidNE", result[0].Title);
         Assert.Equal("Visit Northumberland", result[1].Title);
@@ -78,13 +69,10 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectAsync_ValidId_ReturnsProject()
     {
-        // Arrange
         var testProjectId = Project1Id; // Assuming this ID exists in GetTestProjects()
 
-        // Act
         var result = (await _projectService.GetProjectAsync(testProjectId)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(testProjectId, result.Id);
     }
@@ -92,17 +80,14 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectBySlugAsync_ValidSlug_ReturnsProject()
     {
-        // Arrange
         const string validSlug = "client-portal";
         await SaveProject(CreateProject(ProjectId.New(), "Client Portal", "Client Portal Description",
             "Client Portal Short Description", Company1Id, new DateOnly(2021, 1, 1),
             new DateOnly(2022, 1, 1),
             "https://clientportal.com", []));
 
-        // Act
         var result = (await _projectService.GetProjectBySlugAsync(validSlug)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(validSlug, result.Slug);
     }
@@ -110,13 +95,10 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectBySlugAsync_InvalidSlug_ThrowsNotFoundFailure()
     {
-        // Arrange
         const string invalidSlug = "non-existent-slug";
 
-        // Act
         var result = (await _projectService.GetProjectBySlugAsync(invalidSlug)).ExpectFailure();
 
-        // Assert
         Assert.IsType<NotFoundException>(result);
         Assert.Equal("Project not found.", result.Message);
     }
@@ -124,13 +106,10 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetRelatedProjectsAsync_WithCommonTags_ReturnsRelatedProjects()
     {
-        // Arrange
         var projectIdWithTags = Project1Id;
 
-        // Act
         var result = (await _projectService.GetRelatedProjectsAsync(projectIdWithTags)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.True(result.Any());
     }
@@ -138,7 +117,6 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task GetRelatedProjectsAsync_GetsProjectsWithMostRelatedTags()
     {
-        // Arrange
         await ClearDatabase();
 
         var tag1 = CreateTag(TagId.New(), "Tag 1", TagType.Default);
@@ -155,10 +133,8 @@ public class ProjectServiceTests : BaseServiceTests
         var relatedProject3 = await SaveProject(CreateProject(ProjectId.New(), "Project 4", tags: [tag1, tag2, tag3, tag4]));
         var relatedProject4 = await SaveProject(CreateProject(ProjectId.New(), "Project 5", tags: [tag1, tag2, tag3, tag4, tag5]));
         var relatedProject5 = await SaveProject(CreateProject(ProjectId.New(), "Project 6", tags: [tag1, tag2, tag3, tag4, tag5, tag6]));
-        // Act
         var relatedProjects = (await _projectService.GetRelatedProjectsAsync(mainProject.Id)).ExpectSuccess()!.ToList();
 
-        // Assert
         Assert.NotNull(relatedProjects);
         Assert.Equal(3, relatedProjects.Count);
         Assert.DoesNotContain(relatedProjects, p => p.Id == relatedProject1.Id);
@@ -171,7 +147,6 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task CreateProjectAsync_NewProject_ReturnsProject()
     {
-        // Arrange
         var newProject = new CreateProject
         {
             Title = "Test Project",
@@ -187,10 +162,8 @@ public class ProjectServiceTests : BaseServiceTests
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
             .ReturnsAsync((List<string> tags) => new Success<List<Tag>>(tags.Select(t => CreateTag(TagId.New(), t, TagType.Default)).ToList()));
 
-        // Act
         var result = (await _projectService.CreateProjectAsync(newProject)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(newProject.Title, result.Title);
         Assert.Equal(newProject.Description, result.Description);
@@ -213,7 +186,6 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task UpdateProjectAsync_ExistingProject_UpdatesProject()
     {
-        // Arrange
         var tag = CreateTag(TagId.New(), "Updated Tag", TagType.Backend);
         var existingProject = await SaveProject(CreateProject(ProjectId.New(), "Test Update Project", "Test Description",
             "Test Short Description", Company1Id, new DateOnly(2021, 1, 1),
@@ -235,10 +207,8 @@ public class ProjectServiceTests : BaseServiceTests
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
             .ReturnsAsync(() => new Success<List<Tag>>([tag]));
 
-        // Act
         var result = (await _projectService.UpdateProjectAsync(existingProject.Id, updateData)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(updateData.Title, result.Title);
         Assert.Equal(updateData.Description, result.Description);
@@ -265,13 +235,10 @@ public class ProjectServiceTests : BaseServiceTests
     [Fact]
     public async Task DeleteProjectAsync_ExistingProject_DeletesProject()
     {
-        // Arrange
         var existingProject = await SaveProject(CreateProject(ProjectId.New(), "Test Delete Project"));
 
-        // Act
         var result = (await _projectService.DeleteProjectAsync(existingProject.Id)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(existingProject.Id, result.Id);
 

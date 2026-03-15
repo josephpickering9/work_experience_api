@@ -13,7 +13,6 @@ public class MediaControllerIntegrationTests(CustomWebApplicationFactory customW
     [Fact]
     public async Task GetFile_ExistingFile_ReturnsFile()
     {
-        // Arrange
         const string fileName = "testfile.txt";
         const string testContent = "This is a test file.";
         var webHostEnvironment = Factory.Services.GetRequiredService<IWebHostEnvironment>();
@@ -26,10 +25,8 @@ public class MediaControllerIntegrationTests(CustomWebApplicationFactory customW
         // Create a test file in the temporary directory
         await File.WriteAllTextAsync(filePath, testContent);
 
-        // Act
         var response = await Client.GetAsync($"/media/uploads/{fileName}");
 
-        // Assert
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
         Assert.Equal(testContent, content);
@@ -45,13 +42,10 @@ public class MediaControllerIntegrationTests(CustomWebApplicationFactory customW
     [Fact]
     public async Task GetFile_NonExistingFile_ReturnsNotFound()
     {
-        // Arrange
         const string nonExistingFileName = "nonexistingfile.txt";
 
-        // Act
         var response = await Client.GetAsync($"/media/uploads/{nonExistingFileName}");
 
-        // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

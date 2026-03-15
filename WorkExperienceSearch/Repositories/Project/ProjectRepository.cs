@@ -3,11 +3,12 @@ using Microsoft.Extensions.Caching.Memory;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Repositories;
 
 public class ProjectRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator)
-    : BaseRepository(context, cache), IProjectRepository
+    : BaseRepository(cache), IProjectRepository
 {
     public async Task<IEnumerable<Project>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
@@ -19,7 +20,7 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.ToLowerInvariant();
-            projects = SupportsILike()
+            projects = context.Database.SupportsILike()
                 ? projects.Where(p => EF.Functions.ILike(p.Title, $"%{search}%") || EF.Functions.ILike(p.ShortDescription, $"%{search}%"))
                 : projects.Where(p =>
                     (p.Title != null && p.Title.ToLower().Contains(normalizedSearch)) ||
@@ -108,14 +109,14 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
 
     public async Task<bool> ExistsAsync(string title, CancellationToken cancellationToken = default)
     {
-        return SupportsILike()
+        return context.Database.SupportsILike()
             ? await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, title), cancellationToken)
             : await context.Project.AnyAsync(p => p.Title != null && p.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }
 
     public async Task<bool> ExistsAsync(string title, ProjectId excludeId, CancellationToken cancellationToken = default)
     {
-        return SupportsILike()
+        return context.Database.SupportsILike()
             ? await context.Project.AnyAsync(p => p.Id != excludeId && EF.Functions.ILike(p.Title, title), cancellationToken)
             : await context.Project.AnyAsync(p => p.Id != excludeId && p.Title != null && p.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }

@@ -19,7 +19,6 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task GetProjects_ReturnsProjects()
     {
-        // Arrange
         var projects = new List<Project>
         {
             await CreateProjectAsync(ProjectId.New()),
@@ -27,13 +26,11 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
             await CreateProjectAsync(ProjectId.New())
         };
 
-        // Act
         var httpResponse = await Client.GetAsync("/project");
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var response = GetJsonContent<List<Project>>(stringResponse);
 
-        // Assert
         Assert.NotNull(response);
         Assert.NotEmpty(response);
         Assert.Equal(projects.Count, response.Count);
@@ -42,15 +39,12 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task GetProject_ExistingId_ReturnsProject()
     {
-        // Arrange
         var testProjectId = ProjectId.New();
         var tags = new List<string> { "Tag1", "Tag2" };
         var expectedProject = await CreateProjectAsync(testProjectId, tags: tags);
 
-        // Act
         var httpResponse = await Client.GetAsync($"/project/{testProjectId}");
 
-        // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var actualProject = GetJsonContent<Project>(stringResponse);
@@ -67,27 +61,21 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task GetProject_NonExistingId_ReturnsNotFound()
     {
-        // Arrange
         var nonExistingProjectId = ProjectId.New();
 
-        // Act
         var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectId}");
 
-        // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task GetProject_ExistingSlug_ReturnsProject()
     {
-        // Arrange
         var testProjectId = ProjectId.New();
         var expectedProject = await CreateProjectAsync(testProjectId);
 
-        // Act
         var httpResponse = await Client.GetAsync($"/project/{expectedProject.Slug}");
 
-        // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var actualProject = GetJsonContent<Project>(stringResponse);
@@ -104,28 +92,22 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task GetProject_NonExistingSlug_ReturnsNotFound()
     {
-        // Arrange
         const string nonExistingProjectSlug = "non-existing-slug";
 
-        // Act
         var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectSlug}");
 
-        // Assert
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task GetRelatedProjects_ExistingId_ReturnsProjects()
     {
-        // Arrange
         var tags = new List<string> { "Tag1", "Tag2" };
         var expectedProject = await CreateProjectAsync(ProjectId.New(), tags: tags);
         var relatedProject = await CreateProjectAsync(ProjectId.New(), tags: tags);
 
-        // Act
         var httpResponse = await Client.GetAsync($"/project/{expectedProject.Id}/related");
 
-        // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var actualProjects = GetJsonContent<List<Project>>(stringResponse);
@@ -138,7 +120,6 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task PostProject_CreatesNewProject()
     {
-        // Arrange
         var newProject = new CreateProject
         {
             Title = "New Project",
@@ -155,10 +136,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
 
         var content = GetMultipartFormDataContent(newProject);
 
-        // Act
         var httpResponse = await AuthenticatedClient.PostAsync("/project", content);
 
-        // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var actualProject = GetJsonContent<Project>(stringResponse);
@@ -198,7 +177,6 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task PostProject_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
         var newProject = new CreateProject
         {
             Title = "New Project",
@@ -213,17 +191,14 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
 
         var content = GetMultipartFormDataContent(newProject);
 
-        // Act
         var httpResponse = await Client.PostAsync("/project", content);
 
-        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task PostProject_WithDuplicateTitle_ReturnsConflict()
     {
-        // Arrange
         var duplicateProject = new CreateProject
         {
             Title = "Duplicate Project",
@@ -245,7 +220,6 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         // Act - Second attempt (should fail)
         var secondResponse = await AuthenticatedClient.PostAsync("/project", content);
 
-        // Assert
         Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
         var stringResponse = await secondResponse.Content.ReadAsStringAsync();
 
@@ -260,7 +234,6 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task PutProject_ExistingId_UpdatesProject()
     {
-        // Arrange
         var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
@@ -278,10 +251,8 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
 
         var content = GetMultipartFormDataContent(updateProject);
 
-        // Act
         var httpResponse = await AuthenticatedClient.PutAsync($"/project/{existingProject.Id}", content);
 
-        // Assert
         httpResponse.EnsureSuccessStatusCode();
         var stringResponse = await httpResponse.Content.ReadAsStringAsync();
         var actualProject = GetJsonContent<Project>(stringResponse);
@@ -321,11 +292,9 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task PutProject_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
         var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
-        // Act
         var updateProject = new CreateProject
         {
             Title = "Updated Project",
@@ -340,24 +309,19 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
 
         var content = GetMultipartFormDataContent(updateProject);
 
-        // Act
         var httpResponse = await Client.PutAsync($"/project/{existingProject.Id}", content);
 
-        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 
     [Fact]
     public async Task DeleteProject_ExistingId_DeletesProject()
     {
-        // Arrange
         var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
-        // Act
         var httpResponse = await AuthenticatedClient.DeleteAsync($"/project/{existingProject.Id}");
 
-        // Assert
         httpResponse.EnsureSuccessStatusCode();
 
         using var scope = Factory.Services.CreateScope();
@@ -369,14 +333,11 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     [Fact]
     public async Task DeleteProject_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
         var testProjectId = ProjectId.New();
         var existingProject = await CreateProjectAsync(testProjectId);
 
-        // Act
         var httpResponse = await Client.DeleteAsync($"/project/{existingProject.Id}");
 
-        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
     }
 }
