@@ -53,7 +53,6 @@ public class BaseControllerIntegrationTests : IAsyncLifetime
         var context = scope.ServiceProvider.GetRequiredService<Database>();
 
         context.ProjectImage.RemoveRange(context.ProjectImage);
-        context.ProjectTag.RemoveRange(context.ProjectTag);
         context.Project.RemoveRange(context.Project);
         context.Tag.RemoveRange(context.Tag);
         context.Company.RemoveRange(context.Company);

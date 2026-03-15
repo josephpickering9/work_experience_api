@@ -1,10 +1,13 @@
 using System.Text.Json.Serialization;
 using Auth0.AspNetCore.Authentication;
 using dotenv.net;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Serilog;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Filters;
 using Work_Experience_Search.Services;
@@ -15,12 +18,26 @@ using Work_Experience_Search.Repositories;
 
 DotEnv.Load();
 
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+        .AddEnvironmentVariables()
+        .Build())
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
 builder.Services.AddDbContext<Database>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), o => o.CommandTimeout(300))
 );
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<Database>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<CacheInvalidator>();
@@ -45,6 +62,11 @@ builder.Services.AddScoped<IVertexQueryService, VertexQueryService>();
 builder.Services.AddScoped<IVertexProjectDescriptionService, VertexProjectDescriptionService>();
 builder.Services.AddHttpClient();
 
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+builder.Services.AddProblemDetails();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -54,7 +76,6 @@ builder.Services.AddSwaggerGen(c =>
     c.SchemaFilter<EnumDescriptionSchemaFilter>();
     c.SupportNonNullableReferenceTypes();
 
-    // Expose strongly-typed IDs as simple uuid strings in OpenAPI
     c.MapType<ProjectId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
     c.MapType<CompanyId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
     c.MapType<TagId>(() => new OpenApiSchema { Type = "string", Format = "uuid" });
@@ -102,18 +123,25 @@ app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
     {
-        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
-        var (statusCode, message) = exceptionHandlerPathFeature?.Error switch
+        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+        var (statusCode, title) = exceptionHandlerPathFeature?.Error switch
         {
-            NotFoundException notFoundException => (StatusCodes.Status404NotFound, notFoundException.Message),
-            ConflictException conflictException => (StatusCodes.Status409Conflict, conflictException.Message),
-            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
+            NotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
+            ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
+            _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
+        };
+
+        var problemDetails = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = title,
+            Detail = exceptionHandlerPathFeature?.Error.Message
         };
 
         context.Response.StatusCode = statusCode;
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = "application/problem+json";
 
-        await context.Response.WriteAsync(message);
+        await context.Response.WriteAsJsonAsync(problemDetails);
     });
 });
 
@@ -124,6 +152,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapHealthChecks("/health");
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();

@@ -3,10 +3,12 @@ using Microsoft.Extensions.Caching.Memory;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Repositories;
 
-public class TagRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator) : ITagRepository
+public class TagRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator)
+    : BaseRepository(cache), ITagRepository
 {
     public async Task<IEnumerable<Tag>> GetByIdsAsync(IEnumerable<TagId> ids, CancellationToken cancellationToken = default)
     {
@@ -18,8 +20,7 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
     public async Task<Tag?> GetAsync(string slug, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"tag:slug:{slug}";
-        if (cache.TryGetValue(cacheKey, out Tag? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Tag? cached)) return cached;
 
         var tag = await context.Tag
             .Include(t => t.Projects)
@@ -28,24 +29,23 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
             .ThenInclude(p => p.Tags)
             .SingleOrDefaultAsync(t => t.Slug == slug, cancellationToken);
 
-        cache.Set(cacheKey, tag, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        SetCache(cacheKey, tag, cacheInvalidator.GetTagsChangeToken());
         return tag;
     }
 
     public async Task<Tag?> GetAsync(TagId id, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"tag:{id}";
-        if (cache.TryGetValue(cacheKey, out Tag? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Tag? cached)) return cached;
 
         var tag = await context.Tag.FindAsync(new object[] { id }, cancellationToken);
-        cache.Set(cacheKey, tag, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        SetCache(cacheKey, tag, cacheInvalidator.GetTagsChangeToken());
         return tag;
     }
 
     public async Task<Tag?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
     {
-        return SupportsILike()
+        return context.Database.SupportsILike()
             ? await context.Tag.FirstOrDefaultAsync(t => EF.Functions.ILike(title, t.Title), cancellationToken)
             : await context.Tag.FirstOrDefaultAsync(t => t.Title != null && t.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }
@@ -53,34 +53,33 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
     public async Task<IEnumerable<Tag>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"tags:{search ?? ""}";
-        if (cache.TryGetValue(cacheKey, out IEnumerable<Tag>? cached) && cached != null)
-            return cached;
+        if (TryGetCache(cacheKey, out IEnumerable<Tag>? cached) && cached != null) return cached;
 
         IQueryable<Tag> tags = context.Tag;
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.ToLowerInvariant();
-            tags = SupportsILike()
+            tags = context.Database.SupportsILike()
                 ? tags.Where(p => EF.Functions.ILike(p.Title, $"%{search}%"))
                 : tags.Where(p => p.Title != null && p.Title.ToLower().Contains(normalizedSearch));
         }
 
         var result = await tags.ToListAsync(cancellationToken);
-        cache.Set(cacheKey, result, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        SetCache(cacheKey, result, cacheInvalidator.GetTagsChangeToken());
         return result;
     }
 
     public async Task<bool> ExistsAsync(string title, CancellationToken cancellationToken = default)
     {
-        return SupportsILike()
+        return context.Database.SupportsILike()
             ? await context.Tag.AnyAsync(p => EF.Functions.ILike(p.Title, title), cancellationToken)
             : await context.Tag.AnyAsync(p => p.Title != null && p.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }
 
     public async Task<bool> ExistsAsync(string title, TagId excludeId, CancellationToken cancellationToken = default)
     {
-        return SupportsILike()
+        return context.Database.SupportsILike()
             ? await context.Tag.AnyAsync(t => t.Id != excludeId && EF.Functions.ILike(t.Title, title), cancellationToken)
             : await context.Tag.AnyAsync(t => t.Id != excludeId && t.Title != null && t.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }
@@ -104,7 +103,4 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateTags();
     }
-
-    private bool SupportsILike() =>
-        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }

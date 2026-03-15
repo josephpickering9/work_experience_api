@@ -1,4 +1,4 @@
-﻿using Work_Experience_Search.Controllers;
+﻿using Work_Experience_Search.Requests;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
 

@@ -1,7 +1,7 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 
@@ -64,51 +64,4 @@ public class ProjectController(IProjectService projectService) : ControllerBase
         var project = await projectService.DeleteProjectAsync(id);
         return project.ToResponse();
     }
-}
-
-public class CreateProject
-{
-    [Required] public string Title { get; init; } = null!;
-
-    [Required] public string ShortDescription { get; init; } = null!;
-
-    [Required] public string Description { get; init; } = null!;
-
-    public CompanyId? CompanyId { get; init; }
-
-    [Required] public DateOnly StartDate { get; init; }
-
-    public DateOnly? EndDate { get; init; }
-
-    public string? Website { get; init; }
-
-    [Required] public bool ShowMockup { get; init; } = false;
-
-    public List<CreateProjectImage> Images { get; init; } = [];
-
-    [Required] public List<string> Tags { get; init; } = [];
-
-    public List<CreateProjectRepository> Repositories { get; init; } = [];
-}
-
-public class CreateProjectImage
-{
-    public ProjectImageId? Id { get; init; }
-
-    public IFormFile? Image { get; init; }
-
-    [Required] public ImageType Type { get; init; }
-
-    public int? Order { get; init; }
-}
-
-public class CreateProjectRepository
-{
-    public ProjectRepositoryId? Id { get; init; }
-
-    [Required] public string Title { get; init; } = null!;
-
-    [Required] public string Url { get; init; } = null!;
-
-    public int? Order { get; set; }
 }

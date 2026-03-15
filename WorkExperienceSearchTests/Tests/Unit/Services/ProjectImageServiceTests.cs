@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
-using Work_Experience_Search.Controllers;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Repositories;
@@ -32,10 +32,8 @@ public class ProjectImageServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectImagesAsync_ValidProjectId_ReturnsProjectImages()
     {
-        // Act
         var result = (await _projectImageService.GetProjectImagesAsync(Project1Id)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(7, result.Count());
     }
@@ -43,13 +41,10 @@ public class ProjectImageServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectImagesAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
-        // Arrange
         var invalidProjectId = ProjectId.New();
 
-        // Act
         var result = (await _projectImageService.GetProjectImagesAsync(invalidProjectId)).ExpectFailure();
 
-        // Assert
         Assert.IsType<NotFoundException>(result);
         Assert.Equal("Project not found.", result.Message);
     }
@@ -57,13 +52,10 @@ public class ProjectImageServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectImageAsync_ValidProjectIdAndImageId_ReturnsProjectImage()
     {
-        // Arrange
         var imageId = Image1Id;
 
-        // Act
         var result = (await _projectImageService.GetProjectImageAsync(Project1Id, imageId)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(imageId, result.Id);
     }
@@ -71,14 +63,11 @@ public class ProjectImageServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectImageAsync_InvalidProjectId_ThrowsNotFoundFailure()
     {
-        // Arrange
         var invalidProjectId = ProjectId.New();
         var imageId = Image1Id;
 
-        // Act
         var result = (await _projectImageService.GetProjectImageAsync(invalidProjectId, imageId)).ExpectFailure();
 
-        // Assert
         Assert.IsType<NotFoundException>(result);
         Assert.Equal("Project not found.", result.Message);
     }
@@ -86,13 +75,10 @@ public class ProjectImageServiceTests : BaseServiceTests
     [Fact]
     public async Task GetProjectImageAsync_InvalidImageId_ThrowsNotFoundFailure()
     {
-        // Arrange
         var invalidImageId = ProjectImageId.New();
 
-        // Act
         var result = (await _projectImageService.GetProjectImageAsync(Project1Id, invalidImageId)).ExpectFailure();
 
-        // Assert
         Assert.IsType<NotFoundException>(result);
         Assert.Equal("Image not found.", result.Message);
     }
@@ -100,7 +86,6 @@ public class ProjectImageServiceTests : BaseServiceTests
     [Fact]
     public async Task SyncProjectImagesAsync_ValidProjectIdAndImages_ReturnsProjectImages()
     {
-        // Arrange
         var images = new List<CreateProjectImage>
         {
             new() { Id = Image1Id, Type = ImageType.Logo },
@@ -114,10 +99,8 @@ public class ProjectImageServiceTests : BaseServiceTests
             new() { Image = null, Type = ImageType.Mobile, Order = 3 }
         };
 
-        // Act
         var result = (await _projectImageService.SyncProjectImagesAsync(Project1Id, images)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(9, result.Count);
     }
@@ -125,7 +108,6 @@ public class ProjectImageServiceTests : BaseServiceTests
     [Fact]
     public async Task SyncProjectImagesAsync_ValidProjectIdAndImages_DeletesProjectImages()
     {
-        // Arrange
         var images = new List<CreateProjectImage>
         {
             new() { Id = Image1Id, Type = ImageType.Logo },
@@ -139,11 +121,9 @@ public class ProjectImageServiceTests : BaseServiceTests
             new() { Image = null, Type = ImageType.Mobile, Order = 3 }
         };
 
-        // Act
         await _projectImageService.SyncProjectImagesAsync(Project1Id, images);
         var result = (await _projectImageService.GetProjectImagesAsync(Project1Id)).ExpectSuccess();
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(9, result.Count());
     }

@@ -3,26 +3,24 @@ using Microsoft.Extensions.Caching.Memory;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
+using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Repositories;
 
-public class ProjectRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator) : IProjectRepository
+public class ProjectRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator)
+    : BaseRepository(cache), IProjectRepository
 {
     public async Task<IEnumerable<Project>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"projects:{search ?? ""}";
-        if (cache.TryGetValue(cacheKey, out IEnumerable<Project>? cached) && cached != null)
-            return cached;
+        if (TryGetCache(cacheKey, out IEnumerable<Project>? cached) && cached != null) return cached;
 
-        IQueryable<Project> projects = context.Project
-            .Include(p => p.Tags)
-            .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
-            .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0));
+        var projects = WithIncludes(context.Project);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.ToLowerInvariant();
-            projects = SupportsILike()
+            projects = context.Database.SupportsILike()
                 ? projects.Where(p => EF.Functions.ILike(p.Title, $"%{search}%") || EF.Functions.ILike(p.ShortDescription, $"%{search}%"))
                 : projects.Where(p =>
                     (p.Title != null && p.Title.ToLower().Contains(normalizedSearch)) ||
@@ -30,7 +28,7 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
         }
 
         var result = await projects.OrderByDescending(p => p.StartDate).ThenByDescending(p => p.EndDate).ToListAsync(cancellationToken);
-        cache.Set(cacheKey, result, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetProjectsChangeToken()));
+        SetCache(cacheKey, result, cacheInvalidator.GetProjectsChangeToken());
         return result;
     }
 
@@ -47,8 +45,7 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
     public async Task<Project?> GetAsync(ProjectId id, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"project:{id}";
-        if (cache.TryGetValue(cacheKey, out Project? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Project? cached)) return cached;
 
         var project = await context.Project
             .Include(p => p.Tags)
@@ -57,31 +54,32 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
             .Include(p => p.Company)
             .SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
 
-        cache.Set(cacheKey, project, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetProjectsChangeToken()));
+        SetCache(cacheKey, project, cacheInvalidator.GetProjectsChangeToken());
         return project;
     }
 
     public async Task<Project?> GetAsync(string slug, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"project:slug:{slug}";
-        if (cache.TryGetValue(cacheKey, out Project? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Project? cached)) return cached;
 
-        var project = await context.Project
-            .Include(p => p.Tags)
-            .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
-            .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0))
+        var project = await WithIncludes(context.Project)
             .SingleOrDefaultAsync(p => p.Slug == slug, cancellationToken);
 
-        cache.Set(cacheKey, project, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetProjectsChangeToken()));
+        SetCache(cacheKey, project, cacheInvalidator.GetProjectsChangeToken());
         return project;
+    }
+
+    public async Task<Project?> GetForUpdateAsync(ProjectId id, CancellationToken cancellationToken = default)
+    {
+        return await WithIncludes(context.Project)
+            .SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public async Task<IEnumerable<Project>> GetRelatedAsync(ProjectId projectId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"project:related:{projectId}";
-        if (cache.TryGetValue(cacheKey, out IEnumerable<Project>? cached) && cached != null)
-            return cached;
+        if (TryGetCache(cacheKey, out IEnumerable<Project>? cached) && cached != null) return cached;
 
         var projectTags = context.Project
             .Include(pt => pt.Tags)
@@ -105,16 +103,48 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
             .Include(p => p.Images)
             .ToListAsync(cancellationToken);
 
-        cache.Set(cacheKey, related, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetProjectsChangeToken()));
+        SetCache(cacheKey, related, cacheInvalidator.GetProjectsChangeToken());
         return related;
     }
 
-    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(string title, CancellationToken cancellationToken = default)
     {
+        return context.Database.SupportsILike()
+            ? await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, title), cancellationToken)
+            : await context.Project.AnyAsync(p => p.Title != null && p.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
+    }
+
+    public async Task<bool> ExistsAsync(string title, ProjectId excludeId, CancellationToken cancellationToken = default)
+    {
+        return context.Database.SupportsILike()
+            ? await context.Project.AnyAsync(p => p.Id != excludeId && EF.Functions.ILike(p.Title, title), cancellationToken)
+            : await context.Project.AnyAsync(p => p.Id != excludeId && p.Title != null && p.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
+    }
+
+    public async Task AddAsync(Project project, CancellationToken cancellationToken = default)
+    {
+        context.Project.Add(project);
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateProjects();
     }
 
-    private bool SupportsILike() =>
-        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
+    public async Task UpdateAsync(Project project, CancellationToken cancellationToken = default)
+    {
+        context.Entry(project).State = EntityState.Modified;
+        await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateProjects();
+    }
+
+    public async Task DeleteAsync(Project project, CancellationToken cancellationToken = default)
+    {
+        context.Project.Remove(project);
+        await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateProjects();
+    }
+
+    private static IQueryable<Project> WithIncludes(IQueryable<Project> query) =>
+        query
+            .Include(p => p.Tags)
+            .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
+            .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0));
 }

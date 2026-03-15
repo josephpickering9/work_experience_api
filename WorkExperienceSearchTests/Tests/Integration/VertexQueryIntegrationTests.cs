@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Work_Experience_Search.Controllers;
+using Work_Experience_Search.Requests;
 using Xunit;
 
 namespace WorkExperienceSearchTests.Tests.Integration;

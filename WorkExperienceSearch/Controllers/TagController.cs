@@ -1,7 +1,7 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 
@@ -55,15 +55,4 @@ public class TagController(ITagService tagService) : ControllerBase
         var result = await tagService.DeleteTagAsync(id);
         return result.ToResponse();
     }
-}
-
-public class CreateTag
-{
-    [Required] public string Title { get; init; } = null!;
-
-    [Required] public TagType Type { get; init; }
-
-    public string? Icon { get; init; }
-
-    public string? CustomColour { get; init; }
 }
