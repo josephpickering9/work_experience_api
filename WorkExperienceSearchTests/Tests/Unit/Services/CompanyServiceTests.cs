@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
@@ -17,7 +18,7 @@ public class CompanyServiceTests : BaseServiceTests
     public CompanyServiceTests()
     {
         var mockFileService = new Mock<IFileService>();
-        _companyService = new CompanyService(new CompanyRepository(Context), mockFileService.Object);
+        _companyService = new CompanyService(new CompanyRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), mockFileService.Object);
     }
     
     [Fact]

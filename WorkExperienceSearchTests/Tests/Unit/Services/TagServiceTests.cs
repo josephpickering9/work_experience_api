@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -15,7 +16,7 @@ public class TagServiceTests : BaseServiceTests
 
     public TagServiceTests()
     {
-        _tagService = new TagService(new TagRepository(Context));
+        _tagService = new TagService(new TagRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()));
     }
 
     [Fact]
