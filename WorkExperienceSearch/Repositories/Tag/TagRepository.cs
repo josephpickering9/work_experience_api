@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Repositories;
 
-public class TagRepository(Database context) : ITagRepository
+public class TagRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator) : ITagRepository
 {
     public async Task<IEnumerable<Tag>> GetByIdsAsync(IEnumerable<TagId> ids, CancellationToken cancellationToken = default)
     {
@@ -16,28 +17,45 @@ public class TagRepository(Database context) : ITagRepository
 
     public async Task<Tag?> GetAsync(string slug, CancellationToken cancellationToken = default)
     {
-        return await context.Tag
+        var cacheKey = $"tag:slug:{slug}";
+        if (cache.TryGetValue(cacheKey, out Tag? cached))
+            return cached;
+
+        var tag = await context.Tag
             .Include(t => t.Projects)
             .ThenInclude(p => p.Images)
             .Include(t => t.Projects)
             .ThenInclude(p => p.Tags)
             .SingleOrDefaultAsync(t => t.Slug == slug, cancellationToken);
+
+        cache.Set(cacheKey, tag, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        return tag;
     }
 
     public async Task<Tag?> GetAsync(TagId id, CancellationToken cancellationToken = default)
     {
-        return await context.Tag.FindAsync(new object[] { id }, cancellationToken);
+        var cacheKey = $"tag:{id}";
+        if (cache.TryGetValue(cacheKey, out Tag? cached))
+            return cached;
+
+        var tag = await context.Tag.FindAsync(new object[] { id }, cancellationToken);
+        cache.Set(cacheKey, tag, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        return tag;
     }
 
     public async Task<Tag?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
     {
-         return SupportsILike()
+        return SupportsILike()
             ? await context.Tag.FirstOrDefaultAsync(t => EF.Functions.ILike(title, t.Title), cancellationToken)
             : await context.Tag.FirstOrDefaultAsync(t => t.Title != null && t.Title.Equals(title, StringComparison.OrdinalIgnoreCase), cancellationToken);
     }
 
     public async Task<IEnumerable<Tag>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
+        var cacheKey = $"tags:{search ?? ""}";
+        if (cache.TryGetValue(cacheKey, out IEnumerable<Tag>? cached) && cached != null)
+            return cached;
+
         IQueryable<Tag> tags = context.Tag;
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -48,7 +66,9 @@ public class TagRepository(Database context) : ITagRepository
                 : tags.Where(p => p.Title != null && p.Title.ToLower().Contains(normalizedSearch));
         }
 
-        return await tags.ToListAsync(cancellationToken);
+        var result = await tags.ToListAsync(cancellationToken);
+        cache.Set(cacheKey, result, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        return result;
     }
 
     public async Task<bool> ExistsAsync(string title, CancellationToken cancellationToken = default)
@@ -69,17 +89,20 @@ public class TagRepository(Database context) : ITagRepository
     {
         context.Tag.Add(tag);
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateTags();
     }
 
     public async Task UpdateAsync(Tag tag, CancellationToken cancellationToken = default)
     {
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateTags();
     }
 
     public async Task DeleteAsync(Tag tag, CancellationToken cancellationToken = default)
     {
         context.Tag.Remove(tag);
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateTags();
     }
 
     private bool SupportsILike() =>

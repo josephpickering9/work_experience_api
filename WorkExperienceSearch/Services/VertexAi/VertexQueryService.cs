@@ -89,8 +89,7 @@ public class VertexQueryService : IVertexQueryService
                     {
                         vertexAiSearch = new
                         {
-                            datastore = datastoreResource,
-                            maxResults = 20
+                            datastore = datastoreResource
                         }
                     }
                 }

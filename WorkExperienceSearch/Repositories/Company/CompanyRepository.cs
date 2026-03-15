@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Repositories;
 
-public class CompanyRepository(Database context) : ICompanyRepository
+public class CompanyRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator) : ICompanyRepository
 {
     public async Task<IEnumerable<Company>> GetByIdsAsync(IEnumerable<CompanyId> ids, CancellationToken cancellationToken = default)
     {
@@ -16,17 +17,32 @@ public class CompanyRepository(Database context) : ICompanyRepository
 
     public async Task<Company?> GetAsync(string slug, CancellationToken cancellationToken = default)
     {
-        return await context.Company
-            .SingleOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+        var cacheKey = $"company:slug:{slug}";
+        if (cache.TryGetValue(cacheKey, out Company? cached))
+            return cached;
+
+        var company = await context.Company.SingleOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+        cache.Set(cacheKey, company, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetCompaniesChangeToken()));
+        return company;
     }
 
     public async Task<Company?> GetAsync(CompanyId id, CancellationToken cancellationToken = default)
     {
-        return await context.Company.FindAsync(new object[] { id }, cancellationToken);
+        var cacheKey = $"company:{id}";
+        if (cache.TryGetValue(cacheKey, out Company? cached))
+            return cached;
+
+        var company = await context.Company.FindAsync(new object[] { id }, cancellationToken);
+        cache.Set(cacheKey, company, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetCompaniesChangeToken()));
+        return company;
     }
 
     public async Task<IEnumerable<Company>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
+        var cacheKey = $"companies:{search ?? ""}";
+        if (cache.TryGetValue(cacheKey, out IEnumerable<Company>? cached) && cached != null)
+            return cached;
+
         IQueryable<Company> companies = context.Company;
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -37,7 +53,9 @@ public class CompanyRepository(Database context) : ICompanyRepository
                 : companies.Where(c => c.Name != null && c.Name.ToLower().Contains(normalizedSearch));
         }
 
-        return await companies.ToListAsync(cancellationToken);
+        var result = await companies.ToListAsync(cancellationToken);
+        cache.Set(cacheKey, result, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetCompaniesChangeToken()));
+        return result;
     }
 
     public async Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default)
@@ -58,17 +76,20 @@ public class CompanyRepository(Database context) : ICompanyRepository
     {
         context.Company.Add(company);
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateCompanies();
     }
 
     public async Task UpdateAsync(Company company, CancellationToken cancellationToken = default)
     {
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateCompanies();
     }
 
     public async Task DeleteAsync(Company company, CancellationToken cancellationToken = default)
     {
         context.Company.Remove(company);
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateCompanies();
     }
 
     private bool SupportsILike() =>

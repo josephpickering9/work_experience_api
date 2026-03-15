@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Repositories;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 
@@ -8,6 +9,7 @@ namespace Work_Experience_Search.Services;
 
 public class ProjectService(
     Database context,
+    IProjectRepository projectRepository,
     IProjectImageService projectImageService,
     IProjectRepositoryService projectRepositoryService,
     ITagService tagService
@@ -15,13 +17,13 @@ public class ProjectService(
 {
     public async Task<Result<IEnumerable<Project>>> GetProjectsAsync(string? search)
     {
-        var projects = await GetProjectsQuery(search).ToListAsync();
+        var projects = await projectRepository.SearchAsync(search);
         return new Success<IEnumerable<Project>>(projects);
     }
 
     public async Task<Result<Project>> GetProjectAsync(ProjectId id)
     {
-        var project = await GetProjectsQuery().SingleOrDefaultAsync(p => p.Id == id);
+        var project = await projectRepository.GetAsync(id);
         if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
         return new Success<Project>(project);
@@ -29,7 +31,7 @@ public class ProjectService(
 
     public async Task<Result<Project>> GetProjectBySlugAsync(string slug)
     {
-        var project = await GetProjectsQuery().SingleOrDefaultAsync(p => p.Slug == slug);
+        var project = await projectRepository.GetAsync(slug);
         if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
         return new Success<Project>(project);
@@ -37,27 +39,8 @@ public class ProjectService(
 
     public async Task<Result<IEnumerable<Project>>> GetRelatedProjectsAsync(ProjectId projectId)
     {
-        var projectTags = context.Project
-            .Include(pt => pt.Tags)
-            .Where(pt => pt.Id == projectId)
-            .SelectMany(pt => pt.Tags.Select(t => t.Id));
-        if (!projectTags.Any()) return new Success<IEnumerable<Project>>(new List<Project>());
-
-        var relatedProjects = await context.Project
-            .Where(p => p.Id != projectId && p.Tags.Any(t => projectTags.Contains(t.Id)))
-            .Select(p => new
-            {
-                Project = p,
-                SharedTagsCount = p.Tags.Count(t => projectTags.Contains(t.Id))
-            })
-            .OrderByDescending(x => x.SharedTagsCount)
-            .Take(3)
-            .Select(x => x.Project)
-            .Include(p => p.Tags)
-            .Include(p => p.Images)
-            .ToListAsync();
-
-        return new Success<IEnumerable<Project>>(relatedProjects);
+        var projects = await projectRepository.GetRelatedAsync(projectId);
+        return new Success<IEnumerable<Project>>(projects);
     }
 
     public async Task<Result<Project>> CreateProjectAsync(CreateProject createProject)
@@ -84,17 +67,17 @@ public class ProjectService(
         var relationsResult = await SyncProjectRelations(project, createProject);
         if (!relationsResult.IsSuccess) return relationsResult;
 
-        await context.SaveChangesAsync();
+        await projectRepository.SaveChangesAsync();
 
         return new Success<Project>(project);
     }
 
     public async Task<Result<Project>> UpdateProjectAsync(ProjectId id, CreateProject createProject)
     {
-        var projectResult = await GetProjectAsync(id);
-        if (!projectResult.IsSuccess || projectResult.Data == null) return projectResult;
+        // Fetch directly from DB (not cache) to ensure EF tracking for the update
+        var project = await GetProjectsQuery().SingleOrDefaultAsync(p => p.Id == id);
+        if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
-        var project = projectResult.Data;
         var projectExists = SupportsILike()
             ? await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title))
             : await context.Project.AnyAsync(p => p.Id != project.Id && p.Title != null && p.Title.Equals(createProject.Title, StringComparison.OrdinalIgnoreCase));
@@ -114,7 +97,7 @@ public class ProjectService(
         if (!relationsResult.IsSuccess) return relationsResult;
 
         context.Entry(project).State = EntityState.Modified;
-        await context.SaveChangesAsync();
+        await projectRepository.SaveChangesAsync();
 
         return new Success<Project>(project);
     }
@@ -125,29 +108,18 @@ public class ProjectService(
         if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
         context.Project.Remove(project);
-        await context.SaveChangesAsync();
+        await projectRepository.SaveChangesAsync();
 
         return new Success<Project>(project);
     }
 
-    private IQueryable<Project> GetProjectsQuery(string? search = null)
+    // Used directly for write operations to ensure EF change tracking
+    private IQueryable<Project> GetProjectsQuery()
     {
-        IQueryable<Project> projects = context.Project
+        return context.Project
             .Include(p => p.Tags)
             .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
             .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0));
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var normalizedSearch = search.ToLowerInvariant();
-            projects = SupportsILike()
-                ? projects.Where(p => EF.Functions.ILike(p.Title, $"%{search}%") || EF.Functions.ILike(p.ShortDescription, $"%{search}%"))
-                : projects.Where(p =>
-                    (p.Title != null && p.Title.ToLower().Contains(normalizedSearch)) ||
-                    (p.ShortDescription != null && p.ShortDescription.ToLower().Contains(normalizedSearch)));
-        }
-
-        return projects.OrderByDescending(p => p.StartDate).ThenByDescending(p => p.EndDate);
     }
 
     private async Task<Result<Project>> SyncProjectRelations(Project project, CreateProject createProject)
