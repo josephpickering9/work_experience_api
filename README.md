@@ -1,83 +1,192 @@
-# Work Experience (API)
+# Work Experience API
 
-This project serves as the backend for the Work Experience website, built with .NET Core and utilizing a Postgres database for data persistence. It's designed to provide a robust and scalable API, ensuring secure and efficient access to data for the frontend application.
+A .NET 8 REST API serving the [Work Experience](https://experience.josephpickering.co.uk) portfolio website. Built with clean architecture, a typed Result pattern, AI-powered search via Google Vertex AI, and automated CI/CD to Digital Ocean.
 
-## Live Demo
+**Live API:** [api.experience.josephpickering.co.uk](https://api.experience.josephpickering.co.uk)
+**Swagger UI:** [api.experience.josephpickering.co.uk/swagger](https://api.experience.josephpickering.co.uk/swagger)
 
-Visit [api.experience.josephpickering.co.uk](https://api.experience.josephpickering.co.uk) to see the project in action.
+---
 
-## Table of Contents
+## Tech Stack
 
-- [Overview](#overview)
-    - [Features](#features)
-- [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-- [Deployment](#deployment)
+| Layer | Technology |
+|---|---|
+| Runtime | .NET 8 / C# 12 |
+| Database | PostgreSQL (EF Core + Npgsql) |
+| Authentication | Auth0 (JWT Bearer) |
+| AI Search | Google Vertex AI Discovery Engine |
+| Validation | FluentValidation |
+| Logging | Serilog (structured, console + file) |
+| Image optimisation | Tinify |
+| API Docs | Swagger / Swashbuckle |
+| Testing | xUnit, Moq, NetArchTest, Coverlet |
+| CI/CD | GitHub Actions |
+| Hosting | Digital Ocean droplet |
 
-## Overview
+---
 
-The Work Experience API is a .NET Core application that provides a RESTful API for the Work Experience website. It's designed to be a scalable and reliable backend, providing access to data for the frontend application. The API is built with a focus on performance, security, and reliability, ensuring that it can handle the demands of a production environment.
+## Architecture
 
-### Features
+```
+Controllers  →  Services  →  Repositories  →  Database (EF Core / PostgreSQL)
+                    ↓
+              External APIs (Vertex AI, Tinify, Auth0)
+```
 
-- **.NET Core Framework:** Utilizes the latest .NET Core technologies for a high-performance, cross-platform API.
-- **Postgres Database:** Leverages Postgres for reliable and scalable data storage.
-- **Comprehensive Testing:** Includes both unit and integration tests to ensure code reliability and quality.
-- **CI/CD:** Utilizes GitHub Actions for continuous integration and deployment, automatically running tests on pull requests to prevent merging test failures.
-- **Deployment:** Automated deployment to a Digital Ocean droplet ensures seamless updates and availability.
-- **Authentication:** Integrated with Auth0 for secure and scalable user authentication.
+### Key Patterns
+
+**Result pattern** — every service method returns `Result<T>`. Controllers never throw; they map failures to RFC 7807 `ProblemDetails` responses via a single `result.ToResponse()` call.
+
+```csharp
+// Service
+public async Task<Result<Project>> GetProjectAsync(ProjectId id)
+{
+    var project = await _repository.GetAsync(id);
+    return project is null
+        ? new NotFoundFailure<Project>("Project not found.")
+        : new Success<Project>(project);
+}
+
+// Controller
+[HttpGet("{id}")]
+public async Task<IActionResult> GetProject(ProjectId id) =>
+    (await _projectService.GetProjectAsync(id)).ToResponse();
+```
+
+**Repository pattern with base class** — `BaseRepository` centralises cache helpers and the PostgreSQL ILIKE / LINQ fallback so each concrete repository stays focused on its queries.
+
+**Token-based cache invalidation** — `CacheInvalidator` issues `IChangeToken` instances per entity type. Write operations (add / update / delete) cancel the relevant token, atomically evicting all related cache entries without explicit key tracking.
+
+**Typed IDs** — every entity uses a strongly-typed ID wrapper (e.g. `ProjectId`, `CompanyId`) backed by `Guid`, surfaced as plain UUIDs in the OpenAPI spec.
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- .NET Core SDK (version specified in `global.json`)
-- PostgreSQL installed and running
-- Auth0 account for setting up authentication
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Docker](https://www.docker.com/) (for the local PostgreSQL instance)
+- An [Auth0](https://auth0.com/) application and API
+- *(Optional)* Google Cloud project with Vertex AI Discovery Engine for AI search
 
 ### Installation
 
-1. **Clone the repository:**
+1. **Clone the repository**
 
    ```bash
    git clone https://github.com/josephpickering9/work_experience_api.git
    cd work_experience_api
-    ```
-   
-2. **Install dependencies:**
+   ```
 
-    ```bash
-    dotnet restore
-    ```
+2. **Start the database**
 
-3. **Auth0 Configuration**:
+   ```bash
+   docker-compose -f WorkExperienceSearch/docker-compose.yml up -d
+   ```
 
-    Set up your Auth0 application and API configurations. Provide the necessary settings in appsettings.json or as environment variables for authentication to work.
+3. **Configure environment variables**
 
-4. **Set up environment variables:**
+   Create a `.env` file in `WorkExperienceSearch/` (use `.env.example` as a reference):
 
-    Create a `.env` file (you can use .env.example as reference) in the root of the project and add the following environment variables:
+   ```env
+   DefaultConnection=Host=localhost;Port=5432;Database=work_experience;Username=postgres;Password=postgres
+   Auth0__Domain=your-auth0-domain.auth0.com
+   Auth0__ClientId=your-client-id
+   Auth0__ClientSecret=your-client-secret
+   Auth0__Audience=your-api-audience
 
-    ```env
-    DATABASE_URL=postgres://username:password@localhost:5432/work_experience
-    AUTH0_DOMAIN=your-auth0-domain
-    AUTH0_AUDIENCE=your-auth0-audience
-    ```
-   
-5. **Run the application:**
+   # Optional — required only for AI search
+   VertexAi__ProjectId=your-gcp-project-id
+   VertexAi__Location=global
+   VertexAi__Collection=default_collection
+   VertexAi__Branch=default_branch
+   VertexAi__Environment=your-environment
+   VertexAi__Model=gemini-1.5-flash-001/answer_gen/v1
+   VertexAi__ModelLocation=global
+   VertexAi__QueryDataStoreSuffix=your-datastore-suffix
+   VertexAi__CredentialsFile=/path/to/service-account.json
+   ```
 
-    ```bash
-    dotnet run
-    ```
-   
-    This will start the API on `http://localhost:5105` by default.
+4. **Apply database migrations**
 
-6. **Run tests:**
+   ```bash
+   cd WorkExperienceSearch
+   dotnet ef database update
+   ```
 
-    ```bash
-    dotnet test
-    ```
-   
-## Deployment
-This project is configured for CI/CD with GitHub Actions, automatically deploying to a Digital Ocean droplet upon successful pull request merges. Ensure your Digital Ocean and GitHub repository settings are configured correctly for deployments.
+5. **Run the application**
+
+   ```bash
+   dotnet run --project WorkExperienceSearch
+   ```
+
+   The API starts at `http://localhost:5105`. Swagger is available at `http://localhost:5105/swagger`.
+
+6. **Check health**
+
+   ```bash
+   curl http://localhost:5105/health
+   ```
+
+---
+
+## Testing
+
+The test suite covers three levels:
+
+| Type | Location | Tooling |
+|---|---|---|
+| Unit | `WorkExperienceSearchTests/Tests/Unit/` | xUnit, Moq, SQLite in-memory |
+| Integration | `WorkExperienceSearchTests/Tests/Integration/` | `WebApplicationFactory`, real HTTP client |
+| Architecture | `WorkExperienceSearchTests/Tests/Architecture/` | NetArchTest |
+
+Run all tests:
+
+```bash
+dotnet test
+```
+
+Run with coverage:
+
+```bash
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+### Architecture rules enforced
+
+- Controllers must not reference Repository types directly
+- Services must not reference Controller types
+- Repositories must not reference Service or Controller types
+
+---
+
+## CI/CD
+
+Two GitHub Actions workflows run on every push:
+
+**`.github/workflows/dotnet-tests.yml`** — spins up a PostgreSQL container via Docker Compose, restores, builds, and runs the full test suite. Pull requests cannot be merged if this workflow fails.
+
+**`.github/workflows/deploy.yml`** — triggers on `develop` branch merges. Publishes the app, uploads the artifact to the Digital Ocean droplet via SCP, runs `dotnet ef database update` on the server, and hot-swaps the running process with zero-downtime by symlinking the new release before restarting.
+
+---
+
+## Project Structure
+
+```
+WorkExperienceSearch/
+├── Controllers/          # Thin HTTP layer — receive, delegate, respond
+├── Services/             # Business logic and orchestration
+├── Repositories/         # EF Core data access
+├── Requests/             # Immutable record DTOs for all endpoints
+├── Validators/           # FluentValidation validators (one per request type)
+├── Models/               # EF Core entity models
+├── Types/                # Result<T>, typed IDs, TagType enum
+├── Exceptions/           # Typed exception hierarchy
+└── Utils/                # String extensions (slug generation, etc.)
+
+WorkExperienceSearchTests/
+├── Tests/Unit/           # Service-level tests with mocked dependencies
+├── Tests/Integration/    # Controller-level tests against a real HTTP server
+└── Tests/Architecture/   # NetArchTest layer-boundary assertions
+```

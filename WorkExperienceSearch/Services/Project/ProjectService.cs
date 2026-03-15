@@ -1,14 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Repositories;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
 public class ProjectService(
-    Database context,
     IProjectRepository projectRepository,
     IProjectImageService projectImageService,
     IProjectRepositoryService projectRepositoryService,
@@ -45,9 +43,7 @@ public class ProjectService(
 
     public async Task<Result<Project>> CreateProjectAsync(CreateProject createProject)
     {
-        var projectExists = SupportsILike()
-            ? await context.Project.AnyAsync(p => EF.Functions.ILike(p.Title, createProject.Title))
-            : await context.Project.AnyAsync(p => p.Title != null && p.Title.Equals(createProject.Title, StringComparison.OrdinalIgnoreCase));
+        var projectExists = await projectRepository.ExistsAsync(createProject.Title);
         if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         var project = new Project
@@ -62,25 +58,21 @@ public class ProjectService(
             ShowMockup = createProject.ShowMockup,
             Slug = createProject.Title.ToSlug()
         };
-        context.Project.Add(project);
 
         var relationsResult = await SyncProjectRelations(project, createProject);
         if (!relationsResult.IsSuccess) return relationsResult;
 
-        await projectRepository.SaveChangesAsync();
+        await projectRepository.AddAsync(project);
 
         return new Success<Project>(project);
     }
 
     public async Task<Result<Project>> UpdateProjectAsync(ProjectId id, CreateProject createProject)
     {
-        // Fetch directly from DB (not cache) to ensure EF tracking for the update
-        var project = await GetProjectsQuery().SingleOrDefaultAsync(p => p.Id == id);
+        var project = await projectRepository.GetForUpdateAsync(id);
         if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
-        var projectExists = SupportsILike()
-            ? await context.Project.AnyAsync(p => p.Id != project.Id && EF.Functions.ILike(p.Title, createProject.Title))
-            : await context.Project.AnyAsync(p => p.Id != project.Id && p.Title != null && p.Title.Equals(createProject.Title, StringComparison.OrdinalIgnoreCase));
+        var projectExists = await projectRepository.ExistsAsync(createProject.Title, id);
         if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
 
         project.Title = createProject.Title;
@@ -96,30 +88,19 @@ public class ProjectService(
         var relationsResult = await SyncProjectRelations(project, createProject);
         if (!relationsResult.IsSuccess) return relationsResult;
 
-        context.Entry(project).State = EntityState.Modified;
-        await projectRepository.SaveChangesAsync();
+        await projectRepository.UpdateAsync(project);
 
         return new Success<Project>(project);
     }
 
     public async Task<Result<Project>> DeleteProjectAsync(ProjectId id)
     {
-        var project = await context.Project.FindAsync(id);
+        var project = await projectRepository.GetAsync(id);
         if (project == null) return new NotFoundFailure<Project>("Project not found.");
 
-        context.Project.Remove(project);
-        await projectRepository.SaveChangesAsync();
+        await projectRepository.DeleteAsync(project);
 
         return new Success<Project>(project);
-    }
-
-    // Used directly for write operations to ensure EF change tracking
-    private IQueryable<Project> GetProjectsQuery()
-    {
-        return context.Project
-            .Include(p => p.Tags)
-            .Include(p => p.Images.OrderBy(i => i.Type).ThenBy(i => i.Order ?? 0))
-            .Include(p => p.Repositories.OrderBy(i => i.Order ?? 0));
     }
 
     private async Task<Result<Project>> SyncProjectRelations(Project project, CreateProject createProject)
@@ -171,7 +152,4 @@ public class ProjectService(
 
         return new Success<Project>(project);
     }
-
-    private bool SupportsILike() =>
-        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }

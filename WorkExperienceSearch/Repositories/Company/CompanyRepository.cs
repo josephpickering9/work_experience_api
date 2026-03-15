@@ -6,7 +6,8 @@ using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Repositories;
 
-public class CompanyRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator) : ICompanyRepository
+public class CompanyRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator)
+    : BaseRepository(context, cache), ICompanyRepository
 {
     public async Task<IEnumerable<Company>> GetByIdsAsync(IEnumerable<CompanyId> ids, CancellationToken cancellationToken = default)
     {
@@ -18,30 +19,27 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
     public async Task<Company?> GetAsync(string slug, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"company:slug:{slug}";
-        if (cache.TryGetValue(cacheKey, out Company? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Company? cached)) return cached;
 
         var company = await context.Company.SingleOrDefaultAsync(c => c.Slug == slug, cancellationToken);
-        cache.Set(cacheKey, company, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetCompaniesChangeToken()));
+        SetCache(cacheKey, company, cacheInvalidator.GetCompaniesChangeToken());
         return company;
     }
 
     public async Task<Company?> GetAsync(CompanyId id, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"company:{id}";
-        if (cache.TryGetValue(cacheKey, out Company? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Company? cached)) return cached;
 
         var company = await context.Company.FindAsync(new object[] { id }, cancellationToken);
-        cache.Set(cacheKey, company, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetCompaniesChangeToken()));
+        SetCache(cacheKey, company, cacheInvalidator.GetCompaniesChangeToken());
         return company;
     }
 
     public async Task<IEnumerable<Company>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"companies:{search ?? ""}";
-        if (cache.TryGetValue(cacheKey, out IEnumerable<Company>? cached) && cached != null)
-            return cached;
+        if (TryGetCache(cacheKey, out IEnumerable<Company>? cached) && cached != null) return cached;
 
         IQueryable<Company> companies = context.Company;
 
@@ -54,7 +52,7 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
         }
 
         var result = await companies.ToListAsync(cancellationToken);
-        cache.Set(cacheKey, result, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetCompaniesChangeToken()));
+        SetCache(cacheKey, result, cacheInvalidator.GetCompaniesChangeToken());
         return result;
     }
 
@@ -91,7 +89,4 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateCompanies();
     }
-
-    private bool SupportsILike() =>
-        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }

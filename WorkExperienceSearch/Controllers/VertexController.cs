@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Services.VertexAi;
 using Work_Experience_Search.Types;
 
@@ -10,8 +11,8 @@ public class VertexController(
     IVertexIngestOrchestrator ingestOrchestrator,
     IVertexQueryService queryService,
     IVertexProjectDescriptionService projectDescriptionService
-) : ControllerBase {
-
+) : ControllerBase
+{
     [HttpPost("ingest")]
     public async Task<IActionResult> Ingest(CancellationToken cancellationToken)
     {
@@ -19,14 +20,9 @@ public class VertexController(
         return result.ToResponse();
     }
 
-    private const int MaxQueryLength = 500;
-
     [HttpPost("query")]
     public async Task<ActionResult<VertexQueryResult>> Query([FromBody] VertexQueryRequest request, CancellationToken cancellationToken)
     {
-        if (request.Query.Length > MaxQueryLength)
-            return BadRequest($"Query must not exceed {MaxQueryLength} characters.");
-
         var result = await queryService.QueryAsync(request.Query, cancellationToken);
         return Ok(result);
     }
@@ -38,5 +34,3 @@ public class VertexController(
         return result.ToResponse();
     }
 }
-
-public record VertexQueryRequest(string Query);

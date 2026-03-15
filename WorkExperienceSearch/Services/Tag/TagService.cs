@@ -1,4 +1,4 @@
-using Work_Experience_Search.Controllers;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Repositories;
@@ -67,7 +67,8 @@ public class TagService(ITagRepository repository) : ITagService
                     Title = tag,
                     Type = TagType.Default,
                     Icon = "",
-                    CustomColour = null
+                    CustomColour = null,
+                    Slug = tag.ToSlug()
                 };
 
                 await repository.AddAsync(newTag);

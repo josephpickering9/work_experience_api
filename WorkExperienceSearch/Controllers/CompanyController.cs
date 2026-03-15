@@ -1,7 +1,7 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Services;
 using Work_Experience_Search.Types;
 
@@ -57,19 +57,4 @@ public class CompanyController(ICompanyService companyService) : ControllerBase
         var result = await companyService.DeleteCompanyAsync(id);
         return result.ToResponse();
     }
-}
-
-public class CreateCompany
-{
-    [Required] public string Name { get; init; } = null!;
-
-    [Required] public string Description { get; init; } = null!;
-
-    public DateOnly? StartDate { get; init; }
-
-    public DateOnly? EndDate { get; init; }
-
-    public IFormFile? Logo { get; init; }
-
-    public string? Website { get; init; }
 }

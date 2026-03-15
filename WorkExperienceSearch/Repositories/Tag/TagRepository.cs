@@ -6,7 +6,8 @@ using Work_Experience_Search.Types;
 
 namespace Work_Experience_Search.Repositories;
 
-public class TagRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator) : ITagRepository
+public class TagRepository(Database context, IMemoryCache cache, CacheInvalidator cacheInvalidator)
+    : BaseRepository(context, cache), ITagRepository
 {
     public async Task<IEnumerable<Tag>> GetByIdsAsync(IEnumerable<TagId> ids, CancellationToken cancellationToken = default)
     {
@@ -18,8 +19,7 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
     public async Task<Tag?> GetAsync(string slug, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"tag:slug:{slug}";
-        if (cache.TryGetValue(cacheKey, out Tag? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Tag? cached)) return cached;
 
         var tag = await context.Tag
             .Include(t => t.Projects)
@@ -28,18 +28,17 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
             .ThenInclude(p => p.Tags)
             .SingleOrDefaultAsync(t => t.Slug == slug, cancellationToken);
 
-        cache.Set(cacheKey, tag, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        SetCache(cacheKey, tag, cacheInvalidator.GetTagsChangeToken());
         return tag;
     }
 
     public async Task<Tag?> GetAsync(TagId id, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"tag:{id}";
-        if (cache.TryGetValue(cacheKey, out Tag? cached))
-            return cached;
+        if (TryGetCache(cacheKey, out Tag? cached)) return cached;
 
         var tag = await context.Tag.FindAsync(new object[] { id }, cancellationToken);
-        cache.Set(cacheKey, tag, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        SetCache(cacheKey, tag, cacheInvalidator.GetTagsChangeToken());
         return tag;
     }
 
@@ -53,8 +52,7 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
     public async Task<IEnumerable<Tag>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"tags:{search ?? ""}";
-        if (cache.TryGetValue(cacheKey, out IEnumerable<Tag>? cached) && cached != null)
-            return cached;
+        if (TryGetCache(cacheKey, out IEnumerable<Tag>? cached) && cached != null) return cached;
 
         IQueryable<Tag> tags = context.Tag;
 
@@ -67,7 +65,7 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
         }
 
         var result = await tags.ToListAsync(cancellationToken);
-        cache.Set(cacheKey, result, new MemoryCacheEntryOptions().AddExpirationToken(cacheInvalidator.GetTagsChangeToken()));
+        SetCache(cacheKey, result, cacheInvalidator.GetTagsChangeToken());
         return result;
     }
 
@@ -104,7 +102,4 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateTags();
     }
-
-    private bool SupportsILike() =>
-        context.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
 }

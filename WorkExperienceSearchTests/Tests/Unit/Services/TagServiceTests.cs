@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
-using Work_Experience_Search.Controllers;
+using Work_Experience_Search.Requests;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Repositories;
@@ -172,19 +172,4 @@ public class TagServiceTests : BaseServiceTests
         Assert.Equal("Tag not found.", result.Message);
     }
 
-    private async Task SeedDatabase()
-    {
-        if (!Context.Tag.Any())
-        {
-            Context.Tag.AddRange(GetTestTags());
-            await Context.SaveChangesAsync();
-        }
-    }
-
-    private static IEnumerable<Tag> GetTestTags() => new[]
-    {
-        CreateTag(Tag1Id, "C#", TagType.Backend),
-        CreateTag(Tag2Id, "ASP.NET Core", TagType.Backend),
-        CreateTag(Tag3Id, "Xamarin Forms", TagType.Frontend)
-    };
 }
