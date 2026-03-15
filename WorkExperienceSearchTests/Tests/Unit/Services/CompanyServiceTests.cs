@@ -5,6 +5,7 @@ using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
 using Work_Experience_Search.Repositories;
 using Work_Experience_Search.Services;
+using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Utils;
 using Xunit;
@@ -18,7 +19,8 @@ public class CompanyServiceTests : BaseServiceTests
     public CompanyServiceTests()
     {
         var mockFileService = new Mock<IFileService>();
-        _companyService = new CompanyService(new CompanyRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), mockFileService.Object);
+        var mockImageService = new Mock<IImageService>();
+        _companyService = new CompanyService(new CompanyRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), mockFileService.Object, mockImageService.Object);
     }
     
     [Fact]
