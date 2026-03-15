@@ -70,7 +70,7 @@ jobs:
         id: export-deployment-matrix
         run: |
           delimiter="$(openssl rand -hex 8)"
-          JSON="$(cat ./'Work Experience Search'/deployment-config.json)"
+          JSON="$(cat ./'WorkExperienceSearch'/deployment-config.json)"
           echo "deployment-matrix<<${delimiter}" >> "${GITHUB_OUTPUT}"
           echo "$JSON" >> "${GITHUB_OUTPUT}"
           echo "${delimiter}" >> "${GITHUB_OUTPUT}"
@@ -146,37 +146,99 @@ jobs:
         uses: appleboy/ssh-action@master
         env:
           GITHUB_SHA: ${{ github.sha }}
-          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search
-          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/Work Experience Search/bin/Release/net8.0
+          RELEASE_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/WorkExperienceSearch
+          RELEASE_BIN_PATH: ${{ matrix.server.path }}/releases/${{ github.sha }}/WorkExperienceSearch/bin/Release/net8.0/publish
           ROOT_PATH: ${{ matrix.server.path }}/wwwroot
           ACTIVE_RELEASE_PATH: ${{ matrix.server.path }}/current
           BASE_PATH: ${{ matrix.server.path }}
           DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
+          VERTEX_AI_CREDENTIALS_JSON: ${{ secrets.VERTEX_AI_CREDENTIALS_JSON }}
         with:
           host: ${{ matrix.server.ip }}
           username: ${{ matrix.server.username }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ matrix.server.port }}
-          envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING,ROOT_PATH
+          envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING,ROOT_PATH,VERTEX_AI_CREDENTIALS_JSON
           script: |
             cd "$RELEASE_PATH"
-            echo '{
+
+            SERVICE_ACCOUNT_PATH="$RELEASE_PATH/service-account.json"
+            if [ -n "$VERTEX_AI_CREDENTIALS_JSON" ]; then
+              echo "$VERTEX_AI_CREDENTIALS_JSON" | base64 -d > "$SERVICE_ACCOUNT_PATH"
+            else
+              echo "Vertex AI credential secret (VERTEX_AI_CREDENTIALS_JSON) is missing or empty." >&2
+              exit 1
+            fi
+
+            cat > appsettings.json << EOF
+            {
               "ConnectionStrings": {
                 "DefaultConnection": "${{ secrets.DATABASE_CONNECTION_STRING }}"
               },
               "Auth0": {
-                  "Domain": "${{ secrets.AUTH0_DOMAIN }}",
-                  "ClientId": "${{ secrets.AUTH0_CLIENT_ID }}",
-                  "ClientSecret": "${{ secrets.AUTH0_CLIENT_SECRET }}",
-                  "Audience": "${{ secrets.AUTH0_AUDIENCE }}"
+                "Domain": "${{ secrets.AUTH0_DOMAIN }}",
+                "ClientId": "${{ secrets.AUTH0_CLIENT_ID }}",
+                "ClientSecret": "${{ secrets.AUTH0_CLIENT_SECRET }}",
+                "Audience": "${{ secrets.AUTH0_AUDIENCE }}"
               },
-            }' > appsettings.json
+              "VertexAi": {
+                "ProjectId": "${{ secrets.VERTEX_AI_PROJECT_ID }}",
+                "Location": "${{ secrets.VERTEX_AI_LOCATION }}",
+                "Collection": "${{ secrets.VERTEX_AI_COLLECTION }}",
+                "Branch": "${{ secrets.VERTEX_AI_BRANCH }}",
+                "Environment": "${{ secrets.VERTEX_AI_ENVIRONMENT }}",
+                "Model": "${{ secrets.VERTEX_AI_MODEL }}",
+                "ModelLocation": "${{ secrets.VERTEX_AI_MODEL_LOCATION }}",
+                "QueryDataStoreSuffix": "${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}",
+                "CredentialsFile": "$SERVICE_ACCOUNT_PATH"
+              }
+            }
+            EOF
+
+            cat > .env << EOF
+            DefaultConnection=${{ secrets.DATABASE_CONNECTION_STRING }}
+            Auth0:Domain=${{ secrets.AUTH0_DOMAIN }}
+            Auth0:ClientId=${{ secrets.AUTH0_CLIENT_ID }}
+            Auth0:ClientSecret=${{ secrets.AUTH0_CLIENT_SECRET }}
+            Auth0:Audience=${{ secrets.AUTH0_AUDIENCE }}
+            VertexAi:ProjectId=${{ secrets.VERTEX_AI_PROJECT_ID }}
+            VertexAi:Location=${{ secrets.VERTEX_AI_LOCATION }}
+            VertexAi:Collection=${{ secrets.VERTEX_AI_COLLECTION }}
+            VertexAi:Branch=${{ secrets.VERTEX_AI_BRANCH }}
+            VertexAi:Environment=${{ secrets.VERTEX_AI_ENVIRONMENT }}
+            VertexAi:Model=${{ secrets.VERTEX_AI_MODEL }}
+            VertexAi:ModelLocation=${{ secrets.VERTEX_AI_MODEL_LOCATION }}
+            VertexAi:QueryDataStoreSuffix=${{ secrets.VERTEX_AI_QUERY_DATASTORE_SUFFIX }}
+            VertexAi:CredentialsFile=$SERVICE_ACCOUNT_PATH
+            EOF
+
+            # Ensure configuration files are in the publish directory the app runs from
+            cp appsettings.json "$RELEASE_BIN_PATH"/
+            cp .env "$RELEASE_BIN_PATH"/
+
+            export DOTNET_ROOT=/usr/share/dotnet
+            export PATH="$PATH:$DOTNET_ROOT:$HOME/.dotnet/tools"
             dotnet publish -c Release
             dotnet ef database update
+
+            # Stop any currently running instance to avoid port conflicts and stale configs
+            port_pid=$(lsof -t -i:5000 -sTCP:LISTEN 2>/dev/null | head -n1)
+            if [ -n "$port_pid" ]; then
+              kill "$port_pid" || true
+              sleep 2
+            fi
+
+            dir_pid=$(lsof -t +D "$ACTIVE_RELEASE_PATH" 2>/dev/null | head -n1)
+            if [ -n "$dir_pid" ]; then
+              kill "$dir_pid" || true
+            fi
+
             ln -s -n -f "$RELEASE_BIN_PATH" "$ACTIVE_RELEASE_PATH"
             ln -s -n -f "$ROOT_PATH" "$RELEASE_BIN_PATH/wwwroot"
             cd "$RELEASE_BIN_PATH"
-            nohup dotnet "Work Experience Search.dll" > /dev/null 2>&1 &  
+            LOG_PATH="${BASE_PATH}/logs"
+            mkdir -p "$LOG_PATH"
+            nohup dotnet "WorkExperienceSearch.dll" > "$LOG_PATH/api.log" /dev/null 2>&1 &
   
   run-after-hooks:
     name: '${{ matrix.server.name }}: After hook'

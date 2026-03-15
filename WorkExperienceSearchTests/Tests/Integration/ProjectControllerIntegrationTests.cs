@@ -1,0 +1,343 @@
+using System.Net;
+using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
+using Work_Experience_Search.Requests;
+using Work_Experience_Search.Models;
+using Work_Experience_Search.Services;
+using Work_Experience_Search.Tests;
+using Work_Experience_Search.Types;
+using Xunit;
+
+namespace WorkExperienceSearchTests.Tests.Integration;
+
+[Collection("Sequential")]
+public class ProjectControllerIntegrationTests(CustomWebApplicationFactory customWebApplicationFactory)
+    : BaseControllerIntegrationTests(customWebApplicationFactory), IClassFixture<CustomWebApplicationFactory>
+{
+    [Fact]
+    public async Task GetProjects_ReturnsProjects()
+    {
+        var projects = new List<Project>
+        {
+            await CreateProjectAsync(ProjectId.New()),
+            await CreateProjectAsync(ProjectId.New()),
+            await CreateProjectAsync(ProjectId.New())
+        };
+
+        var httpResponse = await Client.GetAsync("/project");
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var response = GetJsonContent<List<Project>>(stringResponse);
+
+        Assert.NotNull(response);
+        Assert.NotEmpty(response);
+        Assert.Equal(projects.Count, response.Count);
+    }
+
+    [Fact]
+    public async Task GetProject_ExistingId_ReturnsProject()
+    {
+        var testProjectId = ProjectId.New();
+        var tags = new List<string> { "Tag1", "Tag2" };
+        var expectedProject = await CreateProjectAsync(testProjectId, tags: tags);
+
+        var httpResponse = await Client.GetAsync($"/project/{testProjectId}");
+
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = GetJsonContent<Project>(stringResponse);
+
+        Assert.NotNull(actualProject);
+        Assert.Equal(expectedProject.Id, actualProject.Id);
+        Assert.Equal(expectedProject.Title, actualProject.Title);
+        Assert.Equal(expectedProject.Description, actualProject.Description);
+        Assert.Equal(expectedProject.Company, actualProject.Company);
+        Assert.Equal(expectedProject.Website, actualProject.Website);
+        Assert.Equal(expectedProject.Tags.Count, actualProject.Tags.Count);
+    }
+
+    [Fact]
+    public async Task GetProject_NonExistingId_ReturnsNotFound()
+    {
+        var nonExistingProjectId = ProjectId.New();
+
+        var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProject_ExistingSlug_ReturnsProject()
+    {
+        var testProjectId = ProjectId.New();
+        var expectedProject = await CreateProjectAsync(testProjectId);
+
+        var httpResponse = await Client.GetAsync($"/project/{expectedProject.Slug}");
+
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = GetJsonContent<Project>(stringResponse);
+
+        Assert.NotNull(actualProject);
+        Assert.Equal(expectedProject.Id, actualProject.Id);
+        Assert.Equal(expectedProject.Title, actualProject.Title);
+        Assert.Equal(expectedProject.Description, actualProject.Description);
+        Assert.Equal(expectedProject.Company, actualProject.Company);
+        Assert.Equal(expectedProject.Website, actualProject.Website);
+        Assert.Equal(expectedProject.Tags.Count, actualProject.Tags.Count);
+    }
+
+    [Fact]
+    public async Task GetProject_NonExistingSlug_ReturnsNotFound()
+    {
+        const string nonExistingProjectSlug = "non-existing-slug";
+
+        var httpResponse = await Client.GetAsync($"/project/{nonExistingProjectSlug}");
+
+        Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetRelatedProjects_ExistingId_ReturnsProjects()
+    {
+        var tags = new List<string> { "Tag1", "Tag2" };
+        var expectedProject = await CreateProjectAsync(ProjectId.New(), tags: tags);
+        var relatedProject = await CreateProjectAsync(ProjectId.New(), tags: tags);
+
+        var httpResponse = await Client.GetAsync($"/project/{expectedProject.Id}/related");
+
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProjects = GetJsonContent<List<Project>>(stringResponse);
+
+        Assert.NotNull(actualProjects);
+        Assert.NotEmpty(actualProjects);
+        Assert.Contains(relatedProject.Id, actualProjects.Select(p => p.Id));
+    }
+
+    [Fact]
+    public async Task PostProject_CreatesNewProject()
+    {
+        var newProject = new CreateProject
+        {
+            Title = "New Project",
+            ShortDescription = "A short description",
+            Description = "A long description",
+            CompanyId = null,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
+            Website = "https://example.com",
+            Tags = ["Tag1", "Tag2"],
+            Images = [],
+            Repositories = [],
+        };
+
+        var content = GetMultipartFormDataContent(newProject);
+
+        var httpResponse = await AuthenticatedClient.PostAsync("/project", content);
+
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = GetJsonContent<Project>(stringResponse);
+
+        Assert.NotNull(actualProject);
+        Assert.Equal(newProject.Title, actualProject.Title);
+        Assert.Equal(newProject.Description, actualProject.Description);
+        Assert.Equal(newProject.ShortDescription, actualProject.ShortDescription);
+        Assert.Equal(newProject.CompanyId, actualProject.CompanyId);
+        Assert.Equal(newProject.StartDate, actualProject.StartDate);
+        Assert.Equal(newProject.EndDate, actualProject.EndDate);
+        Assert.Equal(newProject.Website, actualProject.Website);
+        Assert.NotNull(actualProject.Tags);
+        Assert.Equal(newProject.Tags.Count, actualProject.Tags.Count);
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectInDb = await context.Project.FindAsync(actualProject.Id);
+        Assert.NotNull(projectInDb);
+        Assert.Equal(newProject.Title, projectInDb.Title);
+        Assert.Equal(newProject.Description, projectInDb.Description);
+        Assert.Equal(newProject.ShortDescription, projectInDb.ShortDescription);
+        Assert.Equal(newProject.CompanyId, projectInDb.CompanyId);
+        Assert.Equal(newProject.StartDate, projectInDb.StartDate);
+        Assert.Equal(newProject.EndDate, projectInDb.EndDate);
+        Assert.Equal(newProject.Website, projectInDb.Website);
+
+        if (projectInDb != null)
+        {
+            projectInDb.Tags =
+                await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
+            Assert.NotNull(projectInDb.Tags);
+            Assert.Equal(newProject.Tags.Count, projectInDb.Tags.Count);
+        }
+    }
+
+    [Fact]
+    public async Task PostProject_WithoutAuth_ReturnsUnauthorized()
+    {
+        var newProject = new CreateProject
+        {
+            Title = "New Project",
+            ShortDescription = "A short description",
+            Description = "A long description",
+            CompanyId = CompanyId.New(),
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
+            Website = "https://example.com",
+            Tags = ["Tag1", "Tag2"]
+        };
+
+        var content = GetMultipartFormDataContent(newProject);
+
+        var httpResponse = await Client.PostAsync("/project", content);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostProject_WithDuplicateTitle_ReturnsConflict()
+    {
+        var duplicateProject = new CreateProject
+        {
+            Title = "Duplicate Project",
+            ShortDescription = "A short description",
+            Description = "A long description",
+            CompanyId = null,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
+            Website = "https://example.com",
+            Tags = ["Tag1", "Tag2"]
+        };
+
+        var content = GetMultipartFormDataContent(duplicateProject);
+
+        // Act - First attempt (should succeed)
+        var firstResponse = await AuthenticatedClient.PostAsync("/project", content);
+        firstResponse.EnsureSuccessStatusCode();
+
+        // Act - Second attempt (should fail)
+        var secondResponse = await AuthenticatedClient.PostAsync("/project", content);
+
+        Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
+        var stringResponse = await secondResponse.Content.ReadAsStringAsync();
+
+        Assert.Contains("A project with the same title already exists", stringResponse);
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectCount = await context.Project.CountAsync(p => p.Title == duplicateProject.Title);
+        Assert.Equal(1, projectCount);
+    }
+
+    [Fact]
+    public async Task PutProject_ExistingId_UpdatesProject()
+    {
+        var testProjectId = ProjectId.New();
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        var updateProject = new CreateProject
+        {
+            Title = "Updated Project",
+            ShortDescription = "Updated short description",
+            Description = "Updated long description",
+            CompanyId = null,
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
+            Website = "https://updated-example.com",
+            Tags = ["UpdatedTag1", "UpdatedTag2"]
+        };
+
+        var content = GetMultipartFormDataContent(updateProject);
+
+        var httpResponse = await AuthenticatedClient.PutAsync($"/project/{existingProject.Id}", content);
+
+        httpResponse.EnsureSuccessStatusCode();
+        var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+        var actualProject = GetJsonContent<Project>(stringResponse);
+
+        Assert.NotNull(actualProject);
+        Assert.Equal(updateProject.Title, actualProject.Title);
+        Assert.Equal(updateProject.Description, actualProject.Description);
+        Assert.Equal(updateProject.ShortDescription, actualProject.ShortDescription);
+        Assert.Equal(updateProject.CompanyId, actualProject.CompanyId);
+        Assert.Equal(updateProject.StartDate, actualProject.StartDate);
+        Assert.Equal(updateProject.EndDate, actualProject.EndDate);
+        Assert.Equal(updateProject.Website, actualProject.Website);
+        Assert.NotNull(actualProject.Tags);
+        Assert.Equal(updateProject.Tags.Count, actualProject.Tags.Count);
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectInDb = await context.Project.FindAsync(existingProject.Id);
+        Assert.NotNull(projectInDb);
+        Assert.Equal(updateProject.Title, projectInDb.Title);
+        Assert.Equal(updateProject.Description, projectInDb.Description);
+        Assert.Equal(updateProject.ShortDescription, projectInDb.ShortDescription);
+        Assert.Equal(updateProject.CompanyId, projectInDb.CompanyId);
+        Assert.Equal(updateProject.StartDate, projectInDb.StartDate);
+        Assert.Equal(updateProject.EndDate, projectInDb.EndDate);
+        Assert.Equal(updateProject.Website, projectInDb.Website);
+
+        if (projectInDb != null)
+        {
+            projectInDb.Tags =
+                await context.Tag.Where(t => t.Projects.Any(p => p.Id == projectInDb.Id)).ToListAsync();
+            Assert.NotNull(projectInDb.Tags);
+            Assert.Equal(updateProject.Tags.Count, projectInDb.Tags.Count);
+        }
+    }
+
+    [Fact]
+    public async Task PutProject_WithoutAuth_ReturnsUnauthorized()
+    {
+        var testProjectId = ProjectId.New();
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        var updateProject = new CreateProject
+        {
+            Title = "Updated Project",
+            ShortDescription = "Updated short description",
+            Description = "Updated long description",
+            CompanyId = CompanyId.New(),
+            StartDate = new DateOnly(2021, 1, 1),
+            EndDate = new DateOnly(2022, 1, 1),
+            Website = "https://updated-example.com",
+            Tags = ["UpdatedTag1", "UpdatedTag2"]
+        };
+
+        var content = GetMultipartFormDataContent(updateProject);
+
+        var httpResponse = await Client.PutAsync($"/project/{existingProject.Id}", content);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteProject_ExistingId_DeletesProject()
+    {
+        var testProjectId = ProjectId.New();
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        var httpResponse = await AuthenticatedClient.DeleteAsync($"/project/{existingProject.Id}");
+
+        httpResponse.EnsureSuccessStatusCode();
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectInDb = await context.Project.FindAsync(existingProject.Id);
+        Assert.Null(projectInDb);
+    }
+
+    [Fact]
+    public async Task DeleteProject_WithoutAuth_ReturnsUnauthorized()
+    {
+        var testProjectId = ProjectId.New();
+        var existingProject = await CreateProjectAsync(testProjectId);
+
+        var httpResponse = await Client.DeleteAsync($"/project/{existingProject.Id}");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+}

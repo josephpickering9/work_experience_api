@@ -1,0 +1,47 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
+using Work_Experience_Search.Types;
+
+namespace Work_Experience_Search.Models;
+
+public class Project
+{
+    [Required] public ProjectId Id { get; set; } = ProjectId.New();
+
+    [Required] public string Title { get; set; } = null!;
+
+    [Required] public string ShortDescription { get; set; } = null!;
+
+    [Required] public string Description { get; set; } = null!;
+
+    public CompanyId? CompanyId { get; set; } = null!;
+    public Company? Company { get; set; } = null!;
+
+    [Required] public DateOnly StartDate { get; set; }
+
+    public DateOnly? EndDate { get; set; }
+
+    public string? Website { get; set; }
+
+    [Required] public bool ShowMockup { get; set; } = false;
+
+    [Required] public string Slug { get; set; } = Guid.NewGuid().ToString();
+
+    [Required] public List<ProjectImage> Images { get; set; } = [];
+
+    [Required] public List<ProjectRepository> Repositories { get; set; } = [];
+
+    [Required] public List<Tag> Tags { get; set; } = [];
+
+    [NotMapped] public List<Project> RelatedProjects { get; set; } = [];
+
+    [JsonIgnore] [NotMapped] public ProjectImage? Logo => Images.SingleOrDefault(i => i.Type == ImageType.Logo);
+    [NotMapped] public string? LogoUrl => Logo?.Image;
+
+    [JsonIgnore] [NotMapped] public ProjectImage? Card => Images.SingleOrDefault(i => i.Type == ImageType.Card);
+    [NotMapped] public string? CardUrl => Card?.Image;
+
+    [JsonIgnore] [NotMapped] public ProjectImage? Banner => Images.SingleOrDefault(i => i.Type == ImageType.Banner);
+    [NotMapped] public string? BannerUrl => Banner?.Image;
+}
