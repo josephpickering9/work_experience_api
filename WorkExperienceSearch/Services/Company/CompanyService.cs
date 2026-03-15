@@ -1,12 +1,13 @@
 using Work_Experience_Search.Requests;
 using Work_Experience_Search.Models;
+using Work_Experience_Search.Services.Image;
 using Work_Experience_Search.Types;
 using Work_Experience_Search.Repositories;
 using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
-public class CompanyService(ICompanyRepository repository, IFileService fileService) : ICompanyService
+public class CompanyService(ICompanyRepository repository, IFileService fileService, IImageService imageService) : ICompanyService
 {
     public async Task<Result<IEnumerable<Company>>> GetCompaniesAsync(string? search)
     {
@@ -36,12 +37,12 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
         if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;
-        if (createCompany.Logo != null)
+        if (createCompany.Logo is { Length: > 0 })
         {
-            var logoFile = await fileService.SaveFileAsync(createCompany.Logo);
+            var logoFile = await SaveLogoAsync(createCompany.Logo);
             if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
 
-            logoPath = Path.GetFileName(logoFile.Data);
+            logoPath = logoFile.Data;
         }
 
         var company = new Company
@@ -69,12 +70,12 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
         if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
 
         string? logoPath = null;
-        if (createCompany.Logo != null)
+        if (createCompany.Logo is { Length: > 0 })
         {
-            var logoFile = await fileService.SaveFileAsync(createCompany.Logo);
+            var logoFile = await SaveLogoAsync(createCompany.Logo);
             if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
 
-            logoPath = Path.GetFileName(logoFile.Data);
+            logoPath = logoFile.Data;
         }
 
         if (logoPath != null) company.Logo = logoPath;
@@ -99,5 +100,20 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
         await repository.DeleteAsync(company);
 
         return new Success<Company>(company);
+    }
+
+    private async Task<Result<string>> SaveLogoAsync(IFormFile file)
+    {
+        var optimisedImage = await imageService.OptimiseImageAsync(await FileExtensions.FileToByteArray(file));
+        var formFile = optimisedImage is { Data: not null, IsSuccess: true }
+            ? FileExtensions.ByteArrayToFile(optimisedImage.Data, file.FileName, file.ContentType)
+            : file;
+        var savedFile = await fileService.SaveFileAsync(formFile);
+        if (!savedFile.IsSuccess) return new BadRequestFailure<string>("Logo file could not be saved.");
+
+        var fileName = Path.GetFileName(savedFile.Data);
+        if (fileName == null) return new BadRequestFailure<string>("Logo file path is null or empty.");
+
+        return new Success<string>(fileName);
     }
 }
