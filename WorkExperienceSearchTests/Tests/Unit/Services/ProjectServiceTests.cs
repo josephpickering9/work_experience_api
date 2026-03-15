@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using Work_Experience_Search.Controllers;
 using Work_Experience_Search.Exceptions;
@@ -22,7 +23,8 @@ public class ProjectServiceTests : BaseServiceTests
         _mockTagService = new Mock<ITagService>();
         _mockProjectImageService = new Mock<IProjectImageService>();
         _mockProjectRepositoryService = new Mock<IProjectRepositoryService>();
-        _projectService = new ProjectService(Context, _mockProjectImageService.Object, _mockProjectRepositoryService.Object, _mockTagService.Object);
+        var projectRepository = new Work_Experience_Search.Repositories.ProjectRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator());
+        _projectService = new ProjectService(Context, projectRepository, _mockProjectImageService.Object, _mockProjectRepositoryService.Object, _mockTagService.Object);
         
         _mockProjectImageService.Setup(service => service.SyncProjectImagesAsync(It.IsAny<Project>(), It.IsAny<List<CreateProjectImage>>()))
             .ReturnsAsync(() => new Success<List<ProjectImage>>([]));

@@ -4,8 +4,6 @@
   &lt;ProjectFolder&gt;C19E35E5-33A2-4AAF-B1CB-B3C12E1AE633/d:Tests&lt;/ProjectFolder&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=57f6c4aa_002Df56d_002D4acf_002Da627_002D5e4dbed66051/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Query_ReturnsRelevantAnswer" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;TestAncestor&gt;
-    &lt;TestId&gt;xUnit::C19E35E5-33A2-4AAF-B1CB-B3C12E1AE633::net8.0::WorkExperienceSearchTests.Tests.Integration.VertexQueryIntegrationTests.Query_ReturnsRelevantAnswer&lt;/TestId&gt;
-  &lt;/TestAncestor&gt;
+  &lt;Project Location="/Users/josephpickering/RiderProjects/Work Experience Search/WorkExperienceSearchTests" Presentation="&amp;lt;WorkExperienceSearchTests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>
 	</wpf:ResourceDictionary>

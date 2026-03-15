@@ -22,6 +22,9 @@ builder.Services.AddDbContext<Database>(options =>
 );
 
 
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<CacheInvalidator>();
+
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
