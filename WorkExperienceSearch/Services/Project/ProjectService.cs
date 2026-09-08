@@ -59,10 +59,16 @@ public class ProjectService(
             Slug = createProject.Title.ToSlug()
         };
 
-        var relationsResult = await SyncProjectRelations(project, createProject);
-        if (!relationsResult.IsSuccess) return relationsResult;
-
         await projectRepository.AddAsync(project);
+
+        var relationsResult = await SyncProjectRelations(project, createProject);
+        if (!relationsResult.IsSuccess)
+        {
+            await projectRepository.DeleteAsync(project);
+            return relationsResult;
+        }
+
+        await projectRepository.SaveChangesAsync();
 
         return new Success<Project>(project);
     }

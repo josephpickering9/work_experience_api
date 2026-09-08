@@ -160,7 +160,13 @@ public class ProjectServiceTests : BaseServiceTests
         };
 
         _mockTagService.Setup(ts => ts.SyncTagsAsync(It.IsAny<List<string>>()))
-            .ReturnsAsync((List<string> tags) => new Success<List<Tag>>(tags.Select(t => CreateTag(TagId.New(), t, TagType.Default)).ToList()));
+            .ReturnsAsync((List<string> tags) =>
+            {
+                var createdTags = tags.Select(t => CreateTag(TagId.New(), t, TagType.Default)).ToList();
+                Context.Tag.AddRange(createdTags);
+                Context.SaveChanges();
+                return new Success<List<Tag>>(createdTags);
+            });
 
         var result = (await _projectService.CreateProjectAsync(newProject)).ExpectSuccess();
 
