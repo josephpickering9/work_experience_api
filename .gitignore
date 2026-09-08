@@ -1,4 +1,6 @@
 wwwroot/*
 .idea/*
-bin/*
-obj/*
+**/bin/
+**/obj/
+.DS_Store
+*.DotSettings.user
