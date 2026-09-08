@@ -82,6 +82,8 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
     {
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateCompanies();
+        SetCache($"company:{company.Id}", company, cacheInvalidator.GetCompaniesChangeToken());
+        SetCache($"company:slug:{company.Slug}", company, cacheInvalidator.GetCompaniesChangeToken());
     }
 
     public async Task DeleteAsync(Company company, CancellationToken cancellationToken = default)

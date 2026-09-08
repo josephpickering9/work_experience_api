@@ -189,4 +189,36 @@ public class CompanyControllerIntegrationTests(CustomWebApplicationFactory custo
 
         Assert.Equal(HttpStatusCode.NotFound, httpResponse.StatusCode);
     }
+
+    [Fact]
+    public async Task GetCompany_AfterUpdate_ReturnsCachedUpdatedData()
+    {
+        var companyId = CompanyId.New();
+        await CreateCompanyAsync(companyId, name: "Original Name", description: "Original Description");
+
+        var getResponse = await Client.GetAsync($"/company/{companyId}");
+        getResponse.EnsureSuccessStatusCode();
+        var original = GetJsonContent<Company>(await getResponse.Content.ReadAsStringAsync());
+        Assert.NotNull(original);
+        Assert.Equal("Original Name", original.Name);
+
+        var updateCompany = new CreateCompany
+        {
+            Name = "Updated Name",
+            Description = "Updated Description",
+            StartDate = new DateOnly(2020, 1, 1),
+            EndDate = new DateOnly(2021, 1, 1),
+            Website = "https://updatedcompany.com"
+        };
+        var putResponse = await AuthenticatedClient.PutAsync($"/company/{companyId}", GetMultipartFormDataContent(updateCompany));
+        putResponse.EnsureSuccessStatusCode();
+
+        var getAfterUpdateResponse = await Client.GetAsync($"/company/{companyId}");
+        getAfterUpdateResponse.EnsureSuccessStatusCode();
+        var updated = GetJsonContent<Company>(await getAfterUpdateResponse.Content.ReadAsStringAsync());
+
+        Assert.NotNull(updated);
+        Assert.Equal("Updated Name", updated.Name);
+        Assert.Equal("Updated Description", updated.Description);
+    }
 }

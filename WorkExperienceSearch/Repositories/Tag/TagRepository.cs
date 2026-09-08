@@ -95,6 +95,8 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
     {
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateTags();
+        SetCache($"tag:{tag.Id}", tag, cacheInvalidator.GetTagsChangeToken());
+        SetCache($"tag:slug:{tag.Slug}", tag, cacheInvalidator.GetTagsChangeToken());
     }
 
     public async Task DeleteAsync(Tag tag, CancellationToken cancellationToken = default)
