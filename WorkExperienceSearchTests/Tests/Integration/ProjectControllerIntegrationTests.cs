@@ -175,6 +175,37 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
     }
 
     [Fact]
+    public async Task PostProject_WithImages_CreatesProjectAndImagesWithoutDuplicateInsertError()
+    {
+        var content = new MultipartFormDataContent
+        {
+            { new StringContent("Project With Images"), "Title" },
+            { new StringContent("A short description"), "ShortDescription" },
+            { new StringContent("A long description"), "Description" },
+            { new StringContent("2021-01-01"), "StartDate" },
+            { new StringContent("2022-01-01"), "EndDate" }
+        };
+        content.Add(new StringContent(ImageType.Logo.ToString()), "Images[0].Type");
+        content.Add(new StreamContent(new MemoryStream("logo"u8.ToArray())), "Images[0].Image", "logo.png");
+        content.Add(new StringContent(ImageType.Banner.ToString()), "Images[1].Type");
+        content.Add(new StreamContent(new MemoryStream("banner"u8.ToArray())), "Images[1].Image", "banner.png");
+
+        var httpResponse = await AuthenticatedClient.PostAsync("/project", content);
+        httpResponse.EnsureSuccessStatusCode();
+
+        var actualProject = GetJsonContent<Project>(await httpResponse.Content.ReadAsStringAsync());
+        Assert.NotNull(actualProject);
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Database>();
+        var projectCount = await context.Project.CountAsync(p => p.Id == actualProject.Id);
+        Assert.Equal(1, projectCount);
+
+        var images = await context.ProjectImage.Where(i => i.ProjectId == actualProject.Id).ToListAsync();
+        Assert.Equal(2, images.Count);
+    }
+
+    [Fact]
     public async Task PostProject_WithoutAuth_ReturnsUnauthorized()
     {
         var newProject = new CreateProject
@@ -312,6 +343,81 @@ public class ProjectControllerIntegrationTests(CustomWebApplicationFactory custo
         var httpResponse = await Client.PutAsync($"/project/{existingProject.Id}", content);
 
         Assert.Equal(HttpStatusCode.Unauthorized, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutProject_ReplacingBannerImageOnly_LeavesLogoAndCardUnaffected()
+    {
+        var testProjectId = ProjectId.New();
+        var existingProject = await CreateProjectAsync(testProjectId, "Image Sync Project");
+
+        var originalLogo = new ProjectImage { Image = "original-logo.png", Type = ImageType.Logo, ProjectId = testProjectId };
+        var originalBanner = new ProjectImage { Image = "original-banner.png", Type = ImageType.Banner, ProjectId = testProjectId };
+        var originalCard = new ProjectImage { Image = "original-card.png", Type = ImageType.Card, ProjectId = testProjectId };
+        var originalDesktop1 = new ProjectImage { Image = "original-desktop1.png", Type = ImageType.Desktop, Order = 1, ProjectId = testProjectId };
+        var originalDesktop2 = new ProjectImage { Image = "original-desktop2.png", Type = ImageType.Desktop, Order = 2, ProjectId = testProjectId };
+        var originalMobile1 = new ProjectImage { Image = "original-mobile1.png", Type = ImageType.Mobile, Order = 1, ProjectId = testProjectId };
+        var originalMobile2 = new ProjectImage { Image = "original-mobile2.png", Type = ImageType.Mobile, Order = 2, ProjectId = testProjectId };
+
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<Database>();
+            context.ProjectImage.AddRange(originalLogo, originalBanner, originalCard, originalDesktop1, originalDesktop2, originalMobile1, originalMobile2);
+            await context.SaveChangesAsync();
+        }
+
+        var updateContent = new MultipartFormDataContent
+        {
+            { new StringContent(existingProject.Title), "Title" },
+            { new StringContent(existingProject.ShortDescription), "ShortDescription" },
+            { new StringContent(existingProject.Description), "Description" },
+            { new StringContent(existingProject.StartDate.ToString("yyyy-MM-dd")), "StartDate" },
+            { new StringContent(existingProject.EndDate!.Value.ToString("yyyy-MM-dd")), "EndDate" }
+        };
+        updateContent.Add(new StringContent(originalLogo.Id.Value.ToString()), "Images[0].Id");
+        updateContent.Add(new StringContent(ImageType.Logo.ToString()), "Images[0].Type");
+        updateContent.Add(new StringContent(ImageType.Banner.ToString()), "Images[1].Type");
+        updateContent.Add(new StreamContent(new MemoryStream("new-banner"u8.ToArray())), "Images[1].Image", "new-banner.png");
+        updateContent.Add(new StringContent(originalCard.Id.Value.ToString()), "Images[2].Id");
+        updateContent.Add(new StringContent(ImageType.Card.ToString()), "Images[2].Type");
+        updateContent.Add(new StringContent(originalDesktop1.Id.Value.ToString()), "Images[3].Id");
+        updateContent.Add(new StringContent(ImageType.Desktop.ToString()), "Images[3].Type");
+        updateContent.Add(new StringContent("1"), "Images[3].Order");
+        updateContent.Add(new StringContent(originalDesktop2.Id.Value.ToString()), "Images[4].Id");
+        updateContent.Add(new StringContent(ImageType.Desktop.ToString()), "Images[4].Type");
+        updateContent.Add(new StringContent("2"), "Images[4].Order");
+        updateContent.Add(new StringContent(originalMobile1.Id.Value.ToString()), "Images[5].Id");
+        updateContent.Add(new StringContent(ImageType.Mobile.ToString()), "Images[5].Type");
+        updateContent.Add(new StringContent("1"), "Images[5].Order");
+        updateContent.Add(new StringContent(originalMobile2.Id.Value.ToString()), "Images[6].Id");
+        updateContent.Add(new StringContent(ImageType.Mobile.ToString()), "Images[6].Type");
+        updateContent.Add(new StringContent("2"), "Images[6].Order");
+
+        var updateResponse = await AuthenticatedClient.PutAsync($"/project/{testProjectId}", updateContent);
+        updateResponse.EnsureSuccessStatusCode();
+
+        var getResponse = await Client.GetAsync($"/project/{testProjectId}");
+        getResponse.EnsureSuccessStatusCode();
+        var refreshedProject = GetJsonContent<Project>(await getResponse.Content.ReadAsStringAsync());
+        Assert.NotNull(refreshedProject);
+
+        var refreshedLogo = refreshedProject.Images.SingleOrDefault(i => i.Type == ImageType.Logo);
+        var refreshedBanner = refreshedProject.Images.SingleOrDefault(i => i.Type == ImageType.Banner);
+        var refreshedCard = refreshedProject.Images.SingleOrDefault(i => i.Type == ImageType.Card);
+
+        Assert.NotNull(refreshedLogo);
+        Assert.Equal(originalLogo.Image, refreshedLogo.Image);
+
+        Assert.NotNull(refreshedCard);
+        Assert.Equal(originalCard.Image, refreshedCard.Image);
+
+        Assert.NotNull(refreshedBanner);
+        Assert.NotEqual(originalBanner.Image, refreshedBanner.Image);
+        Assert.NotEqual(refreshedCard.Image, refreshedBanner.Image);
+
+        Assert.Single(refreshedProject.Images, i => i.Type == ImageType.Logo);
+        Assert.Single(refreshedProject.Images, i => i.Type == ImageType.Banner);
+        Assert.Single(refreshedProject.Images, i => i.Type == ImageType.Card);
     }
 
     [Fact]

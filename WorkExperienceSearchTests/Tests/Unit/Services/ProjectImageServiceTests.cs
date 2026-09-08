@@ -127,4 +127,29 @@ public class ProjectImageServiceTests : BaseServiceTests
         Assert.NotNull(result);
         Assert.Equal(9, result.Count());
     }
+
+    [Fact]
+    public async Task SyncProjectImagesAsync_ReplacingBannerWithNewUpload_LeavesCardUnaffected()
+    {
+        var images = new List<CreateProjectImage>
+        {
+            new() { Id = Image1Id, Type = ImageType.Logo },
+            new() { Type = ImageType.Banner, Image = null },
+            new() { Id = Image3Id, Type = ImageType.Card }
+        };
+
+        await _projectImageService.SyncProjectImagesAsync(Project1Id, images);
+        var result = (await _projectImageService.GetProjectImagesAsync(Project1Id)).ExpectSuccess();
+
+        var card = result.SingleOrDefault(i => i.Type == ImageType.Card);
+        var banner = result.SingleOrDefault(i => i.Type == ImageType.Banner);
+        var logo = result.SingleOrDefault(i => i.Type == ImageType.Logo);
+
+        Assert.NotNull(card);
+        Assert.Equal("testCard.png", card.Image);
+        Assert.NotNull(banner);
+        Assert.Equal("testPath", banner.Image);
+        Assert.NotNull(logo);
+        Assert.Equal("testLogo.png", logo.Image);
+    }
 }

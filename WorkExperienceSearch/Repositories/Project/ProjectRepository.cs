@@ -133,11 +133,19 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
         context.Entry(project).State = EntityState.Modified;
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateProjects();
+        SetCache($"project:{project.Id}", project, cacheInvalidator.GetProjectsChangeToken());
+        SetCache($"project:slug:{project.Slug}", project, cacheInvalidator.GetProjectsChangeToken());
     }
 
     public async Task DeleteAsync(Project project, CancellationToken cancellationToken = default)
     {
         context.Project.Remove(project);
+        await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateProjects();
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateProjects();
     }
