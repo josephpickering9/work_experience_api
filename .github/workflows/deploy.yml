@@ -105,6 +105,7 @@ jobs:
           username: ${{ matrix.server.username }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ matrix.server.port }}
+          command_timeout: 15m
           envs: GITHUB_SHA
           script: |
             mkdir -p "${{ matrix.server.path }}/releases/${GITHUB_SHA}"
@@ -158,8 +159,12 @@ jobs:
           username: ${{ matrix.server.username }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ matrix.server.port }}
+          command_timeout: 30m
           envs: GITHUB_SHA,RELEASE_PATH,RELEASE_BIN_PATH,ACTIVE_RELEASE_PATH,BASE_PATH,DATABASE_CONNECTION_STRING,ROOT_PATH,VERTEX_AI_CREDENTIALS_JSON
           script: |
+            exec 9>/tmp/work-experience-deploy.lock
+            flock -x -w 1500 9
+
             cd "$RELEASE_PATH"
 
             SERVICE_ACCOUNT_PATH="$RELEASE_PATH/service-account.json"
@@ -218,7 +223,6 @@ jobs:
 
             export DOTNET_ROOT=/usr/share/dotnet
             export PATH="$PATH:$DOTNET_ROOT:$HOME/.dotnet/tools"
-            dotnet publish -c Release
             dotnet ef database update
 
             # Stop any currently running instance to avoid port conflicts and stale configs
