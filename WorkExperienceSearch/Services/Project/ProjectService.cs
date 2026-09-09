@@ -10,7 +10,8 @@ public class ProjectService(
     IProjectRepository projectRepository,
     IProjectImageService projectImageService,
     IProjectRepositoryService projectRepositoryService,
-    ITagService tagService
+    ITagService tagService,
+    ILogger<ProjectService> logger
 ) : IProjectService
 {
     public async Task<Result<IEnumerable<Project>>> GetProjectsAsync(string? search)
@@ -22,7 +23,11 @@ public class ProjectService(
     public async Task<Result<Project>> GetProjectAsync(ProjectId id)
     {
         var project = await projectRepository.GetAsync(id);
-        if (project == null) return new NotFoundFailure<Project>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found.", id);
+            return new NotFoundFailure<Project>("Project not found.");
+        }
 
         return new Success<Project>(project);
     }
@@ -30,7 +35,11 @@ public class ProjectService(
     public async Task<Result<Project>> GetProjectBySlugAsync(string slug)
     {
         var project = await projectRepository.GetAsync(slug);
-        if (project == null) return new NotFoundFailure<Project>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project with slug {Slug} not found.", slug);
+            return new NotFoundFailure<Project>("Project not found.");
+        }
 
         return new Success<Project>(project);
     }
@@ -44,7 +53,11 @@ public class ProjectService(
     public async Task<Result<Project>> CreateProjectAsync(CreateProject createProject)
     {
         var projectExists = await projectRepository.ExistsAsync(createProject.Title);
-        if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
+        if (projectExists)
+        {
+            logger.LogWarning("Project creation conflict: a project titled {Title} already exists.", createProject.Title);
+            return new ConflictFailure<Project>("A project with the same title already exists");
+        }
 
         var project = new Project
         {
@@ -64,6 +77,7 @@ public class ProjectService(
         var relationsResult = await SyncProjectRelations(project, createProject);
         if (!relationsResult.IsSuccess)
         {
+            logger.LogWarning("Project {ProjectId} relations sync failed during creation: {Reason}", project.Id, relationsResult.Error?.Message);
             await projectRepository.DeleteAsync(project);
             return relationsResult;
         }
@@ -76,10 +90,18 @@ public class ProjectService(
     public async Task<Result<Project>> UpdateProjectAsync(ProjectId id, CreateProject createProject)
     {
         var project = await projectRepository.GetForUpdateAsync(id);
-        if (project == null) return new NotFoundFailure<Project>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found for update.", id);
+            return new NotFoundFailure<Project>("Project not found.");
+        }
 
         var projectExists = await projectRepository.ExistsAsync(createProject.Title, id);
-        if (projectExists) return new ConflictFailure<Project>("A project with the same title already exists");
+        if (projectExists)
+        {
+            logger.LogWarning("Project {ProjectId} update conflict: a project titled {Title} already exists.", id, createProject.Title);
+            return new ConflictFailure<Project>("A project with the same title already exists");
+        }
 
         project.Title = createProject.Title;
         project.ShortDescription = createProject.ShortDescription;
@@ -92,7 +114,11 @@ public class ProjectService(
         project.Slug = createProject.Title.ToSlug();
 
         var relationsResult = await SyncProjectRelations(project, createProject);
-        if (!relationsResult.IsSuccess) return relationsResult;
+        if (!relationsResult.IsSuccess)
+        {
+            logger.LogWarning("Project {ProjectId} relations sync failed during update: {Reason}", id, relationsResult.Error?.Message);
+            return relationsResult;
+        }
 
         await projectRepository.UpdateAsync(project);
 
@@ -102,7 +128,11 @@ public class ProjectService(
     public async Task<Result<Project>> DeleteProjectAsync(ProjectId id)
     {
         var project = await projectRepository.GetAsync(id);
-        if (project == null) return new NotFoundFailure<Project>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found for deletion.", id);
+            return new NotFoundFailure<Project>("Project not found.");
+        }
 
         await projectRepository.DeleteAsync(project);
 

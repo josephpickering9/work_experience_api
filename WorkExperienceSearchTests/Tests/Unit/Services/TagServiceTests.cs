@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Work_Experience_Search.Requests;
 using Work_Experience_Search.Exceptions;
 using Work_Experience_Search.Models;
@@ -16,7 +17,7 @@ public class TagServiceTests : BaseServiceTests
 
     public TagServiceTests()
     {
-        _tagService = new TagService(new TagRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()));
+        _tagService = new TagService(new TagRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), NullLogger<TagService>.Instance);
     }
 
     [Fact]

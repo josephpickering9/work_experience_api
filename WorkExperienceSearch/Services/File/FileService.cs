@@ -3,11 +3,15 @@ using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
-public class FileService(IWebHostEnvironment hostEnvironment) : IFileService
+public class FileService(IWebHostEnvironment hostEnvironment, ILogger<FileService> logger) : IFileService
 {
     public async Task<Result<string>> SaveFileAsync(byte[] file, string name = "image.png")
     {
-        if (file.Length == 0) return new BadRequestFailure<string>("No file uploaded");
+        if (file.Length == 0)
+        {
+            logger.LogWarning("File save rejected: no file uploaded for {Name}.", name);
+            return new BadRequestFailure<string>("No file uploaded");
+        }
 
         var uploadDir = Path.Combine(hostEnvironment.WebRootPath ?? hostEnvironment.ContentRootPath, "uploads");
         if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
@@ -22,7 +26,11 @@ public class FileService(IWebHostEnvironment hostEnvironment) : IFileService
 
     public async Task<Result<string>> SaveFileAsync(IFormFile? file)
     {
-        if (file == null || file.Length == 0) return new BadRequestFailure<string>("No file uploaded");
+        if (file == null || file.Length == 0)
+        {
+            logger.LogWarning("File save rejected: no file uploaded for {FileName}.", file?.FileName);
+            return new BadRequestFailure<string>("No file uploaded");
+        }
 
         var uploadDir = Path.Combine(hostEnvironment.WebRootPath ?? hostEnvironment.ContentRootPath, "uploads");
         if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);

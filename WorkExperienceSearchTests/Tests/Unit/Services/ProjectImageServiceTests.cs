@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Work_Experience_Search.Requests;
 using Work_Experience_Search.Exceptions;
@@ -21,7 +22,7 @@ public class ProjectImageServiceTests : BaseServiceTests
     {
         var mockFileService = new Mock<IFileService>();
         var mockImageService = new Mock<IImageService>();
-        _projectImageService = new ProjectImageService(new Work_Experience_Search.Repositories.ProjectRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), new ProjectImageRepository(Context), mockFileService.Object, mockImageService.Object);
+        _projectImageService = new ProjectImageService(new Work_Experience_Search.Repositories.ProjectRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), new ProjectImageRepository(Context), mockFileService.Object, mockImageService.Object, NullLogger<ProjectImageService>.Instance);
 
         mockFileService.Setup(fs => fs.SaveFileAsync(It.IsAny<IFormFile>()))
             .ReturnsAsync(() => new Success<string>("testPath"));

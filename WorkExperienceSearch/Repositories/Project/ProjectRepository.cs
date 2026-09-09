@@ -15,7 +15,7 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
         var cacheKey = $"projects:{search ?? ""}";
         if (TryGetCache(cacheKey, out IEnumerable<Project>? cached) && cached != null) return cached;
 
-        var projects = WithIncludes(context.Project);
+        var projects = WithIncludes(context.Project).AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -39,6 +39,7 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
             .Include(p => p.Images)
             .Include(p => p.Repositories)
             .Where(p => ids.Contains(p.Id))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -64,6 +65,7 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
         if (TryGetCache(cacheKey, out Project? cached)) return cached;
 
         var project = await WithIncludes(context.Project)
+            .AsNoTracking()
             .SingleOrDefaultAsync(p => p.Slug == slug, cancellationToken);
 
         SetCache(cacheKey, project, cacheInvalidator.GetProjectsChangeToken());
@@ -101,6 +103,7 @@ public class ProjectRepository(Database context, IMemoryCache cache, CacheInvali
             .Select(x => x.Project)
             .Include(p => p.Tags)
             .Include(p => p.Images)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         SetCache(cacheKey, related, cacheInvalidator.GetProjectsChangeToken());

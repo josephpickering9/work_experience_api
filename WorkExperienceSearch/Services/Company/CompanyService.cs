@@ -7,7 +7,7 @@ using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
-public class CompanyService(ICompanyRepository repository, IFileService fileService, IImageService imageService) : ICompanyService
+public class CompanyService(ICompanyRepository repository, IFileService fileService, IImageService imageService, ILogger<CompanyService> logger) : ICompanyService
 {
     public async Task<Result<IEnumerable<Company>>> GetCompaniesAsync(string? search)
     {
@@ -18,7 +18,11 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
     public async Task<Result<Company>> GetCompanyAsync(CompanyId id)
     {
         var company = await repository.GetAsync(id);
-        if (company == null) return new NotFoundFailure<Company>("Company not found.");
+        if (company == null)
+        {
+            logger.LogWarning("Company {CompanyId} not found.", id);
+            return new NotFoundFailure<Company>("Company not found.");
+        }
 
         return new Success<Company>(company);
     }
@@ -26,7 +30,11 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
     public async Task<Result<Company>> GetCompanyBySlugAsync(string slug)
     {
         var company = await repository.GetAsync(slug);
-        if (company == null) return new NotFoundFailure<Company>("Company not found.");
+        if (company == null)
+        {
+            logger.LogWarning("Company with slug {Slug} not found.", slug);
+            return new NotFoundFailure<Company>("Company not found.");
+        }
 
         return new Success<Company>(company);
     }
@@ -34,13 +42,21 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
     public async Task<Result<Company>> CreateCompanyAsync(CreateCompany createCompany)
     {
         var companyExists = await repository.ExistsAsync(createCompany.Name);
-        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
+        if (companyExists)
+        {
+            logger.LogWarning("Company creation conflict: a company named {Name} already exists.", createCompany.Name);
+            return new ConflictFailure<Company>("A company with the same title already exists.");
+        }
 
         string? logoPath = null;
         if (createCompany.Logo is { Length: > 0 })
         {
             var logoFile = await SaveLogoAsync(createCompany.Logo);
-            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
+            if (!logoFile.IsSuccess)
+            {
+                logger.LogWarning("Logo could not be saved while creating company {Name}: {Reason}", createCompany.Name, logoFile.Error?.Message);
+                return new BadRequestFailure<Company>("Logo file could not be saved.");
+            }
 
             logoPath = logoFile.Data;
         }
@@ -64,16 +80,28 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
     public async Task<Result<Company>> UpdateCompanyAsync(CompanyId id, CreateCompany createCompany)
     {
         var company = await repository.GetAsync(id);
-        if (company == null) return new NotFoundFailure<Company>("Company not found.");
+        if (company == null)
+        {
+            logger.LogWarning("Company {CompanyId} not found for update.", id);
+            return new NotFoundFailure<Company>("Company not found.");
+        }
 
         var companyExists = await repository.ExistsAsync(createCompany.Name, id);
-        if (companyExists) return new ConflictFailure<Company>("A company with the same title already exists.");
+        if (companyExists)
+        {
+            logger.LogWarning("Company {CompanyId} update conflict: a company named {Name} already exists.", id, createCompany.Name);
+            return new ConflictFailure<Company>("A company with the same title already exists.");
+        }
 
         string? logoPath = null;
         if (createCompany.Logo is { Length: > 0 })
         {
             var logoFile = await SaveLogoAsync(createCompany.Logo);
-            if (!logoFile.IsSuccess) return new BadRequestFailure<Company>("Logo file could not be saved.");
+            if (!logoFile.IsSuccess)
+            {
+                logger.LogWarning("Logo could not be saved while updating company {CompanyId}: {Reason}", id, logoFile.Error?.Message);
+                return new BadRequestFailure<Company>("Logo file could not be saved.");
+            }
 
             logoPath = logoFile.Data;
         }
@@ -95,7 +123,11 @@ public class CompanyService(ICompanyRepository repository, IFileService fileServ
     public async Task<Result<Company>> DeleteCompanyAsync(CompanyId id)
     {
         var company = await repository.GetAsync(id);
-        if (company == null) return new NotFoundFailure<Company>("Company not found.");
+        if (company == null)
+        {
+            logger.LogWarning("Company {CompanyId} not found for deletion.", id);
+            return new NotFoundFailure<Company>("Company not found.");
+        }
 
         await repository.DeleteAsync(company);
 

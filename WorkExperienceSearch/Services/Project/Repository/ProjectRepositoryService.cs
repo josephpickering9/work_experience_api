@@ -6,12 +6,16 @@ using Work_Experience_Search.Repositories;
 
 namespace Work_Experience_Search.Services;
 
-public class ProjectRepositoryService(IProjectRepository projectRepository, IProjectCodeRepository projectCodeRepository) : IProjectRepositoryService
+public class ProjectRepositoryService(IProjectRepository projectRepository, IProjectCodeRepository projectCodeRepository, ILogger<ProjectRepositoryService> logger) : IProjectRepositoryService
 {
     public async Task<Result<IEnumerable<Models.ProjectRepository>>> GetProjectRepositoriesAsync(ProjectId projectId)
     {
         var project = await projectRepository.GetAsync(projectId);
-        if (project == null) return new NotFoundFailure<IEnumerable<Models.ProjectRepository>>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found when listing repositories.", projectId);
+            return new NotFoundFailure<IEnumerable<Models.ProjectRepository>>("Project not found.");
+        }
 
         return new Success<IEnumerable<Models.ProjectRepository>>(project.Repositories);
     }
@@ -19,10 +23,18 @@ public class ProjectRepositoryService(IProjectRepository projectRepository, IPro
     public async Task<Result<Models.ProjectRepository>> GetProjectRepositoryAsync(ProjectId projectId, ProjectRepositoryId id)
     {
         var project = await projectRepository.GetAsync(projectId);
-        if (project == null) return new NotFoundFailure<Models.ProjectRepository>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found when fetching repository {ProjectRepositoryId}.", projectId, id);
+            return new NotFoundFailure<Models.ProjectRepository>("Project not found.");
+        }
 
         var repository = project.Repositories.SingleOrDefault(i => i.Id == id);
-        if (repository == null) return new NotFoundFailure<Models.ProjectRepository>("Repository not found.");
+        if (repository == null)
+        {
+            logger.LogWarning("Repository {ProjectRepositoryId} not found on project {ProjectId}.", id, projectId);
+            return new NotFoundFailure<Models.ProjectRepository>("Repository not found.");
+        }
 
         return new Success<Models.ProjectRepository>(repository);
     }
@@ -30,7 +42,11 @@ public class ProjectRepositoryService(IProjectRepository projectRepository, IPro
     public async Task<Result<List<Models.ProjectRepository>>> SyncProjectRepositoriesAsync(ProjectId projectId, List<CreateProjectRepository> repositories)
     {
         var project = await projectRepository.GetAsync(projectId);
-        if (project == null) return new NotFoundFailure<List<Models.ProjectRepository>>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found when syncing repositories.", projectId);
+            return new NotFoundFailure<List<Models.ProjectRepository>>("Project not found.");
+        }
 
         return await SyncProjectRepositoriesAsync(project, repositories);
     }

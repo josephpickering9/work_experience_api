@@ -8,12 +8,16 @@ using Work_Experience_Search.Repositories;
 
 namespace Work_Experience_Search.Services;
 
-public class ProjectImageService(IProjectRepository projectRepository, IProjectImageRepository projectImageRepository, IFileService fileService, IImageService imageService) : IProjectImageService
+public class ProjectImageService(IProjectRepository projectRepository, IProjectImageRepository projectImageRepository, IFileService fileService, IImageService imageService, ILogger<ProjectImageService> logger) : IProjectImageService
 {
     public async Task<Result<IEnumerable<ProjectImage>>> GetProjectImagesAsync(ProjectId projectId)
     {
         var project = await projectRepository.GetAsync(projectId);
-        if (project == null) return new NotFoundFailure<IEnumerable<ProjectImage>>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found when listing images.", projectId);
+            return new NotFoundFailure<IEnumerable<ProjectImage>>("Project not found.");
+        }
 
         return new Success<IEnumerable<ProjectImage>>(project.Images);
     }
@@ -21,10 +25,18 @@ public class ProjectImageService(IProjectRepository projectRepository, IProjectI
     public async Task<Result<ProjectImage>> GetProjectImageAsync(ProjectId projectId, ProjectImageId id)
     {
         var project = await projectRepository.GetAsync(projectId);
-        if (project == null) return new NotFoundFailure<ProjectImage>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found when fetching image {ProjectImageId}.", projectId, id);
+            return new NotFoundFailure<ProjectImage>("Project not found.");
+        }
 
         var image = project.Images.SingleOrDefault(i => i.Id == id);
-        if (image == null) return new NotFoundFailure<ProjectImage>("Image not found.");
+        if (image == null)
+        {
+            logger.LogWarning("Image {ProjectImageId} not found on project {ProjectId}.", id, projectId);
+            return new NotFoundFailure<ProjectImage>("Image not found.");
+        }
 
         return new Success<ProjectImage>(image);
     }
@@ -32,7 +44,11 @@ public class ProjectImageService(IProjectRepository projectRepository, IProjectI
     public async Task<Result<List<ProjectImage>>> SyncProjectImagesAsync(ProjectId projectId, List<CreateProjectImage> images)
     {
         var project = await projectRepository.GetAsync(projectId);
-        if (project == null) return new NotFoundFailure<List<ProjectImage>>("Project not found.");
+        if (project == null)
+        {
+            logger.LogWarning("Project {ProjectId} not found when syncing images.", projectId);
+            return new NotFoundFailure<List<ProjectImage>>("Project not found.");
+        }
 
         return await SyncProjectImagesAsync(project, images);
     }
@@ -64,7 +80,11 @@ public class ProjectImageService(IProjectRepository projectRepository, IProjectI
             }
 
             var imagePath = await SaveImage(image.Image);
-            if (imagePath.Data == null || !imagePath.IsSuccess) return new BadRequestFailure<List<ProjectImage>>(imagePath.Error?.Message ?? "Failed to save image");
+            if (imagePath.Data == null || !imagePath.IsSuccess)
+            {
+                logger.LogWarning("Failed to save image for project {ProjectId}: {Reason}", project.Id, imagePath.Error?.Message);
+                return new BadRequestFailure<List<ProjectImage>>(imagePath.Error?.Message ?? "Failed to save image");
+            }
 
             var projectImage = new ProjectImage
             {
