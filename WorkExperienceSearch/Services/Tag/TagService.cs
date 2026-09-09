@@ -6,7 +6,7 @@ using Work_Experience_Search.Utils;
 
 namespace Work_Experience_Search.Services;
 
-public class TagService(ITagRepository repository) : ITagService
+public class TagService(ITagRepository repository, ILogger<TagService> logger) : ITagService
 {
     public async Task<Result<IEnumerable<Tag>>> GetTagsAsync(string? search)
     {
@@ -17,7 +17,11 @@ public class TagService(ITagRepository repository) : ITagService
     public async Task<Result<Tag>> GetTagAsync(TagId id)
     {
         var tag = await repository.GetAsync(id);
-        if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
+        if (tag == null)
+        {
+            logger.LogWarning("Tag {TagId} not found.", id);
+            return new NotFoundFailure<Tag>("Tag not found.");
+        }
 
         return new Success<Tag>(tag);
     }
@@ -25,7 +29,11 @@ public class TagService(ITagRepository repository) : ITagService
     public async Task<Result<Tag>> GetTagBySlugAsync(string slug)
     {
         var tag = await repository.GetAsync(slug);
-        if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
+        if (tag == null)
+        {
+            logger.LogWarning("Tag with slug {Slug} not found.", slug);
+            return new NotFoundFailure<Tag>("Tag not found.");
+        }
 
         return new Success<Tag>(tag);
     }
@@ -33,7 +41,11 @@ public class TagService(ITagRepository repository) : ITagService
     public async Task<Result<Tag>> CreateTagAsync(CreateTag createTag)
     {
         var tagExists = await repository.ExistsAsync(createTag.Title);
-        if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
+        if (tagExists)
+        {
+            logger.LogWarning("Tag creation conflict: a tag titled {Title} already exists.", createTag.Title);
+            return new ConflictFailure<Tag>("A tag with the same title already exists.");
+        }
 
         var tag = new Tag
         {
@@ -83,10 +95,18 @@ public class TagService(ITagRepository repository) : ITagService
     public async Task<Result<Tag>> UpdateTagAsync(TagId id, CreateTag createTag)
     {
         var tag = await repository.GetAsync(id);
-        if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
+        if (tag == null)
+        {
+            logger.LogWarning("Tag {TagId} not found for update.", id);
+            return new NotFoundFailure<Tag>("Tag not found.");
+        }
 
         var tagExists = await repository.ExistsAsync(createTag.Title, id);
-        if (tagExists) return new ConflictFailure<Tag>("A tag with the same title already exists.");
+        if (tagExists)
+        {
+            logger.LogWarning("Tag {TagId} update conflict: a tag titled {Title} already exists.", id, createTag.Title);
+            return new ConflictFailure<Tag>("A tag with the same title already exists.");
+        }
 
         tag.Title = createTag.Title;
         tag.Type = createTag.Type;
@@ -102,7 +122,11 @@ public class TagService(ITagRepository repository) : ITagService
     public async Task<Result<Tag>> DeleteTagAsync(TagId id)
     {
         var tag = await repository.GetAsync(id);
-        if (tag == null) return new NotFoundFailure<Tag>("Tag not found.");
+        if (tag == null)
+        {
+            logger.LogWarning("Tag {TagId} not found for deletion.", id);
+            return new NotFoundFailure<Tag>("Tag not found.");
+        }
 
         await repository.DeleteAsync(tag);
 

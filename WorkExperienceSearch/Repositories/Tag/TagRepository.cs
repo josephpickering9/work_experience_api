@@ -14,6 +14,7 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
     {
         return await context.Tag
             .Where(t => ids.Contains(t.Id))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -27,6 +28,7 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
             .ThenInclude(p => p.Images)
             .Include(t => t.Projects)
             .ThenInclude(p => p.Tags)
+            .AsNoTracking()
             .SingleOrDefaultAsync(t => t.Slug == slug, cancellationToken);
 
         SetCache(cacheKey, tag, cacheInvalidator.GetTagsChangeToken());
@@ -55,7 +57,7 @@ public class TagRepository(Database context, IMemoryCache cache, CacheInvalidato
         var cacheKey = $"tags:{search ?? ""}";
         if (TryGetCache(cacheKey, out IEnumerable<Tag>? cached) && cached != null) return cached;
 
-        IQueryable<Tag> tags = context.Tag;
+        IQueryable<Tag> tags = context.Tag.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))
         {

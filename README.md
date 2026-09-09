@@ -38,22 +38,28 @@ Controllers  →  Services  →  Repositories  →  Database (EF Core / PostgreS
 **Result pattern** — every service method returns `Result<T>`. Controllers never throw; they map failures to RFC 7807 `ProblemDetails` responses via a single `result.ToResponse()` call.
 
 ```csharp
-// Service
-public async Task<Result<Project>> GetProjectAsync(ProjectId id)
+// Service — primary-constructor DI, no manual field boilerplate
+public class ProjectService(IProjectRepository projectRepository) : IProjectService
 {
-    var project = await _repository.GetAsync(id);
-    return project is null
-        ? new NotFoundFailure<Project>("Project not found.")
-        : new Success<Project>(project);
+    public async Task<Result<Project>> GetProjectAsync(ProjectId id)
+    {
+        var project = await projectRepository.GetAsync(id);
+        return project is null
+            ? new NotFoundFailure<Project>("Project not found.")
+            : new Success<Project>(project);
+    }
 }
 
 // Controller
-[HttpGet("{id}")]
-public async Task<IActionResult> GetProject(ProjectId id) =>
-    (await _projectService.GetProjectAsync(id)).ToResponse();
+public class ProjectController(IProjectService projectService) : ControllerBase
+{
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<Project>> GetProject(ProjectId id) =>
+        (await projectService.GetProjectAsync(id)).ToResponse();
+}
 ```
 
-**Repository pattern with base class** — `BaseRepository` centralises cache helpers and the PostgreSQL ILIKE / LINQ fallback so each concrete repository stays focused on its queries.
+**Repository pattern with base class** — `BaseRepository` centralises the `IMemoryCache` get/set helpers so each concrete repository stays focused on building its own cache keys and queries.
 
 **Token-based cache invalidation** — `CacheInvalidator` issues `IChangeToken` instances per entity type. Write operations (add / update / delete) cancel the relevant token, atomically evicting all related cache entries without explicit key tracking.
 
@@ -87,25 +93,24 @@ public async Task<IActionResult> GetProject(ProjectId id) =>
 
 3. **Configure environment variables**
 
-   Create a `.env` file in `WorkExperienceSearch/` (use `.env.example` as a reference):
+   Create a `.env` file in `WorkExperienceSearch/` (use `.env.example` as a reference). Keys use a colon, not a double underscore, matching `IConfiguration`'s path syntax directly — `dotenv.net` loads them as literal environment variable names and ASP.NET's `AddEnvironmentVariables()` binds a colon in the name straight through:
 
    ```env
    DefaultConnection=Host=localhost;Port=5432;Database=work_experience;Username=postgres;Password=postgres
-   Auth0__Domain=your-auth0-domain.auth0.com
-   Auth0__ClientId=your-client-id
-   Auth0__ClientSecret=your-client-secret
-   Auth0__Audience=your-api-audience
+   Auth0:Domain=your-auth0-domain.auth0.com
+   Auth0:ClientId=your-client-id
+   Auth0:ClientSecret=your-client-secret
+   Auth0:Audience=your-api-audience
 
    # Optional — required only for AI search
-   VertexAi__ProjectId=your-gcp-project-id
-   VertexAi__Location=global
-   VertexAi__Collection=default_collection
-   VertexAi__Branch=default_branch
-   VertexAi__Environment=your-environment
-   VertexAi__Model=gemini-1.5-flash-001/answer_gen/v1
-   VertexAi__ModelLocation=global
-   VertexAi__QueryDataStoreSuffix=your-datastore-suffix
-   VertexAi__CredentialsFile=/path/to/service-account.json
+   VertexAi:ProjectId=your-gcp-project-id
+   VertexAi:Location=global
+   VertexAi:Collection=default_collection
+   VertexAi:Branch=0
+   VertexAi:Model=gemini-2.5-pro
+   VertexAi:ModelLocation=us-central1
+   VertexAi:QueryDataStoreSuffix=your-datastore-suffix
+   VertexAi:CredentialsFile=/path/to/service-account.json
    ```
 
 4. **Apply database migrations**
@@ -137,7 +142,7 @@ The test suite covers three levels:
 
 | Type | Location | Tooling |
 |---|---|---|
-| Unit | `WorkExperienceSearchTests/Tests/Unit/` | xUnit, Moq, SQLite in-memory |
+| Unit | `WorkExperienceSearchTests/Tests/Unit/` | xUnit, Moq, EF Core `InMemoryDatabase` provider |
 | Integration | `WorkExperienceSearchTests/Tests/Integration/` | `WebApplicationFactory`, real HTTP client |
 | Architecture | `WorkExperienceSearchTests/Tests/Architecture/` | NetArchTest |
 
@@ -167,7 +172,7 @@ Two GitHub Actions workflows run on every push:
 
 **`.github/workflows/dotnet-tests.yml`** — spins up a PostgreSQL container via Docker Compose, restores, builds, and runs the full test suite. Pull requests cannot be merged if this workflow fails.
 
-**`.github/workflows/deploy.yml`** — triggers on `develop` branch merges. Publishes the app, uploads the artifact to the Digital Ocean droplet via SCP, runs `dotnet ef database update` on the server, and hot-swaps the running process with zero-downtime by symlinking the new release before restarting.
+**`.github/workflows/deploy.yml`** — triggers on push to `main`. Publishes the app, uploads the artifact to the Digital Ocean droplet via SCP, runs `dotnet ef database update` on the server, then stops the currently running process, symlinks the new release into place, and starts it — a brief restart window, not a zero-downtime swap.
 
 ---
 
@@ -176,17 +181,23 @@ Two GitHub Actions workflows run on every push:
 ```
 WorkExperienceSearch/
 ├── Controllers/          # Thin HTTP layer — receive, delegate, respond
-├── Services/             # Business logic and orchestration
-├── Repositories/         # EF Core data access
+├── Services/<Domain>/    # Business logic, one folder per domain (Project, Company, Tag, File, Image, VertexAi, Database)
+├── Repositories/<Domain>/ # EF Core data access, one folder per domain; BaseRepository.cs at root for shared caching
 ├── Requests/             # Immutable record DTOs for all endpoints
 ├── Validators/           # FluentValidation validators (one per request type)
 ├── Models/               # EF Core entity models
-├── Types/                # Result<T>, typed IDs, TagType enum
-├── Exceptions/           # Typed exception hierarchy
-└── Utils/                # String extensions (slug generation, etc.)
+├── Types/                # Result<T>, typed IDs (Ids.cs)
+├── Exceptions/           # Typed exception hierarchy (unexpected-failure paths only)
+└── Utils/                # Extension methods (string, slug generation, etc.)
 
 WorkExperienceSearchTests/
 ├── Tests/Unit/           # Service-level tests with mocked dependencies
 ├── Tests/Integration/    # Controller-level tests against a real HTTP server
 └── Tests/Architecture/   # NetArchTest layer-boundary assertions
 ```
+
+---
+
+## Conventions
+
+Coding conventions (layering, comment policy, testing, style) live in [`CLAUDE.md`](./CLAUDE.md). The monorepo root's [`docs/CODE_QUALITY_BACKLOG.md`](../docs/CODE_QUALITY_BACKLOG.md) tracks the active code-quality backlog for both projects.

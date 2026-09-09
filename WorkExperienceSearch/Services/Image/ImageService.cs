@@ -10,11 +10,13 @@ public class ImageService : IImageService
 {
     private readonly IWebHostEnvironment _env;
     private readonly string? _tinifyApiKey;
+    private readonly ILogger<ImageService> _logger;
 
-    public ImageService(IWebHostEnvironment hostEnvironment, IConfiguration configuration)
+    public ImageService(IWebHostEnvironment hostEnvironment, IConfiguration configuration, ILogger<ImageService> logger)
     {
         _env = hostEnvironment;
         _tinifyApiKey = configuration["Tinify:ApiKey"];
+        _logger = logger;
 
         if (!string.IsNullOrWhiteSpace(_tinifyApiKey))
             Tinify.Key = _tinifyApiKey;
@@ -27,7 +29,10 @@ public class ImageService : IImageService
             var filePath = Path.Combine(_env.WebRootPath ?? _env.ContentRootPath, "uploads", fileName);
 
             if (!File.Exists(filePath))
+            {
+                _logger.LogWarning("Image {FileName} not found.", fileName);
                 return new NotFoundFailure<ImageData>("Image not found");
+            }
 
             new FileExtensionContentTypeProvider().TryGetContentType(filePath, out var contentType);
 
@@ -42,6 +47,7 @@ public class ImageService : IImageService
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "Failed to read image {FileName}.", fileName);
             return new Failure<ImageData>(e.Message);
         }
     }
@@ -57,6 +63,7 @@ public class ImageService : IImageService
         }
         catch (TinifyException e)
         {
+            _logger.LogError(e, "Tinify image optimisation failed.");
             return new Failure<byte[]>(e.Message);
         }
     }

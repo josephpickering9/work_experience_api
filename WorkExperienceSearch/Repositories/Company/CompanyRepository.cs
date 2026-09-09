@@ -14,6 +14,7 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
     {
         return await context.Company
             .Where(c => ids.Contains(c.Id))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -22,7 +23,7 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
         var cacheKey = $"company:slug:{slug}";
         if (TryGetCache(cacheKey, out Company? cached)) return cached;
 
-        var company = await context.Company.SingleOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+        var company = await context.Company.AsNoTracking().SingleOrDefaultAsync(c => c.Slug == slug, cancellationToken);
         SetCache(cacheKey, company, cacheInvalidator.GetCompaniesChangeToken());
         return company;
     }
@@ -42,7 +43,7 @@ public class CompanyRepository(Database context, IMemoryCache cache, CacheInvali
         var cacheKey = $"companies:{search ?? ""}";
         if (TryGetCache(cacheKey, out IEnumerable<Company>? cached) && cached != null) return cached;
 
-        IQueryable<Company> companies = context.Company;
+        IQueryable<Company> companies = context.Company.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))
         {

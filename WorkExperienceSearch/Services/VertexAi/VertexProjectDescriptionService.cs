@@ -124,12 +124,15 @@ Output format:
             return new Failure<ProjectDescriptionSuggestionResponse>("Vertex AI did not return a suggestion.");
         }
 
-        return new Success<ProjectDescriptionSuggestionResponse>(new ProjectDescriptionSuggestionResponse(
+        return new Success<ProjectDescriptionSuggestionResponse>(ToResponse(project, answer.Trim()));
+    }
+
+    private static ProjectDescriptionSuggestionResponse ToResponse(Project project, string suggestedDescription) =>
+        new(
             ProjectId: project.Id,
             Title: project.Title,
             ExistingDescription: project.Description,
-            SuggestedDescription: answer.Trim()));
-    }
+            SuggestedDescription: suggestedDescription);
 
     private string BuildPrompt(Project project, SuggestProjectDescriptionRequest request)
     {

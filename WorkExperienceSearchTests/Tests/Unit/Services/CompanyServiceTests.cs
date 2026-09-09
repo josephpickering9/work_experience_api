@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Work_Experience_Search.Requests;
 using Work_Experience_Search.Exceptions;
@@ -20,7 +21,7 @@ public class CompanyServiceTests : BaseServiceTests
     {
         var mockFileService = new Mock<IFileService>();
         var mockImageService = new Mock<IImageService>();
-        _companyService = new CompanyService(new CompanyRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), mockFileService.Object, mockImageService.Object);
+        _companyService = new CompanyService(new CompanyRepository(Context, new MemoryCache(new MemoryCacheOptions()), new CacheInvalidator()), mockFileService.Object, mockImageService.Object, NullLogger<CompanyService>.Instance);
     }
     
     [Fact]
